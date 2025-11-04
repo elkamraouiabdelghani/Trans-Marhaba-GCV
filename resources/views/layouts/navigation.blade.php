@@ -13,13 +13,61 @@
         <li class="mb-2">
             <a href="{{ route('dashboard') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('dashboard') ? 'active' : '' }}">
                 <i class="bi bi-speedometer2 me-2 text-gray-600 sidebar-icon"></i>
-                <span class="sidebar-text">{{ __('Dashboard') }}</span>
+                <span class="sidebar-text">{{ __('messages.dashboard') }}</span>
+            </a>
+        </li>
+        <li class="mb-2">
+            <a href="{{ route('drivers.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2">
+                <i class="bi bi-people me-2 text-gray-600 sidebar-icon"></i>
+                <span class="sidebar-text">{{ __('messages.all_drivers') }}</span>
+            </a>
+        </li>
+        <li class="mb-2">
+            <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2">
+                <i class="bi bi-flag me-2 text-gray-600 sidebar-icon"></i>
+                <span class="sidebar-text">{{ __('messages.violations_by_type') }}</span>
+            </a>
+        </li>
+        <li class="mb-2">
+            <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2">
+                <i class="bi bi-shield-check me-2 text-gray-600 sidebar-icon"></i>
+                <span class="sidebar-text">{{ __('messages.score_points') }}</span>
+            </a>
+        </li>
+        <li class="mb-2">
+            <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2">
+                <i class="bi bi-clock-history me-2 text-gray-600 sidebar-icon"></i>
+                <span class="sidebar-text">{{ __('messages.driving_time_reports') }}</span>
+            </a>
+        </li>
+        <li class="mb-2">
+            <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2">
+                <i class="bi bi-box-arrow-down me-2 text-gray-600 sidebar-icon"></i>
+                <span class="sidebar-text">{{ __('messages.export_center') }}</span>
+            </a>
+        </li>
+        <li class="mb-2">
+            <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2">
+                <i class="bi bi-journal-check me-2 text-gray-600 sidebar-icon"></i>
+                <span class="sidebar-text">{{ __('messages.action_plan') }}</span>
+            </a>
+        </li>
+        <li class="mb-2">
+            <a href="{{ route('formation-types.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2">
+                <i class="bi bi-book me-2 text-gray-600 sidebar-icon"></i>
+                <span class="sidebar-text">{{ __('messages.formation_types') }}</span>
+            </a>
+        </li>
+        <li class="mb-2">
+            <a href="{{ route('drivers.integrations') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('drivers.integrations.*') ? 'active' : '' }}">
+                <i class="bi bi-person-plus me-2 text-gray-600 sidebar-icon"></i>
+                <span class="sidebar-text">{{ __('messages.start_integration') }}</span>
             </a>
         </li>
     </ul>
 
     {{-- sidebar footer setting dropdown --}}
-    <div class="sidebar-footer p-3 border-top" style="position: absolute; bottom: 0; left: 0; width: 100%;">
+    {{-- <div class="sidebar-footer p-3 border-top" style="position: absolute; bottom: 0; left: 0; width: 100%;">
         <div class="dropdown">
             <button class="btn btn-light dropdown-toggle w-100 text-start" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                 <i class="bi bi-person-circle me-2 text-gray-600 sidebar-icon"></i>
@@ -43,7 +91,7 @@
                 </li>
             </ul>
         </div>
-    </div>
+    </div> --}}
 </nav>
 
 <!-- Floating Toggle Button moved into header -->
@@ -55,12 +103,31 @@
             <i class="bi bi-list text-gray-600"></i>
         </button>
         <a href="{{ route('dashboard') }}" class="text-decoration-none">
-            {{-- <img src="{{ asset('build/assets/logos/SGE-hor.png') }}" alt="SGE_logo" width="30%" style="margin: auto;"> --}}
             <div class="text-center">
-                <span class="fw-bolder text-black fs-1">GCV</span>
+                <span class="fw-bolder text-black" style="font-size: 0.9rem;">
+                    @if(request()->routeIs('dashboard'))
+                        {{ __('messages.dashboard') }}
+                    @elseif(request()->routeIs('drivers.*'))
+                        {{ __('messages.drivers') }}
+                    @elseif(request()->routeIs('violations.*'))
+                        {{ __('messages.violations') }}
+                    @elseif(request()->routeIs('reports.*'))
+                        {{ __('messages.reports') }}
+                    @else
+                        GCV
+                    @endif
+                </span>
             </div>
         </a>
-        <div style="width: 40px;"></div> <!-- Spacer for alignment -->
+        <div class="dropdown">
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                {{ strtoupper(app()->getLocale()) }}
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item" href="{{ route('locale.switch', ['locale' => 'en']) }}">English</a></li>
+                <li><a class="dropdown-item" href="{{ route('locale.switch', ['locale' => 'fr']) }}">Français</a></li>
+            </ul>
+        </div>
     </div>
 </div>
 
@@ -75,11 +142,60 @@
             <li class="mb-2">
                 <a href="{{ route('dashboard') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('dashboard') ? 'active' : '' }}">
                     <i class="bi bi-speedometer2 me-2 text-gray-600"></i>
-                    {{ __('Dashboard') }}
+                    {{ __('messages.dashboard') }}
+                </a>
+            </li>
+            <li class="mb-2">
+                <a href="{{ route('drivers.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2">
+                    <i class="bi bi-people me-2 text-gray-600"></i>
+                    {{ __('messages.all_drivers') }}
+                </a>
+            </li>
+            <li class="mb-2">
+                <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2">
+                    <i class="bi bi-flag me-2 text-gray-600"></i>
+                    {{ __('messages.violations_by_type') }}
+                </a>
+            </li>
+            <li class="mb-2">
+                <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2">
+                    <i class="bi bi-shield-check me-2 text-gray-600"></i>
+                    {{ __('messages.score_points') }}
+                </a>
+            </li>
+            <li class="mb-2">
+                <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2">
+                    <i class="bi bi-clock-history me-2 text-gray-600"></i>
+                    {{ __('messages.driving_time_reports') }}
+                </a>
+            </li>
+            <li class="mb-2">
+                <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2">
+                    <i class="bi bi-box-arrow-down me-2 text-gray-600"></i>
+                    {{ __('messages.export_center') }}
+                </a>
+            </li>
+            <li class="mb-2">
+                <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2">
+                    <i class="bi bi-journal-check me-2 text-gray-600"></i>
+                    {{ __('messages.action_plan') }}
+                </a>
+            </li>
+            <li class="mb-2">
+                <a href="{{ route('formation-types.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2">
+                    <i class="bi bi-book me-2 text-gray-600"></i>
+                    {{ __('messages.formation_types') }}
+                </a>
+            </li>
+            <li class="mb-2">
+                <a href="{{ route('drivers.integrations') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('drivers.integrations.*') ? 'active' : '' }}">
+                    <i class="bi bi-person-plus me-2 text-gray-600"></i>
+                    {{ __('messages.start_integration') }}
                 </a>
             </li>
         </ul>
 
+        {{-- mobile sidebar footer --}}
         <div class="border-top mt-auto">
             <div class="p-3">
                 <div class="dropdown">
@@ -352,7 +468,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Expand sidebar
                 sidebar.classList.remove('collapsed');
                 if (contentWrapper) contentWrapper.classList.remove('expanded');
-                updateToggleBtnPosition();
                 localStorage.setItem('sidebarCollapsed', 'false');
                 // Open the corresponding dropdown after sidebar expands
                 const dropdownMenu = this.nextElementSibling;

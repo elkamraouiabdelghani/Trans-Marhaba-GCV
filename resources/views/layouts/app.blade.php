@@ -5,10 +5,10 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title>{{ config('app.name', 'SGE') }}</title>
+        <title>{{ config('app.name', 'GCV') }}</title>
 
         <!-- Favicon -->
-        <link rel="icon" type="image/png" href="{{ asset('build/assets/logos/SGE.png') }}">
+        {{-- <link rel="icon" type="image/png" href="{{ asset('build/assets/logos/SGE.png') }}"> --}}
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
@@ -27,7 +27,7 @@
             <div class="content-wrapper">
                 <!-- Page Heading -->
                 @isset($header)
-                    <header class="bg-white shadow pt-2 pb-2">
+                    <header class="bg-white shadow pt-2 pb-2 d-none d-md-block">
                         <div class="container-fluid py-3">
                             {{ $header }}
                         </div>
@@ -35,10 +35,11 @@
                 @endisset
 
                 <!-- Page Content -->
-                <main class="container-fluid py-4">
+                <main class="w-100">
                     {{ $slot }}
                 </main>
             </div>
         </div>
+        @stack('scripts')
     </body>
 </html>

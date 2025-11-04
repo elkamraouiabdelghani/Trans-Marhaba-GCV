@@ -1,18 +1,100 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex justify-between items-center">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                {{ __('Dashboard') }}
-            </h2>
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                {{ ucfirst(Auth::user()->role) }}
-            </h2>
-        </div>
+        @include('layouts.topnav')
     </x-slot>
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <!-- Statistics Section -->
+    <div class="container-fluid py-4 mt-4">
+        <!-- Key Performance Indicators -->
+        <div class="row g-4 mb-4">
+
+            <!-- Total Drivers Overview -->
+            <div class="col-xl-3 col-lg-6 col-md-6">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center row">
+                            <div class="col-3 bg-info bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                                <i class="bi bi-people text-info fs-4"></i>
+                            </div>
+                            <div class="col-9">
+                                <h6 class="text-muted mb-1">{{ __('messages.total_drivers') }}</h6>
+                                <h3 class="mb-0 fw-bold text-dark">{{ $totalDrivers ?? 0 }}</h3>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <a href="{{ route('drivers.index') }}" class="btn btn-outline-info btn-sm">
+                                <i class="bi bi-eye me-1"></i>{{ __('messages.view_all') }}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Violations This Week Overview -->
+            <div class="col-xl-3 col-lg-6 col-md-6">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center row">
+                            <div class="col-3 bg-danger bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                                <i class="bi bi-flag text-danger fs-4"></i>
+                            </div>
+                            <div class="col-9">
+                                <h6 class="text-muted mb-1">{{ __('messages.violations_this_week') }}</h6>
+                                <h3 class="mb-0 fw-bold text-dark">N/A</h3>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <a href="#" class="btn btn-outline-danger btn-sm">
+                                <i class="bi bi-eye me-1"></i>{{ __('messages.view_all') }}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Drivers Exceeding Legal Hours Overview -->
+            <div class="col-xl-3 col-lg-6 col-md-6">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center row">
+                            <div class="col-3 bg-warning bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                                <i class="bi bi-alarm text-warning fs-4"></i>
+                            </div>
+                            <div class="col-9">
+                                <h6 class="text-muted mb-1">{{ __('messages.drivers_exceeding_legal_hours') }}</h6>
+                                <h3 class="mb-0 fw-bold text-dark">N/A</h3>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <a href="#" class="btn btn-outline-warning btn-sm">
+                                <i class="bi bi-eye me-1"></i>{{ __('messages.view_all') }}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Violating Driver Overview -->
+            <div class="col-xl-3 col-lg-6 col-md-6">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center row">
+                            <div class="col-3 bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                                <i class="bi bi-exclamation-triangle text-primary fs-4"></i>
+                            </div>
+                            <div class="col-9">
+                                <h6 class="text-muted mb-1">{{ __('messages.top_violating_driver') }}</h6>
+                                <h3 class="mb-0 fw-bold text-dark">N/A</h3>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <a href="#" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-eye me-1"></i>{{ __('messages.view_details') }}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
             <!-- Recent Activity Section -->
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
@@ -28,130 +110,40 @@
     </div>
 
     <style>
-        .grid {
-            display: grid;
+        /* Statistics badges */
+        .badge {
+            font-weight: 500;
+            letter-spacing: 0.5px;
         }
-        
-        .grid-cols-1 {
-            grid-template-columns: repeat(1, minmax(0, 1fr));
+
+        /* Modern gradient backgrounds */
+        .bg-gradient-primary {
+            background: linear-gradient(135deg, #0d6efd 0%, #6610f2 100%);
         }
-        
-        @media (min-width: 768px) {
-            .md\:grid-cols-2 {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-            }
+
+        .bg-gradient-warning {
+            background: linear-gradient(135deg, #fd7e14 0%, #ffc107 100%);
         }
-        
-        @media (min-width: 1024px) {
-            .lg\:grid-cols-3 {
-                grid-template-columns: repeat(3, minmax(0, 1fr));
-            }
+
+        /* Icon circle backgrounds */
+        .bg-info.bg-opacity-10 {
+            background-color: rgba(13, 202, 240, 0.1) !important;
         }
-        
-        .gap-6 {
-            gap: 1.5rem;
+
+        .bg-danger.bg-opacity-10 {
+            background-color: rgba(220, 53, 69, 0.1) !important;
+        }
+
+        .bg-warning.bg-opacity-10 {
+            background-color: rgba(255, 193, 7, 0.1) !important;
+        }
+
+        .bg-primary.bg-opacity-10 {
+            background-color: rgba(13, 110, 253, 0.1) !important;
+        }
+
+        .bg-success.bg-opacity-10 {
+            background-color: rgba(25, 135, 84, 0.1) !important;
         }
     </style>
-
-    <!-- Chart.js and Plugins (load once) -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Gender Distribution Chart
-        @if(($maleStudentsCount ?? 0) != 0 || ($femaleStudentsCount ?? 0) != 0)
-        const genderCtx = document.getElementById('genderChart').getContext('2d');
-        new Chart(genderCtx, {
-            type: 'pie',
-            data: {
-                labels: ['male', 'female'],
-                datasets: [{
-                    data: [{{ $maleStudentsCount }}, {{ $femaleStudentsCount }}],
-                    backgroundColor: [
-                        'rgba(54, 162, 235, 0.8)',  // Blue for male
-                        'rgba(255, 99, 132, 0.8)'   // Pink for female
-                    ],
-                    borderColor: [
-                        'rgba(54, 162, 235, 1)',
-                        'rgba(255, 99, 132, 1)'
-                    ],
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { position: 'bottom' },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                const label = context.label || '';
-                                const value = context.raw || 0;
-                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                const percentage = Math.round((value / total) * 100);
-                                return `${label}: ${value} (${percentage}%)`;
-                            }
-                        }
-                    },
-                    datalabels: {
-                        color: '#fff',
-                        font: { weight: 'bold', size: 14 },
-                        formatter: function(value, context) {
-                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            const percentage = Math.round((value / total) * 100);
-                            return percentage + '%';
-                        }
-                    }
-                }
-            },
-            plugins: [ChartDataLabels]
-        });
-        @endif
-
-        // Groups & Students Bar Chart
-        const ctx = document.getElementById('groupsStudentsBarChart').getContext('2d');
-        new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: ['Groups', 'Students'],
-                datasets: [{
-                    label: 'Count',
-                    data: [{{ $groupsCount ?? 0 }}, {{ $studentsCount ?? 0 }}],
-                    backgroundColor: [
-                        'rgba(99, 102, 241, 0.8)', // Indigo for groups
-                        'rgba(139, 92, 246, 0.8)'  // Purple for students
-                    ],
-                    borderRadius: 8,
-                    maxBarThickness: 60
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return context.dataset.label + ': ' + context.parsed.y;
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    x: {
-                        grid: { display: false },
-                        ticks: { font: { weight: 'bold', size: 16 } }
-                    },
-                    y: {
-                        beginAtZero: true,
-                        grid: { color: '#f3f4f6' },
-                        ticks: { stepSize: 1, font: { size: 14 } }
-                    }
-                }
-            }
-        });
-    });
-    </script>
 </x-app-layout>
