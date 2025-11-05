@@ -90,66 +90,6 @@
                                     </span>
                                 </div>
                             </div>
-                            <div class="mt-3 pt-3 border-top">
-                                @if($integration && $integration->status !== 'rejected')
-                                    <!-- Integration Progress Card -->
-                                    <div class="card border-0 shadow-sm mb-3">
-                                        <div class="card-body p-3">
-                                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                                <h6 class="mb-0 text-dark fw-bold">
-                                                    <i class="bi bi-list-check me-2 text-primary"></i>
-                                                    {{ __('messages.integration_progress') }}
-                                                </h6>
-                                                <span class="badge bg-{{ $integration->status === 'validated' ? 'success' : ($integration->status === 'rejected' ? 'danger' : 'warning') }}">
-                                                    @php
-                                                        $statusKey = $integration->status === 'in_progress' ? 'in_progress' : ($integration->status === 'validated' ? 'validated' : 'rejected');
-                                                    @endphp
-                                                    {{ __('messages.' . $statusKey) }}
-                                                </span>
-                                            </div>
-                                            <div class="mb-2">
-                                                <div class="d-flex justify-content-between mb-1">
-                                                    <small class="text-muted">{{ __('messages.progress') }}</small>
-                                                    <small class="text-muted fw-bold">{{ $integrationProgress['percentage'] ?? 0 }}%</small>
-                                                </div>
-                                                <div class="progress" style="height: 8px;">
-                                                    <div class="progress-bar bg-primary" role="progressbar" 
-                                                         style="width: {{ $integrationProgress['percentage'] ?? 0 }}%" 
-                                                         aria-valuenow="{{ $integrationProgress['percentage'] ?? 0 }}" 
-                                                         aria-valuemin="0" 
-                                                         aria-valuemax="100">
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            @if($integrationProgress['current_step_label'] && !$driver->is_integrated)
-                                                <small class="text-muted d-block">
-                                                    <i class="bi bi-arrow-right-circle me-1"></i>
-                                                    {{ __('messages.current_step') }}: <strong>{{ $integrationProgress['current_step_label'] }}</strong>
-                                                </small>
-                                            @endif
-                                            <small class="text-muted d-block mb-2">
-                                                {{ $integrationProgress['completed_steps'] ?? 0 }} / {{ $integrationProgress['total_steps'] ?? 0 }} {{ __('messages.steps_completed') }}
-                                            </small>
-                                            @if(!$driver->is_integrated)
-                                                <a href="{{ route('drivers.integrations.step', ['integration' => $integration->id, 'step' => $integration->current_step ?? \App\Models\DriverIntegration::STEP_IDENTIFICATION_BESOIN]) }}" class="btn btn-primary w-100">
-                                                    <i class="bi bi-arrow-right-circle me-2"></i>
-                                                    {{ __('messages.continue_integration') }}
-                                                </a>
-                                            @else
-                                                <a href="{{ route('drivers.integrations.step', ['integration' => $integration->id, 'step' => $integration->current_step ?? \App\Models\DriverIntegration::STEP_IDENTIFICATION_BESOIN]) }}" class="btn btn-success w-100">
-                                                    <i class="bi bi-eye me-2"></i>
-                                                    {{ __('messages.check_integration_data') }}
-                                                </a>
-                                            @endif
-                                        </div>
-                                    </div>
-                                @else
-                                    <a href="{{ route('drivers.integrations', ['driver_id' => $driver->id]) }}" class="btn btn-primary">
-                                        <i class="bi bi-person-plus me-2"></i>
-                                        {{ __('messages.start_integration_for_driver') }}
-                                    </a>
-                                @endif
-                            </div>
                         </div>
                     </div>
                 </div>

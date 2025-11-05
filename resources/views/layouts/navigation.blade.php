@@ -58,12 +58,7 @@
                 <span class="sidebar-text">{{ __('messages.formation_types') }}</span>
             </a>
         </li>
-        <li class="mb-2">
-            <a href="{{ route('drivers.integrations') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('drivers.integrations.*') ? 'active' : '' }}">
-                <i class="bi bi-person-plus me-2 text-gray-600 sidebar-icon"></i>
-                <span class="sidebar-text">{{ __('messages.start_integration') }}</span>
-            </a>
-        </li>
+        
     </ul>
 
     {{-- sidebar footer setting dropdown --}}
@@ -187,12 +182,7 @@
                     {{ __('messages.formation_types') }}
                 </a>
             </li>
-            <li class="mb-2">
-                <a href="{{ route('drivers.integrations') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('drivers.integrations.*') ? 'active' : '' }}">
-                    <i class="bi bi-person-plus me-2 text-gray-600"></i>
-                    {{ __('messages.start_integration') }}
-                </a>
-            </li>
+            
         </ul>
 
         {{-- mobile sidebar footer --}}

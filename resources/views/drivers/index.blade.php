@@ -205,9 +205,7 @@
                                                 <i class="bi bi-eye"></i>
                                             </a>
                                             @if(!$driver->is_integrated)
-                                                <a href="{{ route('drivers.integrations', ['driver_id' => $driver->id]) }}" class="btn btn-outline-primary btn-sm" title="{{ __('messages.start_integration') }}">
-                                                    <i class="bi bi-person-plus"></i>
-                                                </a>
+                                                
                                             @endif
                                         </div>
                                     </td>

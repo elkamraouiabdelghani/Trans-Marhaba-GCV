@@ -34,6 +34,9 @@ class Driver extends Model
         'vehicle_matricule',
         'matricule',
         'assigned_vehicle_matricule',
+        'license_number',
+        'license_type',
+        'license_issue_date',
         'status',
         'statu',
         'state',
@@ -62,10 +65,7 @@ class Driver extends Model
     /**
      * Get the driver integration process
      */
-    public function integration()
-    {
-        return $this->hasOne(DriverIntegration::class);
-    }
+    // integration relation removed
 
     /**
      * Get all formations for this driver

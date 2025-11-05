@@ -42,7 +42,7 @@ class DriversController extends Controller
     public function show(Request $request, Driver $driver): View
     {
         // Load relationships
-        $driver->load(['assignedVehicle', 'flotte', 'integration.steps']);
+        $driver->load(['assignedVehicle', 'flotte']);
 
         // Get filter parameters
         $violationType = $request->get('violation_type');
@@ -76,33 +76,9 @@ class DriversController extends Controller
             'high' => __('messages.high'),
         ];
 
-        // Calculate integration progress if exists
-        $integration = $driver->integration;
+        // Integration removed; set placeholders
+        $integration = null;
         $integrationProgress = null;
-        $currentStepLabel = null;
-        
-        if ($integration) {
-            $stepsOrder = \App\Models\DriverIntegration::getStepsOrder();
-            $completedSteps = $integration->steps()->where('status', 'passed')->count();
-            $totalSteps = count($stepsOrder);
-            $progressPercentage = $totalSteps > 0 ? round(($completedSteps / $totalSteps) * 100) : 0;
-            
-            $currentStepLabel = null;
-            if ($integration->current_step) {
-                $controller = new \App\Http\Controllers\DriverIntegrationController();
-                $currentStepLabel = $controller->getStepLabel($integration->current_step);
-            }
-            
-            $integrationProgress = [
-                'percentage' => $progressPercentage,
-                'completed_steps' => $completedSteps,
-                'total_steps' => $totalSteps,
-                'current_step' => $integration->current_step,
-                'current_step_label' => $currentStepLabel,
-                'status' => $integration->status,
-                'started_at' => $integration->started_at,
-            ];
-        }
 
         return view('drivers.show', compact(
             'driver',
