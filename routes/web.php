@@ -31,9 +31,6 @@ Route::middleware('auth')->group(function () {
 
     // Drivers
     Route::get('/drivers', [DriversController::class, 'index'])->name('drivers.index');
-    
-    
-    // Drivers (specific routes must come after integrations routes)
     Route::get('/drivers/{driver}', [DriversController::class, 'show'])->name('drivers.show');
 
     // Formation Types
