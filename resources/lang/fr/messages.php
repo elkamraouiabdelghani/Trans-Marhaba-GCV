@@ -262,7 +262,7 @@ return [
     'not_started' => 'Non démarré',
     'no_integrations_found' => 'Aucune intégration trouvée',
     'no_integrations_message' => 'Aucune intégration n\'a été démarrée pour le moment.',
-    'back_to_drivers' => 'Retour aux conducteurs'
+    'back_to_drivers' => 'Retour aux conducteurs',
 ];
 
 

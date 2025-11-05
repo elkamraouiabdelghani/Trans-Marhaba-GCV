@@ -262,7 +262,7 @@ return [
     'not_started' => 'Not Started',
     'no_integrations_found' => 'No Integrations Found',
     'no_integrations_message' => 'No integrations have been started yet.',
-    'back_to_drivers' => 'Back to Drivers'
+    'back_to_drivers' => 'Back to Drivers',
 ];
 
 
