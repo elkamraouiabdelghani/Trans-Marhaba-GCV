@@ -17,7 +17,7 @@
             </a>
         </li>
         <li class="mb-2">
-            <a href="{{ route('drivers.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2">
+            <a href="{{ route('drivers.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('drivers.*') ? 'active' : '' }}">
                 <i class="bi bi-people me-2 text-gray-600 sidebar-icon"></i>
                 <span class="sidebar-text">{{ __('messages.all_drivers') }}</span>
             </a>
@@ -58,7 +58,12 @@
                 <span class="sidebar-text">{{ __('messages.formation_types') }}</span>
             </a>
         </li>
-        
+        <li class="mb-2">
+            <a href="{{ route('integrations.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('integrations.*') ? 'active' : '' }}">
+                <i class="bi bi-person-check me-2 text-gray-600 sidebar-icon"></i>
+                <span class="sidebar-text">{{ __('messages.driver_integrations') }}</span>
+            </a>
+        </li>
     </ul>
 
     {{-- sidebar footer setting dropdown --}}
@@ -104,6 +109,8 @@
                         {{ __('messages.dashboard') }}
                     @elseif(request()->routeIs('drivers.*'))
                         {{ __('messages.drivers') }}
+                    @elseif(request()->routeIs('integrations.*'))
+                        {{ __('messages.driver_integrations') }}
                     @elseif(request()->routeIs('violations.*'))
                         {{ __('messages.violations') }}
                     @elseif(request()->routeIs('reports.*'))
@@ -182,7 +189,12 @@
                     {{ __('messages.formation_types') }}
                 </a>
             </li>
-            
+            <li class="mb-2">
+                <a href="{{ route('integrations.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2">
+                    <i class="bi bi-person-check me-2 text-gray-600"></i>
+                    {{ __('messages.driver_integrations') }}
+                </a>
+            </li>
         </ul>
 
         {{-- mobile sidebar footer --}}
@@ -300,10 +312,17 @@
     #sidebar.collapsed .sidebar-header {
         padding: 1rem 0.5rem !important;
         text-align: center;
+        justify-content: center !important;
+        align-items: center !important;
+        flex-direction: column;
     }
 
     #sidebar.collapsed .sidebar-header a {
-        justify-content: center !important;
+        display: none !important;
+    }
+
+    #sidebar.collapsed .sidebar-header .sidebar-toggle-btn {
+        margin: 0 auto !important;
     }
 
     /* Tooltip for collapsed sidebar */

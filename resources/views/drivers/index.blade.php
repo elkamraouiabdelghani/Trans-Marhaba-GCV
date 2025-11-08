@@ -204,6 +204,9 @@
                                             <a href="{{ route('drivers.show', $driver) }}" class="btn btn-outline-success btn-sm" title="{{ __('messages.view') }}">
                                                 <i class="bi bi-eye"></i>
                                             </a>
+                                            <a href="{{ route('drivers.edit', $driver) }}" class="btn btn-outline-warning btn-sm" title="{{ __('messages.edit') }}">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
                                             @if(!$driver->is_integrated)
                                                 
                                             @endif

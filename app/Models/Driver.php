@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use App\Models\IntegrationCandidate;
 
 class Driver extends Model
 {
@@ -25,25 +27,45 @@ class Driver extends Model
     /**
      * The attributes that are mass assignable.
      */
+    
     protected $fillable = [
         'full_name',
         'email',
         'phone',
-        'phone_number',
-        'phone_numbre',
-        'vehicle_matricule',
-        'matricule',
-        'assigned_vehicle_matricule',
+        'address',
+        'city',
+        'date_of_birth',
+        'cin',
+        'visite_medical',
+        'visite_yeux',
+        'formation_imd',
+        'formation_16_module',
+        'date_integration',
+        'attestation_travail',
+        'carte_profession',
+        'n_cnss',
+        'rib',
         'license_number',
         'license_type',
         'license_issue_date',
+        'license_class',
         'status',
-        'statu',
-        'state',
         'assigned_vehicle_id',
+        'notes',
+        'documents',
         'flotte_id',
         'is_integrated',
-        'date_integration',
+    ];
+
+    protected $casts = [
+        'date_of_birth' => 'date',
+        'visite_medical' => 'date',
+        'visite_yeux' => 'date',
+        'formation_imd' => 'date',
+        'formation_16_module' => 'date',
+        'date_integration' => 'date',
+        'license_issue_date' => 'date',
+        'documents' => 'array',
     ];
 
     /**
@@ -63,9 +85,12 @@ class Driver extends Model
     }
 
     /**
-     * Get the driver integration process
+     * Get the integration candidate that owns this driver
      */
-    // integration relation removed
+    public function integrationCandidate(): HasOne
+    {
+        return $this->hasOne(IntegrationCandidate::class, 'driver_id');
+    }
 
     /**
      * Get all formations for this driver

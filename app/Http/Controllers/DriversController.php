@@ -3,9 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Driver;
+use App\Models\Vehicle;
+use App\Models\Flotte;
 use Illuminate\View\View;
 use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class DriversController extends Controller
 {
@@ -115,6 +119,84 @@ class DriversController extends Controller
     private function prepareTimelineData($driver, $dateFrom, $dateTo, $violations)
     {
         return [];
+    }
+
+    /**
+     * Show the form for editing the specified driver.
+     */
+    public function edit(Driver $driver): View
+    {
+        try {
+            $driver->load(['assignedVehicle', 'flotte']);
+            
+            // Get vehicles for dropdown
+            $vehicles = Vehicle::all();
+            
+            // Get flottes for dropdown
+            $flottes = Flotte::all();
+            
+            return view('drivers.edit', compact('driver', 'vehicles', 'flottes'));
+        } catch (\Throwable $e) {
+            Log::error('Failed to edit driver', [
+                'driver_id' => $driver->id,
+                'error' => $e->getMessage(),
+            ]);
+            return back()->with('error', __('messages.error_editing_driver'));
+        }
+    }
+
+    /**
+     * Update the specified driver in storage.
+     */
+    public function update(Request $request, Driver $driver): RedirectResponse
+    {
+        try {
+            $validated = $request->validate([
+                'full_name' => 'required|string|max:255',
+                'email' => 'nullable|email|max:255',
+                'phone' => 'nullable|string|max:20',
+                'address' => 'nullable|string',
+                'city' => 'nullable|string|max:255',
+                'date_of_birth' => 'nullable|date',
+                'cin' => 'nullable|string|max:50',
+                'visite_medical' => 'nullable|date',
+                'visite_yeux' => 'nullable|date',
+                'formation_imd' => 'nullable|date',
+                'formation_16_module' => 'nullable|date',
+                'date_integration' => 'nullable|date',
+                'attestation_travail' => 'nullable|string',
+                'carte_profession' => 'nullable|string',
+                'n_cnss' => 'nullable|string|max:50',
+                'rib' => 'nullable|string|max:50',
+                'license_number' => 'required|string|max:50',
+                'license_type' => 'nullable|string|max:50',
+                'license_issue_date' => 'nullable|date',
+                'license_class' => 'nullable|string|max:50',
+                'status' => 'nullable|string',
+                'assigned_vehicle_id' => 'nullable|exists:vehicles,id',
+                'flotte_id' => 'nullable|exists:flottes,id',
+                'notes' => 'nullable|string',
+            ]);
+
+            $driver->update($validated);
+            
+            Log::info('Driver updated', [
+                'driver_id' => $driver->id,
+                'driver_name' => $driver->full_name,
+            ]);
+
+            return redirect()->route('drivers.show', $driver)
+                ->with('success', __('messages.driver_updated_successfully'));
+        } catch (\Throwable $e) {
+            Log::error('Failed to update driver', [
+                'driver_id' => $driver->id,
+                'error' => $e->getMessage(),
+            ]);
+            
+            return back()
+                ->withInput()
+                ->with('error', __('messages.error_updating_driver'));
+        }
     }
 }
 
