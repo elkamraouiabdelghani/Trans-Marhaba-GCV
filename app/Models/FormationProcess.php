@@ -6,22 +6,18 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use App\Models\Driver;
 
-class IntegrationCandidate extends Model
+class FormationProcess extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'type',
-        'identification_besoin',
-        'poste_type',
         'driver_id',
-        'description_poste',
-        'prospection_method',
-        'prospection_date',
-        // 'nombre_candidats',
-        'notes_prospection',
+        'formation_type_id',
+        'driver_formation_id',
+        'site',
+        'flotte_id',
+        'theme',
         'status',
         'current_step',
         'validated_by',
@@ -31,15 +27,13 @@ class IntegrationCandidate extends Model
     ];
 
     protected $casts = [
-        'prospection_date' => 'date',
         'validated_at' => 'datetime',
         'rejected_at' => 'datetime',
         'current_step' => 'integer',
-        // 'nombre_candidats' => 'integer',
     ];
 
     /**
-     * Get the driver that owns this integration candidate
+     * Get the driver for this formation process
      */
     public function driver(): BelongsTo
     {
@@ -47,15 +41,39 @@ class IntegrationCandidate extends Model
     }
 
     /**
-     * Get all steps for this integration candidate
+     * Get the formation type
      */
-    public function steps(): HasMany
+    public function formationType(): BelongsTo
     {
-        return $this->hasMany(IntegrationStep::class);
+        return $this->belongsTo(FormationType::class, 'formation_type_id');
     }
 
     /**
-     * Get the user who validated this integration
+     * Get the driver formation record
+     */
+    public function driverFormation(): BelongsTo
+    {
+        return $this->belongsTo(DriverFormation::class, 'driver_formation_id');
+    }
+
+    /**
+     * Get the flotte
+     */
+    public function flotte(): BelongsTo
+    {
+        return $this->belongsTo(Flotte::class, 'flotte_id');
+    }
+
+    /**
+     * Get all steps for this formation process
+     */
+    public function steps(): HasMany
+    {
+        return $this->hasMany(FormationStep::class);
+    }
+
+    /**
+     * Get the user who validated this formation process
      */
     public function validator(): BelongsTo
     {
@@ -65,13 +83,13 @@ class IntegrationCandidate extends Model
     /**
      * Get a specific step by step number
      */
-    public function getStep(int $stepNumber): ?IntegrationStep
+    public function getStep(int $stepNumber): ?FormationStep
     {
         return $this->steps()->where('step_number', $stepNumber)->first();
     }
 
     /**
-     * Check if candidate can proceed to a specific step
+     * Check if process can proceed to a specific step
      */
     public function canProceedToStep(int $stepNumber): bool
     {
@@ -105,7 +123,7 @@ class IntegrationCandidate extends Model
     }
 
     /**
-     * Check if integration is rejected
+     * Check if formation process is rejected
      */
     public function isRejected(): bool
     {
@@ -113,7 +131,7 @@ class IntegrationCandidate extends Model
     }
 
     /**
-     * Check if integration is validated
+     * Check if formation process is validated
      */
     public function isValidated(): bool
     {
@@ -121,7 +139,7 @@ class IntegrationCandidate extends Model
     }
 
     /**
-     * Check if integration is in progress
+     * Check if formation process is in progress
      */
     public function isInProgress(): bool
     {
@@ -129,7 +147,7 @@ class IntegrationCandidate extends Model
     }
 
     /**
-     * Check if integration is draft
+     * Check if formation process is draft
      */
     public function isDraft(): bool
     {
@@ -137,7 +155,7 @@ class IntegrationCandidate extends Model
     }
 
     /**
-     * Mark integration as rejected
+     * Mark formation process as rejected
      */
     public function markAsRejected(?string $reason = null, ?int $userId = null): void
     {
@@ -150,7 +168,7 @@ class IntegrationCandidate extends Model
     }
 
     /**
-     * Mark integration as validated
+     * Mark formation process as validated
      */
     public function markAsValidated(?int $userId = null): void
     {
@@ -174,3 +192,4 @@ class IntegrationCandidate extends Model
         }
     }
 }
+

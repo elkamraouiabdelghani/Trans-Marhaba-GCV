@@ -6,6 +6,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DriversController;
 use App\Http\Controllers\FormationTypeController;
 use App\Http\Controllers\IntegrationController;
+use App\Http\Controllers\FormationProcessController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Session;
 
@@ -46,10 +47,21 @@ Route::middleware('auth')->group(function () {
     Route::get('/integrations/{integration}', [IntegrationController::class, 'show'])->name('integrations.show');
     Route::get('/integrations/{integration}/step/{stepNumber}', [IntegrationController::class, 'step'])->name('integrations.step');
     Route::post('/integrations/{integration}/step/{stepNumber}', [IntegrationController::class, 'saveStep'])->name('integrations.save-step');
-    
     Route::post('/integrations/{integration}/step/{stepNumber}/validate', [IntegrationController::class, 'validateStep'])->name('integrations.validate-step');
     Route::post('/integrations/{integration}/step/{stepNumber}/reject', [IntegrationController::class, 'rejectStep'])->name('integrations.reject-step');
     Route::post('/integrations/{integration}/finalize', [IntegrationController::class, 'finalize'])->name('integrations.finalize');
+
+    // Formation Processes
+    Route::get('/formation-processes', [FormationProcessController::class, 'index'])->name('formation-processes.index');
+    Route::get('/formation-processes/create', [FormationProcessController::class, 'create'])->name('formation-processes.create');
+    Route::post('/formation-processes', [FormationProcessController::class, 'store'])->name('formation-processes.store');
+    Route::get('/formation-processes/{formationProcess}', [FormationProcessController::class, 'show'])->name('formation-processes.show');
+    Route::get('/formation-processes/{formationProcess}/step/{stepNumber}', [FormationProcessController::class, 'step'])->name('formation-processes.step');
+    Route::post('/formation-processes/{formationProcess}/step/{stepNumber}', [FormationProcessController::class, 'saveStep'])->name('formation-processes.save-step');
+    Route::post('/formation-processes/{formationProcess}/step/{stepNumber}/validate', [FormationProcessController::class, 'validateStep'])->name('formation-processes.validate-step');
+    Route::post('/formation-processes/{formationProcess}/step/{stepNumber}/reject', [FormationProcessController::class, 'rejectStep'])->name('formation-processes.reject-step');
+    Route::post('/formation-processes/{formationProcess}/finalize', [FormationProcessController::class, 'finalize'])->name('formation-processes.finalize');
+    Route::get('/formation-processes/{formationProcess}/report', [FormationProcessController::class, 'downloadReport'])->name('formation-processes.download-report');
     
 });
 

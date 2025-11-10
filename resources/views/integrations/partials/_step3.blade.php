@@ -63,26 +63,62 @@
 
             <div class="mb-3">
                 <label class="form-label">{{ __('messages.documents') }}</label>
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" name="documents_reviewed[]" value="cv" id="doc_cv" {{ in_array('cv', old('documents_reviewed', $stepData['documents_reviewed'] ?? [])) ? 'checked' : '' }}>
-                    <label class="form-check-label" for="doc_cv">{{ __('messages.cv') }}</label>
+                @php
+                    $documentsReviewed = old('documents_reviewed', $stepData['documents_reviewed'] ?? []);
+                    $documentOptions = [
+                        'cv' => __('messages.cv'),
+                        'lettre_motivation' => __('messages.lettre_motivation'),
+                        'permis_conduire' => __('messages.permis_conduire'),
+                        'casier_judiciaire' => __('messages.casier_judiciaire'),
+                        'certificat_medical' => __('messages.certificat_medical'),
+                        'cin' => __('messages.doc_cin'),
+                        'carte_professionnelle' => __('messages.doc_carte_professionelle'),
+                        'certificat_yeux' => __('messages.doc_certificat_yeux'),
+                        'attestation_travail' => __('messages.attestation_travail'),
+                        'attestation_demission' => __('messages.doc_attestation_demission'),
+                        'formations' => __('messages.doc_formations'),
+                        'sold_permis' => __('messages.doc_sold_permis'),
+                        'rib' => __('messages.rib'),
+                    ];
+                @endphp
+                <div class="row">
+                    @foreach($documentOptions as $value => $label)
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input"
+                                       type="checkbox"
+                                       name="documents_reviewed[]"
+                                       value="{{ $value }}"
+                                       id="doc_{{ $value }}"
+                                       {{ in_array($value, $documentsReviewed) ? 'checked' : '' }}>
+                                <label class="form-check-label" for="doc_{{ $value }}">{{ $label }}</label>
+                            </div>
+                        </div>
+                    @endforeach
                 </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" name="documents_reviewed[]" value="lettre_motivation" id="doc_lettre" {{ in_array('lettre_motivation', old('documents_reviewed', $stepData['documents_reviewed'] ?? [])) ? 'checked' : '' }}>
-                    <label class="form-check-label" for="doc_lettre">{{ __('messages.lettre_motivation') }}</label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" name="documents_reviewed[]" value="permis_conduire" id="doc_permis" {{ in_array('permis_conduire', old('documents_reviewed', $stepData['documents_reviewed'] ?? [])) ? 'checked' : '' }}>
-                    <label class="form-check-label" for="doc_permis">{{ __('messages.permis_conduire') }}</label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" name="documents_reviewed[]" value="casier_judiciaire" id="doc_casier" {{ in_array('casier_judiciaire', old('documents_reviewed', $stepData['documents_reviewed'] ?? [])) ? 'checked' : '' }}>
-                    <label class="form-check-label" for="doc_casier">{{ __('messages.casier_judiciaire') }}</label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" name="documents_reviewed[]" value="certificat_medical" id="doc_medical" {{ in_array('certificat_medical', old('documents_reviewed', $stepData['documents_reviewed'] ?? [])) ? 'checked' : '' }}>
-                    <label class="form-check-label" for="doc_medical">{{ __('messages.certificat_medical') }}</label>
-                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="documents_files" class="form-label">{{ __('messages.supporting_documents') }}</label>
+                <input type="file"
+                       class="form-control @error('documents_files') is-invalid @enderror @error('documents_files.*') is-invalid @enderror"
+                       id="documents_files"
+                       name="documents_files[]"
+                       multiple>
+                @error('documents_files')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+                @error('documents_files.*')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+                <small class="form-text text-muted">{{ __('messages.multiple_files_allowed') }}</small>
+                @if(!empty($stepData['documents_files']) && is_array($stepData['documents_files']))
+                    <div class="mt-2">
+                        @foreach($stepData['documents_files'] as $doc)
+                            <small class="d-block text-muted">{{ __('messages.file_uploaded') }}: {{ $doc['name'] ?? basename($doc['path']) }}</small>
+                        @endforeach
+                    </div>
+                @endif
             </div>
 
             <div class="mb-3">

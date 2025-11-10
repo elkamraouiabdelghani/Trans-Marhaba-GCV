@@ -12,6 +12,8 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class IntegrationController extends Controller
 {
@@ -316,6 +318,17 @@ class IntegrationController extends Controller
             // Validate based on step number
             $validated = $this->validateStepData($request, $stepNumber);
 
+            $existingStep2Documents = [];
+            $existingStep3Documents = [];
+
+            if ($stepNumber === 2) {
+                $existingStep2Documents = $step->step_data['documents'] ?? [];
+            }
+
+            if ($stepNumber === 3) {
+                $existingStep3Documents = $step->step_data['documents_files'] ?? [];
+            }
+
             // Handle file uploads for specific steps
             if ($stepNumber === 2) {
                 $validated = $this->handleStep2Uploads($request, $validated);
@@ -323,6 +336,26 @@ class IntegrationController extends Controller
                 $validated = $this->handleStep3Uploads($request, $validated);
             } elseif ($stepNumber === 6) {
                 $validated = $this->handleStep6Uploads($request, $validated);
+            }
+
+            if ($stepNumber === 2 && isset($validated['documents'])) {
+                $mergedDocs = array_merge($existingStep2Documents, $validated['documents']);
+                $uniqueDocs = collect($mergedDocs)
+                    ->filter(fn($doc) => is_array($doc) && !empty($doc['path'] ?? null))
+                    ->unique('path')
+                    ->values()
+                    ->all();
+                $validated['documents'] = $uniqueDocs;
+            }
+
+            if ($stepNumber === 3 && isset($validated['documents_files'])) {
+                $mergedDocs = array_merge($existingStep3Documents, $validated['documents_files']);
+                $uniqueDocs = collect($mergedDocs)
+                    ->filter(fn($doc) => is_array($doc) && !empty($doc['path'] ?? null))
+                    ->unique('path')
+                    ->values()
+                    ->all();
+                $validated['documents_files'] = $uniqueDocs;
             }
 
             // Update step data
@@ -341,13 +374,17 @@ class IntegrationController extends Controller
             $integration->refresh();
 
             // Create driver after saving step 2 data (for driver type integrations)
-            if ($stepNumber === 2 && $integration->type === 'driver') {
+            if (in_array($stepNumber, [2, 3], true) && $integration->type === 'driver') {
                 try {
-                    Log::info('Attempting to create driver from step 2', [
-                        'integration_id' => $integration->id,
-                        'step_id' => $step->id,
-                    ]);
-                    $this->createDriverFromStep2($integration);
+                    if ($stepNumber === 2) {
+                        Log::info('Attempting to create driver from step 2', [
+                            'integration_id' => $integration->id,
+                            'step_id' => $step->id,
+                        ]);
+                        $this->createDriverFromStep2($integration);
+                    }
+
+                    $this->syncDriverDocuments($integration);
                 } catch (\Throwable $e) {
                     // Log the error with full details
                     Log::error('Failed to create driver from step 2', [
@@ -403,7 +440,17 @@ class IntegrationController extends Controller
             // Step 2: All basic info must be filled
             if ($stepNumber === 2) {
                 $stepData = $step->step_data ?? [];
-                $requiredFields = ['full_name', 'email', 'phone', 'cin', 'date_of_birth', 'address'];
+                $requiredFields = [
+                    'full_name',
+                    'email',
+                    'phone',
+                    'cin',
+                    'date_of_birth',
+                    'address',
+                    'license_number',
+                    'license_type',
+                    'license_issue_date',
+                ];
                 foreach ($requiredFields as $field) {
                     if (empty($stepData[$field])) {
                         return redirect()->route('integrations.step', ['integration' => $integration->id, 'stepNumber' => $stepNumber])
@@ -690,6 +737,9 @@ class IntegrationController extends Controller
                         'cin' => 'required|string|max:50',
                         'date_of_birth' => 'required|date',
                         'address' => 'required|string',
+                        'license_number' => 'required|string|max:50',
+                        'license_type' => 'required|in:B,C,D,E',
+                        'license_issue_date' => 'required|date',
                         'photo' => 'nullable|image|max:2048',
                         'documents' => 'nullable|array',
                         'documents.*' => 'file|max:5120',
@@ -811,7 +861,18 @@ class IntegrationController extends Controller
     {
         try {
             // Documents reviewed are stored as array of document names/paths
-            // This can be extended if files need to be uploaded
+            if ($request->hasFile('documents_files')) {
+                $documents = [];
+                foreach ($request->file('documents_files') as $file) {
+                    $path = $file->store('integration/document-verification', 'public');
+                    $documents[] = [
+                        'name' => $file->getClientOriginalName(),
+                        'path' => $path,
+                    ];
+                }
+                $validated['documents_files'] = $documents;
+            }
+
             return $validated;
         } catch (\Throwable $e) {
             Log::error('Failed to handle step 3 uploads', [
@@ -841,6 +902,70 @@ class IntegrationController extends Controller
             return redirect()->route('integrations.index')
                 ->with('error', __('messages.error_handling_step_6_uploads'));
         }
+    }
+
+    /**
+     * Required document keys for step 3 verification.
+     */
+    private function getStep3DocumentKeys(): array
+    {
+        return [
+            'cin',
+            'cv',
+            'lettre_motivation',
+            'permis_conduire',
+            'casier_judiciaire',
+            'certificat_medical',
+            'certificat_yeux',
+            'carte_professionnelle',
+            'attestation_travail',
+            'attestation_demission',
+            'formations',
+            'sold_permis',
+            'rib',
+        ];
+    }
+
+    /**
+     * Synchronize driver documents from step data (steps 2 & 3).
+     */
+    private function syncDriverDocuments(IntegrationCandidate $integration): void
+    {
+        if (!$integration->driver_id) {
+            return;
+        }
+
+        $driver = Driver::find($integration->driver_id);
+        if (!$driver) {
+            return;
+        }
+
+        $documents = collect($driver->documents ?? []);
+
+        foreach ([2, 3] as $stepNumber) {
+            $step = $integration->getStep($stepNumber);
+            if (!$step) {
+                continue;
+            }
+
+            $stepData = $step->step_data ?? [];
+            if (!is_array($stepData)) {
+                $stepData = [];
+            }
+
+            $key = $stepNumber === 2 ? 'documents' : 'documents_files';
+            if (!empty($stepData[$key]) && is_array($stepData[$key])) {
+                $documents = $documents->merge($stepData[$key]);
+            }
+        }
+
+        $documents = $documents
+            ->filter(fn($doc) => is_array($doc) && !empty($doc['path'] ?? null))
+            ->unique('path')
+            ->values()
+            ->all();
+
+        $driver->update(['documents' => $documents]);
     }
 
     /**

@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Driver;
 use App\Models\Vehicle;
 use App\Models\Flotte;
+use App\Models\DriverFormation;
+use App\Models\FormationType;
 use Illuminate\View\View;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
@@ -46,7 +48,12 @@ class DriversController extends Controller
     public function show(Request $request, Driver $driver): View
     {
         // Load relationships
-        $driver->load(['assignedVehicle', 'flotte']);
+        $driver->load([
+            'assignedVehicle',
+            'flotte',
+            'formations.formationType',
+            'formations.formationProcess.steps',
+        ]);
 
         // Get filter parameters
         $violationType = $request->get('violation_type');
@@ -84,6 +91,14 @@ class DriversController extends Controller
         $integration = null;
         $integrationProgress = null;
 
+        // Get formations for this driver
+        $formations = DriverFormation::where('driver_id', $driver->id)
+            ->with(['formationType', 'formationProcess'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $formationTypes = FormationType::orderBy('name')->get();
+
         return view('drivers.show', compact(
             'driver',
             'violations',
@@ -97,7 +112,9 @@ class DriversController extends Controller
             'dateFrom',
             'dateTo',
             'integration',
-            'integrationProgress'
+            'integrationProgress',
+            'formations',
+            'formationTypes'
         ));
     }
 

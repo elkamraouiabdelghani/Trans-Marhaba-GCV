@@ -53,16 +53,35 @@
             </a>
         </li>
         <li class="mb-2">
-            <a href="{{ route('formation-types.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2">
-                <i class="bi bi-book me-2 text-gray-600 sidebar-icon"></i>
-                <span class="sidebar-text">{{ __('messages.formation_types') }}</span>
-            </a>
-        </li>
-        <li class="mb-2">
             <a href="{{ route('integrations.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('integrations.*') ? 'active' : '' }}">
                 <i class="bi bi-person-check me-2 text-gray-600 sidebar-icon"></i>
                 <span class="sidebar-text">{{ __('messages.driver_integrations') }}</span>
             </a>
+        </li>
+        <li class="mb-2">
+            <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ (request()->routeIs('formation-types.*') || request()->routeIs('formation-processes.*')) ? 'active' : '' }}" 
+               data-bs-toggle="collapse" 
+               data-bs-target="#formationsSubmenu" 
+               aria-expanded="{{ (request()->routeIs('formation-types.*') || request()->routeIs('formation-processes.*')) ? 'true' : 'false' }}"
+               aria-controls="formationsSubmenu">
+                <i class="bi bi-book me-2 text-gray-600 sidebar-icon"></i>
+                <span class="sidebar-text">{{ __('messages.formations') }}</span>
+                <i class="bi bi-chevron-down ms-auto sidebar-icon"></i>
+            </a>
+            <ul class="collapse list-unstyled ms-3 {{ (request()->routeIs('formation-types.*') || request()->routeIs('formation-processes.*')) ? 'show' : '' }}" id="formationsSubmenu">
+                <li class="mb-1">
+                    <a href="{{ route('formation-types.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('formation-types.*') ? 'active' : '' }}">
+                        <i class="bi bi-book me-2 text-gray-600 sidebar-icon"></i>
+                        <span class="sidebar-text">{{ __('messages.formation_types') }}</span>
+                    </a>
+                </li>
+                <li class="mb-1">
+                    <a href="{{ route('formation-processes.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('formation-processes.*') ? 'active' : '' }}">
+                        <i class="bi bi-book-half me-2 text-gray-600 sidebar-icon"></i>
+                        <span class="sidebar-text">{{ __('messages.formation_processes') }}</span>
+                    </a>
+                </li>
+            </ul>
         </li>
     </ul>
 
@@ -111,6 +130,8 @@
                         {{ __('messages.drivers') }}
                     @elseif(request()->routeIs('integrations.*'))
                         {{ __('messages.driver_integrations') }}
+                    @elseif(request()->routeIs('formation-types.*') || request()->routeIs('formation-processes.*'))
+                        {{ __('messages.formations') }}
                     @elseif(request()->routeIs('violations.*'))
                         {{ __('messages.violations') }}
                     @elseif(request()->routeIs('reports.*'))
@@ -184,16 +205,35 @@
                 </a>
             </li>
             <li class="mb-2">
-                <a href="{{ route('formation-types.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2">
-                    <i class="bi bi-book me-2 text-gray-600"></i>
-                    {{ __('messages.formation_types') }}
-                </a>
-            </li>
-            <li class="mb-2">
                 <a href="{{ route('integrations.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2">
                     <i class="bi bi-person-check me-2 text-gray-600"></i>
                     {{ __('messages.driver_integrations') }}
                 </a>
+            </li>
+            <li class="mb-2">
+                <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ (request()->routeIs('formation-types.*') || request()->routeIs('formation-processes.*')) ? 'active' : '' }}" 
+                   data-bs-toggle="collapse" 
+                   data-bs-target="#formationsSubmenuMobile" 
+                   aria-expanded="{{ (request()->routeIs('formation-types.*') || request()->routeIs('formation-processes.*')) ? 'true' : 'false' }}"
+                   aria-controls="formationsSubmenuMobile">
+                    <i class="bi bi-book me-2 text-gray-600"></i>
+                    {{ __('messages.formations') }}
+                    <i class="bi bi-chevron-down ms-auto"></i>
+                </a>
+                <ul class="collapse list-unstyled ms-3 {{ (request()->routeIs('formation-types.*') || request()->routeIs('formation-processes.*')) ? 'show' : '' }}" id="formationsSubmenuMobile">
+                    <li class="mb-1">
+                        <a href="{{ route('formation-types.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('formation-types.*') ? 'active' : '' }}">
+                            <i class="bi bi-book me-2 text-gray-600"></i>
+                            {{ __('messages.formation_types') }}
+                        </a>
+                    </li>
+                    <li class="mb-1">
+                        <a href="{{ route('formation-processes.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('formation-processes.*') ? 'active' : '' }}">
+                            <i class="bi bi-book-half me-2 text-gray-600"></i>
+                            {{ __('messages.formation_processes') }}
+                        </a>
+                    </li>
+                </ul>
             </li>
         </ul>
 
@@ -260,6 +300,29 @@
         color: #gray !important;
     }
 
+    /* Formations dropdown styles */
+    #formationsSubmenu,
+    #formationsSubmenuMobile {
+        transition: all 0.3s ease;
+    }
+
+    #formationsSubmenu a,
+    #formationsSubmenuMobile a {
+        font-size: 0.9rem;
+    }
+
+    #formationsSubmenu a.active,
+    #formationsSubmenuMobile a.active {
+        background-color: #e9ecef;
+        border-radius: 5px;
+    }
+
+    /* Chevron rotation for dropdown */
+    a[aria-expanded="true"] .bi-chevron-down {
+        transform: rotate(180deg);
+        transition: transform 0.3s ease;
+    }
+
     /* Collapsed sidebar styles */
     #sidebar.collapsed {
         width: 70px !important;
@@ -272,6 +335,11 @@
     /* Hide the sidebar title/logo when collapsed */
     #sidebar.collapsed .sidebar-logo-text {
         display: none;
+    }
+
+    /* Hide chevron icon when sidebar is collapsed */
+    #sidebar.collapsed .bi-chevron-down {
+        display: none !important;
     }
 
     #sidebar.collapsed .sidebar-logo {
@@ -420,82 +488,106 @@
 </style>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const sidebar = document.getElementById('sidebar');
-    const sidebarToggle = document.getElementById('sidebarToggle');
-    const contentWrapper = document.querySelector('.content-wrapper');
-    
-    // Check if sidebar state is stored in localStorage
-    const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-    
-    if (isCollapsed) {
-        sidebar.classList.add('collapsed');
-        if (contentWrapper) {
-            contentWrapper.classList.add('expanded');
-        }
-        sidebarToggle.querySelector('i').classList.remove('bi-chevron-left');
-        sidebarToggle.querySelector('i').classList.add('bi-chevron-right');
-    }
-    
-    // Add titles for tooltips when collapsed
-    const sidebarLinks = sidebar.querySelectorAll('a[href]');
-    sidebarLinks.forEach(link => {
-        const text = link.querySelector('.sidebar-text');
-        if (text) {
-            link.setAttribute('title', text.textContent.trim());
-        }
-    });
-    
-    // Move toggle button when sidebar is collapsed
-    // Button is now inside header; no left/right positioning needed
-    // update button icon
-    function updatebuttonicon() {
-        if (sidebar.classList.contains('collapsed')){
+    document.addEventListener('DOMContentLoaded', function() {
+        const sidebar = document.getElementById('sidebar');
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const contentWrapper = document.querySelector('.content-wrapper');
+        
+        // Check if sidebar state is stored in localStorage
+        const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        
+        if (isCollapsed) {
+            sidebar.classList.add('collapsed');
+            if (contentWrapper) {
+                contentWrapper.classList.add('expanded');
+            }
             sidebarToggle.querySelector('i').classList.remove('bi-chevron-left');
             sidebarToggle.querySelector('i').classList.add('bi-chevron-right');
         }
-        sidebarToggle.querySelector('i').classList.remove('bi-chevron-right');
-        sidebarToggle.querySelector('i').classList.add('bi-chevron-left');
-    }
-    updatebuttonicon();
-    sidebarToggle.addEventListener('click', function(e) {
-        e.preventDefault();
-        sidebar.classList.toggle('collapsed');
-        if (contentWrapper) {
-            contentWrapper.classList.toggle('expanded');
+        
+        // Add titles for tooltips when collapsed
+        const sidebarLinks = sidebar.querySelectorAll('a[href]');
+        sidebarLinks.forEach(link => {
+            const text = link.querySelector('.sidebar-text');
+            if (text) {
+                link.setAttribute('title', text.textContent.trim());
+            }
+        });
+        
+        // Move toggle button when sidebar is collapsed
+        // Button is now inside header; no left/right positioning needed
+        // update button icon
+        function updatebuttonicon() {
+            if (sidebar.classList.contains('collapsed')){
+                sidebarToggle.querySelector('i').classList.remove('bi-chevron-left');
+                sidebarToggle.querySelector('i').classList.add('bi-chevron-right');
+            }
+            sidebarToggle.querySelector('i').classList.remove('bi-chevron-right');
+            sidebarToggle.querySelector('i').classList.add('bi-chevron-left');
         }
         updatebuttonicon();
-        localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed') ? 'true' : 'false');
-    });
-    
-    // Dropdown open on icon click when sidebar is collapsed
-    const dropdownToggles = sidebar.querySelectorAll('.dropdown-toggle');
-    dropdownToggles.forEach(toggle => {
-        toggle.addEventListener('click', function(e) {
-            if (sidebar.classList.contains('collapsed')) {
-                e.preventDefault();
-                // Expand sidebar
-                sidebar.classList.remove('collapsed');
-                if (contentWrapper) contentWrapper.classList.remove('expanded');
-                localStorage.setItem('sidebarCollapsed', 'false');
-                // Open the corresponding dropdown after sidebar expands
-                const dropdownMenu = this.nextElementSibling;
-                setTimeout(() => {
-                    if (dropdownMenu && dropdownMenu.classList.contains('collapse')) {
-                        dropdownMenu.classList.add('show');
+        sidebarToggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            sidebar.classList.toggle('collapsed');
+            if (contentWrapper) {
+                contentWrapper.classList.toggle('expanded');
+            }
+            updatebuttonicon();
+            localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed') ? 'true' : 'false');
+        });
+        
+        // Dropdown open on icon click when sidebar is collapsed
+        const dropdownToggles = sidebar.querySelectorAll('.dropdown-toggle');
+        dropdownToggles.forEach(toggle => {
+            toggle.addEventListener('click', function(e) {
+                if (sidebar.classList.contains('collapsed')) {
+                    e.preventDefault();
+                    // Expand sidebar
+                    sidebar.classList.remove('collapsed');
+                    if (contentWrapper) contentWrapper.classList.remove('expanded');
+                    localStorage.setItem('sidebarCollapsed', 'false');
+                    // Open the corresponding dropdown after sidebar expands
+                    const dropdownMenu = this.nextElementSibling;
+                    setTimeout(() => {
+                        if (dropdownMenu && dropdownMenu.classList.contains('collapse')) {
+                            dropdownMenu.classList.add('show');
+                        }
+                    }, 300); // Wait for sidebar to expand
+                }
+            });
+        });
+        
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!sidebar.contains(e.target)) {
+                sidebar.querySelectorAll('.collapse.show').forEach(menu => {
+                    menu.classList.remove('show');
+                });
+            }
+        });
+
+        // Handle formations dropdown chevron rotation
+        const formationsDropdowns = document.querySelectorAll('[data-bs-target="#formationsSubmenu"], [data-bs-target="#formationsSubmenuMobile"]');
+        formationsDropdowns.forEach(dropdown => {
+            const targetId = dropdown.getAttribute('data-bs-target');
+            const target = document.querySelector(targetId);
+            
+            if (target) {
+                // Bootstrap collapse event listeners
+                target.addEventListener('show.bs.collapse', function() {
+                    const chevron = dropdown.querySelector('.bi-chevron-down');
+                    if (chevron) {
+                        chevron.style.transform = 'rotate(180deg)';
                     }
-                }, 300); // Wait for sidebar to expand
+                });
+                
+                target.addEventListener('hide.bs.collapse', function() {
+                    const chevron = dropdown.querySelector('.bi-chevron-down');
+                    if (chevron) {
+                        chevron.style.transform = 'rotate(0deg)';
+                    }
+                });
             }
         });
     });
-    
-    // Close dropdowns when clicking outside
-    document.addEventListener('click', function(e) {
-        if (!sidebar.contains(e.target)) {
-            sidebar.querySelectorAll('.collapse.show').forEach(menu => {
-                menu.classList.remove('show');
-            });
-        }
-    });
-});
 </script>

@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('driver_id')->constrained('drivers')->onDelete('cascade');
             $table->foreignId('formation_type_id')->constrained('formation_types')->onDelete('restrict');
+            $table->foreignId('formation_process_id')->nullable()->constrained('formation_processes')->onDelete('set null');
             $table->enum('status', ['done', 'planned'])->default('planned');
             $table->date('planned_at')->nullable();
             $table->date('due_at')->nullable();

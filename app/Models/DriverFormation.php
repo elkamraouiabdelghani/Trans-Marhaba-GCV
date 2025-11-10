@@ -13,6 +13,7 @@ class DriverFormation extends Model
     protected $fillable = [
         'driver_id',
         'formation_type_id',
+        'formation_process_id',
         'status',
         'planned_at',
         'done_at',
@@ -39,6 +40,14 @@ class DriverFormation extends Model
     public function formationType(): BelongsTo
     {
         return $this->belongsTo(FormationType::class);
+    }
+
+    /**
+     * Get the formation process
+     */
+    public function formationProcess(): BelongsTo
+    {
+        return $this->belongsTo(FormationProcess::class);
     }
 
     /**
