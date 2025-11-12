@@ -3,7 +3,7 @@
         @include('layouts.topnav')
     </x-slot>
 
-    <div class="container-fluid py-4">
+    <div class="container-fluid py-4 mt-4">
         <!-- Stats Cards -->
         <div class="row g-4 mb-4">
             <div class="col-xl-3 col-lg-6 col-md-6">
@@ -50,6 +50,24 @@
                         </div>
                     </div>
                 </div>
+            </div>
+            <div class="col-xl-3 col-lg-6 col-md-6">
+                <a href="{{ route('drivers.alerts') }}" class="text-decoration-none">
+                    <div class="card border-0 shadow-sm h-100 position-relative overflow-hidden">
+                        <div class="card-body p-4">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-warning bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 60px; height: 60px;">
+                                    <i class="bi bi-bell text-warning fs-4"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h6 class="text-muted mb-1">{{ __('messages.drivers_with_alerts') }}</h6>
+                                    <h3 class="mb-0 fw-bold text-dark">{{ $driversWithAlerts ?? 0 }}</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <span class="stretched-link"></span>
+                    </div>
+                </a>
             </div>
         </div>
 

@@ -30,9 +30,28 @@
                 </div>
             </div>
         @endif
+
+        @if(session('info'))
+            <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="true" data-bs-delay="5000">
+                <div class="toast-header bg-info text-white">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <strong class="me-auto">{{ __('messages.information') }}</strong>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+                <div class="toast-body">
+                    {{ session('info') }}
+                </div>
+            </div>
+        @endif
     </div>
 
     <div class="container-fluid py-4 mt-4">
+        @php
+            $stepNumbers = $stepNumbers ?? ($integration->type === 'driver'
+                ? range(1, 9)
+                : array_merge(range(1, 4), [7, 9]));
+        @endphp
+
         <!-- Header -->
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-white border-0 py-3">
@@ -40,7 +59,7 @@
                     <div>
                         <h5 class="mb-0 text-dark fw-bold">
                             <i class="bi bi-person-check me-2 text-primary"></i>
-                            {{ __('messages.integration_progress') }} #{{ $integration->id }}
+                            {{ __('messages.integration_progress') }} #{{ $integration->identification_besoin }}
                         </h5>
                         <small class="text-muted">
                             @php
@@ -60,14 +79,14 @@
             <div class="card-body bg-light">
                 @php
                     $completedSteps = 0;
-                    $totalSteps = 8;
-                    for ($i = 1; $i <= 8; $i++) {
-                        $step = $integration->getStep($i);
+                    foreach ($stepNumbers as $stepIndex) {
+                        $step = $integration->getStep($stepIndex);
                         if ($step && $step->isValidated()) {
                             $completedSteps++;
                         }
                     }
-                    $progressPercentage = ($completedSteps / $totalSteps) * 100;
+                    $totalSteps = count($stepNumbers);
+                    $progressPercentage = $totalSteps > 0 ? ($completedSteps / $totalSteps) * 100 : 0;
                 @endphp
                 <div class="mb-2 d-flex justify-content-between align-items-center">
                     <span class="text-muted small">{{ __('messages.progress') }}: {{ $completedSteps }}/{{ $totalSteps }} {{ __('messages.steps_completed') }}</span>
@@ -100,9 +119,10 @@
                         <div class="list-group list-group-flush">
                             @php
                                 // Get the currently viewed step number from route or default to integration's current step
-                                $viewedStepNumber = request()->route('stepNumber') ?? $integration->current_step;
+                                $viewedStepNumberParam = request()->route('stepNumber');
+                                $viewedStepNumber = $viewedStepNumberParam !== null ? (int) $viewedStepNumberParam : $integration->current_step;
                             @endphp
-                            @for($i = 1; $i <= 8; $i++)
+                            @foreach($stepNumbers as $i)
                                 @php
                                     $stepInfo = $steps[$i] ?? [];
                                     $step = $stepInfo['step'] ?? null;
@@ -118,11 +138,12 @@
                                         1 => __('messages.identification_besoin'),
                                         2 => __('messages.driver_creation'),
                                         3 => __('messages.verification_documentaire'),
-                                        4 => __('messages.test_oral_ecrit'),
-                                        5 => __('messages.test_conduite'),
-                                        6 => __('messages.validation') . ' + ' . __('messages.induction') . ' + ' . __('messages.signature_contrat'),
-                                        7 => __('messages.accompagnement'),
-                                        8 => __('messages.validation_finale'),
+                                        4 => __('messages.test_oral'),
+                                        5 => __('messages.test_ecrit'),
+                                        6 => __('messages.test_conduite'),
+                                        7 => __('messages.validation') . ' + ' . __('messages.induction') . ' + ' . __('messages.signature_contrat'),
+                                        8 => __('messages.accompagnement'),
+                                        9 => __('messages.validation_finale'),
                                     ];
                                 @endphp
                                 <a href="{{ $canAccess ? route('integrations.step', ['integration' => $integration->id, 'stepNumber' => $i]) : '#' }}" 
@@ -169,7 +190,7 @@
                                         </div>
                                     </div>
                                 </a>
-                            @endfor
+                            @endforeach
                         </div>
                     </div>
                 </div>
@@ -178,24 +199,49 @@
             <!-- Step Content -->
             <div class="col-lg-9">
                 @php
-                    $currentStepNumber = request()->route('stepNumber') ?? $integration->current_step;
+                    $requestedStepNumber = request()->route('stepNumber');
+                    $currentStepNumber = $requestedStepNumber !== null ? (int) $requestedStepNumber : $integration->current_step;
                     $currentStep = $integration->getStep($currentStepNumber);
                     
-                    // Ensure step number is valid
-                    if ($currentStepNumber < 1 || $currentStepNumber > 8) {
-                        $currentStepNumber = $integration->current_step;
-                        $currentStep = $integration->getStep($currentStepNumber);
+                    // Ensure step number is valid for this integration type
+                    if (!in_array($currentStepNumber, $stepNumbers, true)) {
+                        $currentStepNumber = in_array($integration->current_step, $stepNumbers, true)
+                            ? $integration->current_step
+                            : ($stepNumbers[0] ?? null);
+                        $currentStep = $currentStepNumber ? $integration->getStep($currentStepNumber) : null;
                     }
+
+                    $stepSequence = $stepNumbers;
+                    $currentIndex = $currentStepNumber !== null
+                        ? array_search($currentStepNumber, $stepSequence, true)
+                        : false;
+                    $previousAvailableStep = ($currentIndex !== false && $currentIndex > 0)
+                        ? $stepSequence[$currentIndex - 1]
+                        : null;
+                    $nextAvailableStep = ($currentIndex !== false && $currentIndex < count($stepSequence) - 1)
+                        ? $stepSequence[$currentIndex + 1]
+                        : null;
                 @endphp
 
-                @if($currentStepNumber && $currentStepNumber >= 1 && $currentStepNumber <= 8)
-                    @include('integrations.partials._step' . $currentStepNumber, ['integration' => $integration, 'step' => $currentStep, 'stepNumber' => $currentStepNumber])
+                @if($currentStepNumber && in_array($currentStepNumber, $stepNumbers, true))
+                    @include('integrations.partials._step' . $currentStepNumber, [
+                        'integration' => $integration,
+                        'step' => $currentStep,
+                        'stepNumber' => $currentStepNumber,
+                        'previousAvailableStep' => $previousAvailableStep,
+                        'nextAvailableStep' => $nextAvailableStep,
+                    ])
                 @else
                     <div class="card border-0 shadow-sm">
                         <div class="card-body text-center py-5">
                             <i class="bi bi-info-circle display-1 text-muted mb-3"></i>
                             <h5>{{ __('messages.select_step_to_continue') }}</h5>
-                            <a href="{{ route('integrations.step', ['integration' => $integration->id, 'stepNumber' => $integration->current_step]) }}" class="btn btn-primary mt-3">
+                            @php
+                                $defaultStep = in_array($integration->current_step, $stepNumbers, true)
+                                    ? $integration->current_step
+                                    : ($stepNumbers[0] ?? 1);
+                            @endphp
+                            <a href="{{ route('integrations.step', ['integration' => $integration->id, 'stepNumber' => $defaultStep]) }}" class="btn btn-primary mt-3">
                                 {{ __('messages.continue_integration') }}
                             </a>
                         </div>
@@ -388,11 +434,27 @@
                 });
             });
 
-            // Add loading states to forms
+            // Add loading states to forms and manage submit actions
             const forms = document.querySelectorAll('form');
             forms.forEach(function(form) {
+                const actionInput = form.querySelector('input[name="submit_action"]');
+                const actionButtons = form.querySelectorAll('[data-submit-action]');
+
+                actionButtons.forEach(function(button) {
+                    button.addEventListener('click', function() {
+                        if (actionInput) {
+                            actionInput.value = button.dataset.submitAction || '';
+                        }
+                        form.__submitButton = button;
+                    });
+                });
+
                 form.addEventListener('submit', function() {
-                    const submitBtn = form.querySelector('button[type="submit"]');
+                    if (actionInput && !actionInput.value && actionButtons.length === 1) {
+                        actionInput.value = actionButtons[0].dataset.submitAction || '';
+                    }
+
+                    const submitBtn = form.__submitButton || form.querySelector('button[type="submit"]');
                     if (submitBtn) {
                         submitBtn.disabled = true;
                         submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>{{ __('messages.saving') }}...';

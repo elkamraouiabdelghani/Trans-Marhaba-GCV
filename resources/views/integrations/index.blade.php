@@ -77,6 +77,26 @@
                         {{ __('messages.driver_integrations') }}
                     </h5>
                     <div class="d-flex gap-2">
+                        {{-- Filter by integration type --}}
+                        <form method="GET" action="{{ route('integrations.index') }}" class="d-inline">
+                            @if(request('status'))
+                                <input type="hidden" name="status" value="{{ request('status') }}">
+                            @endif
+                            <select name="type" 
+                                    class="form-select form-select-sm d-inline-block" 
+                                    style="width: auto; min-width: 150px;"
+                                    onchange="this.form.submit()">
+                                <option value="all" {{ request('type', 'all') === 'all' ? 'selected' : '' }}>
+                                    {{ __('messages.all_types') }}
+                                </option>
+                                <option value="driver" {{ request('type') === 'driver' ? 'selected' : '' }}>
+                                    {{ __('messages.chauffeurs') }}
+                                </option>
+                                <option value="administration" {{ request('type') === 'administration' ? 'selected' : '' }}>
+                                    {{ __('messages.administratife') }}
+                                </option>
+                            </select>
+                        </form>
                         <a href="{{ route('integrations.create') }}" class="btn btn-dark btn-sm">
                             <i class="bi bi-plus-circle me-1"></i>
                             {{ __('messages.start_new_integration') }}
@@ -119,8 +139,7 @@
                     <table class="table table-hover mb-0 align-middle" id="integrationsTable">
                         <thead class="table-light">
                             <tr>
-                                <th class="border-0 py-3 px-4">#</th>
-                                <th class="border-0 py-3 px-4">{{ __('messages.driver') }}</th>
+                                <th class="border-0 py-3 px-4">{{ __('messages.condidats') }}</th>
                                 <th class="border-0 py-3 px-4">{{ __('messages.poste_type') }}</th>
                                 <th class="border-0 py-3 px-4">{{ __('messages.current_step') }}</th>
                                 <th class="border-0 py-3 px-4">{{ __('messages.status') }}</th>
@@ -131,9 +150,6 @@
                         <tbody>
                             @forelse($integrations ?? [] as $integration)
                                 <tr class="border-bottom">
-                                    <td class="py-3 px-4">
-                                        <strong class="text-muted">#{{ $integration->id }}</strong>
-                                    </td>
                                     <td class="py-3 px-4">
                                         @php
                                             $step2 = $integration->getStep(2);
@@ -163,24 +179,25 @@
                                         @php
                                             // Calculate progress
                                             $completedSteps = 0;
-                                            for ($i = 1; $i <= 8; $i++) {
+                                            for ($i = 1; $i <= 9; $i++) {
                                                 $step = $integration->getStep($i);
                                                 if ($step && $step->isValidated()) {
                                                     $completedSteps++;
                                                 }
                                             }
-                                            $progressPercentage = ($completedSteps / 8) * 100;
+                                            $progressPercentage = ($completedSteps / 9) * 100;
                                             
                                             // Get current step label
                                             $stepLabels = [
                                                 1 => __('messages.identification_besoin'),
                                                 2 => __('messages.driver_creation'),
                                                 3 => __('messages.verification_documentaire'),
-                                                4 => __('messages.test_oral_ecrit'),
-                                                5 => __('messages.test_conduite'),
-                                                6 => __('messages.validation') . ' + ' . __('messages.induction') . ' + ' . __('messages.signature_contrat'),
-                                                7 => __('messages.accompagnement'),
-                                                8 => __('messages.validation_finale'),
+                                                4 => __('messages.test_oral'),
+                                                5 => __('messages.test_ecrit'),
+                                                6 => __('messages.test_conduite'),
+                                                7 => __('messages.validation') . ' + ' . __('messages.induction') . ' + ' . __('messages.signature_contrat'),
+                                                8 => __('messages.accompagnement'),
+                                                9 => __('messages.validation_finale'),
                                             ];
                                             $currentStepLabel = $stepLabels[$integration->current_step] ?? __('messages.step') . ' ' . $integration->current_step;
                                         @endphp
@@ -193,7 +210,7 @@
                                                     aria-valuenow="{{ $progressPercentage }}" 
                                                     aria-valuemin="0" 
                                                     aria-valuemax="100">
-                                                    <small class="text-white fw-bold">{{ $integration->current_step }}/8</small>
+                                                    <small class="text-white fw-bold">{{ $integration->current_step }}/9</small>
                                                 </div>
                                             </div>
                                             <div class="text-muted small">

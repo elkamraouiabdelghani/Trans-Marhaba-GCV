@@ -59,20 +59,26 @@
             </a>
         </li>
         <li class="mb-2">
-            <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ (request()->routeIs('formation-types.*') || request()->routeIs('formation-processes.*')) ? 'active' : '' }}" 
+            <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ (request()->routeIs('formations.*') || request()->routeIs('formation-processes.*') || request()->routeIs('formation-categories.*')) ? 'active' : '' }}" 
                data-bs-toggle="collapse" 
                data-bs-target="#formationsSubmenu" 
-               aria-expanded="{{ (request()->routeIs('formation-types.*') || request()->routeIs('formation-processes.*')) ? 'true' : 'false' }}"
+               aria-expanded="{{ (request()->routeIs('formations.*') || request()->routeIs('formation-processes.*') || request()->routeIs('formation-categories.*')) ? 'true' : 'false' }}"
                aria-controls="formationsSubmenu">
                 <i class="bi bi-book me-2 text-gray-600 sidebar-icon"></i>
                 <span class="sidebar-text">{{ __('messages.formations') }}</span>
                 <i class="bi bi-chevron-down ms-auto sidebar-icon"></i>
             </a>
-            <ul class="collapse list-unstyled ms-3 {{ (request()->routeIs('formation-types.*') || request()->routeIs('formation-processes.*')) ? 'show' : '' }}" id="formationsSubmenu">
+            <ul class="collapse list-unstyled ms-3 {{ (request()->routeIs('formations.*') || request()->routeIs('formation-processes.*') || request()->routeIs('formation-categories.*')) ? 'show' : '' }}" id="formationsSubmenu">
                 <li class="mb-1">
-                    <a href="{{ route('formation-types.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('formation-types.*') ? 'active' : '' }}">
+                    <a href="{{ route('formation-categories.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('formation-categories.*') ? 'active' : '' }}">
+                        <i class="bi bi-collection me-2 text-gray-600 sidebar-icon"></i>
+                        <span class="sidebar-text">{{ __('messages.formation_categories_title') }}</span>
+                    </a>
+                </li>
+                <li class="mb-1">
+                    <a href="{{ route('formations.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('formations.*') ? 'active' : '' }}">
                         <i class="bi bi-book me-2 text-gray-600 sidebar-icon"></i>
-                        <span class="sidebar-text">{{ __('messages.formation_types') }}</span>
+                        <span class="sidebar-text">{{ __('messages.formations') }}</span>
                     </a>
                 </li>
                 <li class="mb-1">
@@ -130,7 +136,7 @@
                         {{ __('messages.drivers') }}
                     @elseif(request()->routeIs('integrations.*'))
                         {{ __('messages.driver_integrations') }}
-                    @elseif(request()->routeIs('formation-types.*') || request()->routeIs('formation-processes.*'))
+                    @elseif(request()->routeIs('formations.*') || request()->routeIs('formation-processes.*'))
                         {{ __('messages.formations') }}
                     @elseif(request()->routeIs('violations.*'))
                         {{ __('messages.violations') }}
@@ -210,21 +216,27 @@
                     {{ __('messages.driver_integrations') }}
                 </a>
             </li>
-            <li class="mb-2">
-                <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ (request()->routeIs('formation-types.*') || request()->routeIs('formation-processes.*')) ? 'active' : '' }}" 
+        <li class="mb-2">
+            <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ (request()->routeIs('formations.*') || request()->routeIs('formation-processes.*') || request()->routeIs('formation-categories.*')) ? 'active' : '' }}" 
                    data-bs-toggle="collapse" 
                    data-bs-target="#formationsSubmenuMobile" 
-                   aria-expanded="{{ (request()->routeIs('formation-types.*') || request()->routeIs('formation-processes.*')) ? 'true' : 'false' }}"
+                   aria-expanded="{{ (request()->routeIs('formations.*') || request()->routeIs('formation-processes.*') || request()->routeIs('formation-categories.*')) ? 'true' : 'false' }}"
                    aria-controls="formationsSubmenuMobile">
                     <i class="bi bi-book me-2 text-gray-600"></i>
                     {{ __('messages.formations') }}
                     <i class="bi bi-chevron-down ms-auto"></i>
                 </a>
-                <ul class="collapse list-unstyled ms-3 {{ (request()->routeIs('formation-types.*') || request()->routeIs('formation-processes.*')) ? 'show' : '' }}" id="formationsSubmenuMobile">
+                <ul class="collapse list-unstyled ms-3 {{ (request()->routeIs('formations.*') || request()->routeIs('formation-processes.*') || request()->routeIs('formation-categories.*')) ? 'show' : '' }}" id="formationsSubmenuMobile">
                     <li class="mb-1">
-                        <a href="{{ route('formation-types.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('formation-types.*') ? 'active' : '' }}">
+                        <a href="{{ route('formation-categories.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('formation-categories.*') ? 'active' : '' }}">
+                            <i class="bi bi-collection me-2 text-gray-600"></i>
+                            {{ __('messages.formation_categories_title') }}
+                        </a>
+                    </li>
+                    <li class="mb-1">
+                        <a href="{{ route('formations.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('formations.*') ? 'active' : '' }}">
                             <i class="bi bi-book me-2 text-gray-600"></i>
-                            {{ __('messages.formation_types') }}
+                            {{ __('messages.formations') }}
                         </a>
                     </li>
                     <li class="mb-1">

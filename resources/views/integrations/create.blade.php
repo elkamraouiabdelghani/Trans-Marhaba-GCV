@@ -122,6 +122,17 @@
                                     <input class="form-check-input @error('prospection_method') is-invalid @enderror" 
                                            type="radio" 
                                            name="prospection_method" 
+                                           id="prospection_bureau_recrutement" 
+                                           value="bureau_recrutement" 
+                                           {{ old('prospection_method') === 'bureau_recrutement' ? 'checked' : '' }}>
+                                    <label class="form-check-label" for="prospection_bureau_recrutement">
+                                        {{ __('messages.bureau_recrutement') }}
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input @error('prospection_method') is-invalid @enderror" 
+                                           type="radio" 
+                                           name="prospection_method" 
                                            id="prospection_autre" 
                                            value="autre" 
                                            {{ old('prospection_method') === 'autre' ? 'checked' : '' }}>
@@ -146,19 +157,6 @@
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
-
-                                <div class="col-md-6 mb-3">
-                                    <label for="nombre_candidats" class="form-label">{{ __('messages.candidats_contactes') }}</label>
-                                    <input type="number" 
-                                           class="form-control @error('nombre_candidats') is-invalid @enderror" 
-                                           id="nombre_candidats" 
-                                           name="nombre_candidats" 
-                                           value="{{ old('nombre_candidats') }}" 
-                                           min="0">
-                                    @error('nombre_candidats')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
                             </div>
 
                             <div class="mb-3">
@@ -173,7 +171,7 @@
                             </div>
 
                             <hr class="my-4">
-                            <div class="d-flex gap-2 justify-content-end">
+                            <div class="d-flex gap-2 justify-content-center">
                                 <a href="{{ route('integrations.index') }}" class="btn btn-outline-secondary">
                                     <i class="bi bi-x-circle me-1"></i>
                                     {{ __('messages.cancel') }}

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\SaveIntegrationStepRequest;
+use App\Http\Requests\StoreIntegrationRequest;
 use App\Models\IntegrationCandidate;
 use App\Models\IntegrationStep;
 use App\Models\Driver;
@@ -12,15 +14,15 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
 
 class IntegrationController extends Controller
 {
+    private const DRIVER_ONLY_STEPS = [5, 6, 8];
+
     /**
      * Display a listing of all integrations.
      */
-    public function index(Request $request): View
+    public function index(Request $request)
     {
         try {
             $query = IntegrationCandidate::query()
@@ -72,7 +74,7 @@ class IntegrationController extends Controller
     /**
      * Show the form for creating a new integration (Step 1).
      */
-    public function create(): View
+    public function create()
     {
         return view('integrations.create');
     }
@@ -80,18 +82,10 @@ class IntegrationController extends Controller
     /**
      * Store a newly created integration candidate (Step 1 data).
      */
-    public function store(Request $request): RedirectResponse
+    public function store(StoreIntegrationRequest $request)
     {
         try {
-            $validated = $request->validate([
-                'identification_besoin' => 'required|string',
-                'poste_type' => 'required|in:chauffeur,administration',
-                'description_poste' => 'required|string',
-                'prospection_method' => 'required|in:reseaux_social,bouche_a_oreil,autre',
-                'prospection_date' => 'nullable|date',
-                'nombre_candidats' => 'nullable|integer|min:0',
-                'notes_prospection' => 'nullable|string',
-            ]);
+            $validated = $request->validated();
             // Determine type based on poste_type
             $type = $validated['poste_type'] === 'chauffeur' ? 'driver' : 'administration';
 
@@ -140,14 +134,16 @@ class IntegrationController extends Controller
     /**
      * Display the specified integration progress.
      */
-    public function show(IntegrationCandidate $integration): View
+    public function show(IntegrationCandidate $integration)
     {
         try {
             $integration->load(['steps', 'validator']);
 
+            $stepNumbers = $this->getApplicableStepNumbers($integration);
+
             // Get all steps with their status
             $steps = [];
-            for ($i = 1; $i <= 8; $i++) {
+            foreach ($stepNumbers as $i) {
                 $step = $integration->getStep($i);
                 $steps[$i] = [
                     'step' => $step,
@@ -158,7 +154,7 @@ class IntegrationController extends Controller
                 ];
             }
 
-            return view('integrations.show', compact('integration', 'steps'));
+            return view('integrations.show', compact('integration', 'steps', 'stepNumbers'));
         } catch (\Throwable $e) {
             Log::error('Failed to display integration', [
                 'error' => $e->getMessage(),
@@ -171,13 +167,20 @@ class IntegrationController extends Controller
     /**
      * Show the form for a specific step.
      */
-    public function step(IntegrationCandidate $integration, int $stepNumber): View|RedirectResponse
+    public function step(IntegrationCandidate $integration, int $stepNumber)
     {
         try {
             // Validate step number
-            if ($stepNumber < 1 || $stepNumber > 8) {
+            if ($stepNumber < 1 || $stepNumber > 9) {
                 return redirect()->route('integrations.show', $integration->id)
                     ->with('error', __('messages.invalid_step'));
+            }
+
+            $stepNumbers = $this->getApplicableStepNumbers($integration);
+            if (!in_array($stepNumber, $stepNumbers, true)) {
+                $redirectStep = $this->resolveRedirectStep($integration, $stepNumber);
+                return redirect()->route('integrations.step', ['integration' => $integration->id, 'stepNumber' => $redirectStep])
+                    ->with('info', __('messages.step_not_required_for_admin'));
             }
 
             // Check if integration is rejected or already validated
@@ -190,7 +193,7 @@ class IntegrationController extends Controller
 
             // Get all steps with their status
             $steps = [];
-            for ($i = 1; $i <= 8; $i++) {
+            foreach ($stepNumbers as $i) {
                 $step = $integration->getStep($i);
                 $steps[$i] = [
                     'step' => $step,
@@ -208,7 +211,7 @@ class IntegrationController extends Controller
                     return redirect()->route('integrations.show', $integration->id)
                         ->with('error', __('messages.step_not_found'));
                 }
-                return view('integrations.show', compact('integration', 'stepNumber', 'step', 'steps'));
+                return view('integrations.show', compact('integration', 'stepNumber', 'step', 'steps', 'stepNumbers'));
             }
 
             // Get the step
@@ -243,7 +246,7 @@ class IntegrationController extends Controller
                 ]);
             }
 
-            return view('integrations.show', compact('integration', 'stepNumber', 'step', 'steps'));
+            return view('integrations.show', compact('integration', 'stepNumber', 'step', 'steps', 'stepNumbers'));
         } catch (\Throwable $e) {
             Log::error('Failed to display step', [
                 'error' => $e->getMessage(),
@@ -256,13 +259,19 @@ class IntegrationController extends Controller
     /**
      * Save step data.
      */
-    public function saveStep(Request $request, IntegrationCandidate $integration, int $stepNumber): RedirectResponse
+    public function saveStep(SaveIntegrationStepRequest $request, IntegrationCandidate $integration, int $stepNumber)
     {
         try {
             // Validate step number
-            if ($stepNumber < 1 || $stepNumber > 8) {
+            if ($stepNumber < 1 || $stepNumber > 9) {
                 return redirect()->route('integrations.show', $integration->id)
                     ->with('error', __('messages.invalid_step'));
+            }
+
+            if ($integration->type !== 'driver' && in_array($stepNumber, self::DRIVER_ONLY_STEPS, true)) {
+                $redirectStep = $this->resolveRedirectStep($integration, $stepNumber);
+                return redirect()->route('integrations.step', ['integration' => $integration->id, 'stepNumber' => $redirectStep])
+                    ->with('info', __('messages.step_not_required_for_admin'));
             }
 
             // Check if integration is rejected
@@ -315,18 +324,60 @@ class IntegrationController extends Controller
                 ]);
             }
 
-            // Validate based on step number
-            $validated = $this->validateStepData($request, $stepNumber);
+            // Validate based on step number via FormRequest
+            $validated = $request->validated();
+
+            if ($stepNumber === 2) {
+                if (!array_key_exists('email', $validated) || $validated['email'] === '') {
+                    $validated['email'] = null;
+                }
+            }
 
             $existingStep2Documents = [];
             $existingStep3Documents = [];
+            $existingDocuments = [];
+            $existingContracts = [];
 
             if ($stepNumber === 2) {
-                $existingStep2Documents = $step->step_data['documents'] ?? [];
+                $stepData = $step->step_data ?? [];
+                $existingStep2Documents = is_array($stepData) ? ($stepData['documents'] ?? []) : [];
+                if (!is_array($existingStep2Documents)) {
+                    $existingStep2Documents = [];
+                }
             }
 
             if ($stepNumber === 3) {
-                $existingStep3Documents = $step->step_data['documents_files'] ?? [];
+                $stepData = $step->step_data ?? [];
+                $existingStep3Documents = is_array($stepData) ? ($stepData['documents_files'] ?? []) : [];
+                if (!is_array($existingStep3Documents)) {
+                    $existingStep3Documents = [];
+                }
+            }
+
+            // Get existing documents for steps 4, 5, 6, 8, 9
+            if (in_array($stepNumber, [4, 5, 6, 8, 9])) {
+                $stepData = $step->step_data ?? [];
+                $existingDocuments = is_array($stepData) ? ($stepData['documents'] ?? []) : [];
+                if (!is_array($existingDocuments)) {
+                    $existingDocuments = [];
+                }
+            }
+
+            // Get existing contracts for step 7
+            if ($stepNumber === 7) {
+                $stepData = $step->step_data ?? [];
+                $existingContracts = is_array($stepData) ? ($stepData['contract_paths'] ?? []) : [];
+                if (!is_array($existingContracts)) {
+                    // Try to get from old single contract_path format
+                    if (isset($stepData['contract_path']) && !empty($stepData['contract_path'])) {
+                        $existingContracts = [[
+                            'name' => basename($stepData['contract_path']),
+                            'path' => $stepData['contract_path'],
+                        ]];
+                    } else {
+                        $existingContracts = [];
+                    }
+                }
             }
 
             // Handle file uploads for specific steps
@@ -334,11 +385,21 @@ class IntegrationController extends Controller
                 $validated = $this->handleStep2Uploads($request, $validated);
             } elseif ($stepNumber === 3) {
                 $validated = $this->handleStep3Uploads($request, $validated);
+            } elseif ($stepNumber === 4) {
+                $validated = $this->handleStep4Uploads($request, $validated);
+            } elseif ($stepNumber === 5) {
+                $validated = $this->handleStep5Uploads($request, $validated);
             } elseif ($stepNumber === 6) {
                 $validated = $this->handleStep6Uploads($request, $validated);
+            } elseif ($stepNumber === 7) {
+                $validated = $this->handleStep7Uploads($request, $validated);
+            } elseif ($stepNumber === 8) {
+                $validated = $this->handleStep8Uploads($request, $validated);
+            } elseif ($stepNumber === 9) {
+                $validated = $this->handleStep9Uploads($request, $validated);
             }
 
-            if ($stepNumber === 2 && isset($validated['documents'])) {
+            if ($stepNumber === 2 && isset($validated['documents']) && is_array($validated['documents'])) {
                 $mergedDocs = array_merge($existingStep2Documents, $validated['documents']);
                 $uniqueDocs = collect($mergedDocs)
                     ->filter(fn($doc) => is_array($doc) && !empty($doc['path'] ?? null))
@@ -348,7 +409,7 @@ class IntegrationController extends Controller
                 $validated['documents'] = $uniqueDocs;
             }
 
-            if ($stepNumber === 3 && isset($validated['documents_files'])) {
+            if ($stepNumber === 3 && isset($validated['documents_files']) && is_array($validated['documents_files'])) {
                 $mergedDocs = array_merge($existingStep3Documents, $validated['documents_files']);
                 $uniqueDocs = collect($mergedDocs)
                     ->filter(fn($doc) => is_array($doc) && !empty($doc['path'] ?? null))
@@ -356,6 +417,44 @@ class IntegrationController extends Controller
                     ->values()
                     ->all();
                 $validated['documents_files'] = $uniqueDocs;
+            } elseif ($stepNumber === 3 && !empty($existingStep3Documents)) {
+                // Preserve existing documents if no new files uploaded
+                $validated['documents_files'] = $existingStep3Documents;
+            }
+
+            // Merge documents for steps 4, 5, 6, 8, 9
+            if (in_array($stepNumber, [4, 5, 6, 8, 9]) && isset($validated['documents']) && is_array($validated['documents'])) {
+                $mergedDocs = array_merge($existingDocuments, $validated['documents']);
+                $uniqueDocs = collect($mergedDocs)
+                    ->filter(fn($doc) => is_array($doc) && !empty($doc['path'] ?? null))
+                    ->unique('path')
+                    ->values()
+                    ->all();
+                $validated['documents'] = $uniqueDocs;
+            } elseif (in_array($stepNumber, [4, 5, 6, 8, 9]) && !empty($existingDocuments)) {
+                // Preserve existing documents if no new files uploaded
+                $validated['documents'] = $existingDocuments;
+            }
+
+            // Merge contracts for step 7
+            if ($stepNumber === 7 && isset($validated['contract_paths']) && is_array($validated['contract_paths'])) {
+                $mergedContracts = array_merge($existingContracts, $validated['contract_paths']);
+                $uniqueContracts = collect($mergedContracts)
+                    ->filter(fn($contract) => is_array($contract) && !empty($contract['path'] ?? null))
+                    ->unique('path')
+                    ->values()
+                    ->all();
+                $validated['contract_paths'] = $uniqueContracts;
+                // Keep backward compatibility with single contract_path
+                if (count($uniqueContracts) === 1) {
+                    $validated['contract_path'] = $uniqueContracts[0]['path'];
+                }
+            } elseif ($stepNumber === 7 && !empty($existingContracts)) {
+                // Preserve existing contracts if no new files uploaded
+                $validated['contract_paths'] = $existingContracts;
+                if (count($existingContracts) === 1) {
+                    $validated['contract_path'] = $existingContracts[0]['path'];
+                }
             }
 
             // Update step data
@@ -372,6 +471,8 @@ class IntegrationController extends Controller
 
             // Refresh integration to get latest data
             $integration->refresh();
+            // Refresh the steps relationship to ensure we have the latest step data
+            $integration->load('steps');
 
             // Create driver after saving step 2 data (for driver type integrations)
             if (in_array($stepNumber, [2, 3], true) && $integration->type === 'driver') {
@@ -398,7 +499,20 @@ class IntegrationController extends Controller
                 }
             }
 
-            // Redirect back to the step page after saving
+            // Check if this is a validation request
+            $submitAction = $request->input('submit_action');
+            
+            if ($submitAction === 'validate') {
+                // Refresh step and integration to ensure we have the latest data
+                $step->refresh();
+                $integration->refresh();
+                $integration->load('steps');
+                
+                // Validate the step (this will check all requirements, mark as validated, and redirect to next step)
+                return $this->validateStep($request, $integration, $stepNumber);
+            }
+
+            // Redirect back to the step page after saving (only if not validating)
             return redirect()->route('integrations.step', ['integration' => $integration->id, 'stepNumber' => $stepNumber])
                 ->with('success', __('messages.step_saved'));
         } catch (\Throwable $e) {
@@ -416,14 +530,27 @@ class IntegrationController extends Controller
     /**
      * Validate a step (admin only).
      */
-    public function validateStep(Request $request, IntegrationCandidate $integration, int $stepNumber): RedirectResponse
+    public function validateStep(Request $request, IntegrationCandidate $integration, int $stepNumber)
     {
         try {
+            if ($integration->type !== 'driver' && in_array($stepNumber, self::DRIVER_ONLY_STEPS, true)) {
+                $redirectStep = $this->resolveRedirectStep($integration, $stepNumber);
+                return redirect()->route('integrations.step', ['integration' => $integration->id, 'stepNumber' => $redirectStep])
+                    ->with('info', __('messages.step_not_required_for_admin'));
+            }
+
+            // Refresh integration to ensure we have latest data
+            $integration->refresh();
+            $integration->load('steps');
+            
             $step = $integration->getStep($stepNumber);
             if (!$step) {
                 return redirect()->route('integrations.step', ['integration' => $integration->id, 'stepNumber' => $stepNumber])
                     ->with('error', __('messages.step_not_found'));
             }
+            
+            // Refresh step to ensure we have the latest data
+            $step->refresh();
 
             // Step 1: All fields must be filled (basic validation)
             if ($stepNumber === 1) {
@@ -442,15 +569,22 @@ class IntegrationController extends Controller
                 $stepData = $step->step_data ?? [];
                 $requiredFields = [
                     'full_name',
-                    'email',
                     'phone',
                     'cin',
                     'date_of_birth',
                     'address',
+                ];
+
+                if ($integration->type === 'driver') {
+                    $requiredFields = array_merge($requiredFields, [
                     'license_number',
                     'license_type',
                     'license_issue_date',
-                ];
+                    ]);
+                } else {
+                    $requiredFields[] = 'email';
+                }
+
                 foreach ($requiredFields as $field) {
                     if (empty($stepData[$field])) {
                         return redirect()->route('integrations.step', ['integration' => $integration->id, 'stepNumber' => $stepNumber])
@@ -486,7 +620,7 @@ class IntegrationController extends Controller
                 }
             }
 
-            // Step 4: Must pass test (result = 'passed') to continue, else reject
+            // Step 4: Must pass oral test (result = 'passed') to continue, else reject
             if ($stepNumber === 4) {
                 $stepData = $step->step_data ?? [];
                 if (empty($stepData)) {
@@ -506,7 +640,7 @@ class IntegrationController extends Controller
                 }
             }
 
-            // Step 5: Must pass driving test (result = 'passed') to continue, else reject
+            // Step 5: Must pass written test (result = 'passed') to continue, else reject
             if ($stepNumber === 5) {
                 $stepData = $step->step_data ?? [];
                 if (empty($stepData)) {
@@ -526,8 +660,28 @@ class IntegrationController extends Controller
                 }
             }
 
-            // Step 6: All sub-steps (validation, induction, contract) required
+            // Step 6: Must pass driving test (result = 'passed') to continue, else reject
             if ($stepNumber === 6) {
+                $stepData = $step->step_data ?? [];
+                if (empty($stepData)) {
+                    return redirect()->route('integrations.step', ['integration' => $integration->id, 'stepNumber' => $stepNumber])
+                        ->with('error', __('messages.please_save_step_before_validation'));
+                }
+                
+                $result = $step->getStepData('result');
+                if ($result !== 'passed') {
+                    $this->rejectIntegration($integration, __('messages.step6_failed'), auth()->id());
+                    $step->rejectStep(
+                        __('messages.result_must_be_passed'),
+                        auth()->id()
+                    );
+                    return redirect()->route('integrations.step', ['integration' => $integration->id, 'stepNumber' => $stepNumber])
+                        ->with('error', __('messages.step6_failed'));
+                }
+            }
+
+            // Step 7: All sub-steps (validation, induction, contract) required
+            if ($stepNumber === 7) {
                 $stepData = $step->step_data ?? [];
                 if (empty($stepData)) {
                     return redirect()->route('integrations.step', ['integration' => $integration->id, 'stepNumber' => $stepNumber])
@@ -544,13 +698,13 @@ class IntegrationController extends Controller
                 foreach ($requiredFields as $field) {
                     if (empty($stepData[$field])) {
                         return redirect()->route('integrations.step', ['integration' => $integration->id, 'stepNumber' => $stepNumber])
-                            ->with('error', __('messages.step6_substeps_required'));
+                            ->with('error', __('messages.step7_substeps_required'));
                     }
                 }
             }
 
-            // Step 7: Must pass accompaniment (result = 'passed') to continue, else reject
-            if ($stepNumber === 7) {
+            // Step 8: Must pass accompaniment (result = 'passed') to continue, else reject
+            if ($stepNumber === 8) {
                 $stepData = $step->step_data ?? [];
                 if (empty($stepData)) {
                     return redirect()->route('integrations.step', ['integration' => $integration->id, 'stepNumber' => $stepNumber])
@@ -559,18 +713,18 @@ class IntegrationController extends Controller
                 
                 $result = $step->getStepData('result');
                 if ($result !== 'passed') {
-                    $this->rejectIntegration($integration, __('messages.step7_failed'), auth()->id());
+                    $this->rejectIntegration($integration, __('messages.step8_failed'), auth()->id());
                     $step->rejectStep(
                         __('messages.result_must_be_passed'),
                         auth()->id()
                     );
                     return redirect()->route('integrations.step', ['integration' => $integration->id, 'stepNumber' => $stepNumber])
-                        ->with('error', __('messages.step7_failed'));
+                        ->with('error', __('messages.step8_failed'));
                 }
             }
 
-            // Step 8: Final validation unlocks promotion
-            if ($stepNumber === 8) {
+            // Step 9: Final validation unlocks promotion
+            if ($stepNumber === 9) {
                 $stepData = $step->step_data ?? [];
                 if (empty($stepData)) {
                     return redirect()->route('integrations.step', ['integration' => $integration->id, 'stepNumber' => $stepNumber])
@@ -583,18 +737,26 @@ class IntegrationController extends Controller
                 }
             }
 
+            // Mark the step as validated
             $step->validateStep(auth()->id(), $request->input('notes'));
 
+            // Refresh integration to get latest step status
+            $integration->refresh();
+
             // Move to next step if this step is validated and it's the current step
-            if ($stepNumber < 8 && $integration->current_step === $stepNumber) {
+            if ($integration->current_step === $stepNumber && $stepNumber < 9) {
                 $integration->moveToNextStep();
-                
-                // Automatically redirect to next step after validation
-                return redirect()->route('integrations.step', ['integration' => $integration->id, 'stepNumber' => $stepNumber + 1])
+                $integration->refresh();
+            }
+
+            // Automatically redirect to next step after validation (if not the last step)
+            if ($stepNumber < 9) {
+                $nextStep = $this->getNextAllowedStep($integration, $stepNumber + 1);
+                return redirect()->route('integrations.step', ['integration' => $integration->id, 'stepNumber' => $nextStep])
                     ->with('success', __('messages.step_validated_successfully') . ' ' . __('messages.redirecting_to_next_step'));
             }
 
-            // If not redirected to next step, redirect back to current step
+            // If it's the last step, redirect back to current step
             return redirect()->route('integrations.step', ['integration' => $integration->id, 'stepNumber' => $stepNumber])
                 ->with('success', __('messages.step_validated_successfully'));
         } catch (\Throwable $e) {
@@ -610,9 +772,15 @@ class IntegrationController extends Controller
     /**
      * Reject a step (admin only).
      */
-    public function rejectStep(Request $request, IntegrationCandidate $integration, int $stepNumber): RedirectResponse
+    public function rejectStep(Request $request, IntegrationCandidate $integration, int $stepNumber)
     {
         try {
+            if ($integration->type !== 'driver' && in_array($stepNumber, self::DRIVER_ONLY_STEPS, true)) {
+                $redirectStep = $this->resolveRedirectStep($integration, $stepNumber);
+                return redirect()->route('integrations.step', ['integration' => $integration->id, 'stepNumber' => $redirectStep])
+                    ->with('info', __('messages.step_not_required_for_admin'));
+            }
+
             $step = $integration->getStep($stepNumber);
             if (!$step) {
                 return redirect()->route('integrations.show', $integration->id)
@@ -630,7 +798,7 @@ class IntegrationController extends Controller
             );
 
             // Reject integration if critical step is rejected
-            if (in_array($stepNumber, [3, 4, 5, 7])) {
+            if (in_array($stepNumber, [3, 4, 5, 6, 8])) {
                 $this->rejectIntegration($integration, $request->input('rejection_reason'), auth()->id());
             }
 
@@ -649,18 +817,18 @@ class IntegrationController extends Controller
     /**
      * Finalize integration (Step 8 completion - promote to Driver/User).
      */
-    public function finalize(IntegrationCandidate $integration): RedirectResponse
+    public function finalize(IntegrationCandidate $integration)
     {
         try {
-            // Check if Step 8 is validated
-            $step8 = $integration->getStep(8);
-            if (!$step8 || !$step8->isValidated()) {
+            // Check if Step 9 is validated
+            $step9 = $integration->getStep(9);
+            if (!$step9 || !$step9->isValidated()) {
                 return redirect()->route('integrations.show', $integration->id)
-                    ->with('error', __('messages.step8_must_be_validated'));
+                    ->with('error', __('messages.step9_must_be_validated'));
             }
 
-            // Check if all steps are validated
-            for ($i = 1; $i <= 8; $i++) {
+            // Check if all applicable steps are validated
+            foreach ($this->getApplicableStepNumbers($integration) as $i) {
                 $step = $integration->getStep($i);
                 if (!$step || !$step->isValidated()) {
                     return redirect()->route('integrations.show', $integration->id)
@@ -715,108 +883,52 @@ class IntegrationController extends Controller
                 'integration_id' => $integration->id,
                 'error' => $e->getMessage(),
             ]);
+
+            $errorMessage = $e->getMessage() === 'integration_email_exists'
+                ? __('messages.user_email_exists')
+                : __('messages.error_finalizing_integration');
+
             return redirect()->route('integrations.show', $integration->id)
-                ->with('error', __('messages.error_finalizing_integration'));
+                ->with('error', $errorMessage);
         }
     }
 
     /**
-     * Validate step data based on step number.
+     * Get applicable step numbers depending on integration type.
      */
-    private function validateStepData(Request $request, int $stepNumber): array
+    private function getApplicableStepNumbers(IntegrationCandidate $integration): array
     {
-        try {
-            $rules = [];
+        return $integration->type === 'driver'
+            ? range(1, 9)
+            : array_merge(range(1, 4), [7, 9]);
+    }
 
-            switch ($stepNumber) {
-                case 2:
-                    $rules = [
-                        'full_name' => 'required|string|max:255',
-                        'email' => 'required|email|max:255',
-                        'phone' => 'required|string|max:20',
-                        'cin' => 'required|string|max:50',
-                        'date_of_birth' => 'required|date',
-                        'address' => 'required|string',
-                        'license_number' => 'required|string|max:50',
-                        'license_type' => 'required|in:B,C,D,E',
-                        'license_issue_date' => 'required|date',
-                        'photo' => 'nullable|image|max:2048',
-                        'documents' => 'nullable|array',
-                        'documents.*' => 'file|max:5120',
-                    ];
-                    break;
-
-                case 3:
-                    $rules = [
-                        'verification_date' => 'required|date',
-                        'verified_by' => 'required|string|max:255',
-                        'result' => 'required|in:passed,failed',
-                        'documents_reviewed' => 'nullable|array',
-                        'notes' => 'nullable|string',
-                    ];
-                    break;
-
-                case 4:
-                    $rules = [
-                        'test_date' => 'required|date',
-                        'evaluator' => 'required|string|max:255',
-                        'oral_score' => 'nullable|integer|min:0|max:100',
-                        'written_score' => 'nullable|integer|min:0|max:100',
-                        'result' => 'required|in:passed,failed',
-                        'notes' => 'nullable|string',
-                    ];
-                    break;
-
-                case 5:
-                    $rules = [
-                        'test_date' => 'required|date',
-                        'instructor' => 'required|string|max:255',
-                        'score' => 'nullable|integer|min:0|max:100',
-                        'result' => 'required|in:passed,failed',
-                        'notes' => 'nullable|string',
-                    ];
-                    break;
-
-                case 6:
-                    $rules = [
-                        'validation_date' => 'required|date',
-                        'validated_by' => 'required|string|max:255',
-                        'induction_date' => 'required|date',
-                        'induction_conducted_by' => 'required|string|max:255',
-                        'contract_signed_date' => 'required|date',
-                        'contract_path' => 'nullable|string',
-                        'contract' => 'nullable|file|mimes:pdf,doc,docx|max:5120',
-                        'notes' => 'nullable|string',
-                    ];
-                    break;
-
-                case 7:
-                    $rules = [
-                        'accompaniment_start_date' => 'required|date',
-                        'accompaniment_end_date' => 'nullable|date|after_or_equal:accompaniment_start_date',
-                        'accompanied_by' => 'required|string|max:255',
-                        'result' => 'required|in:passed,failed',
-                        'notes' => 'nullable|string',
-                    ];
-                    break;
-
-                case 8:
-                    $rules = [
-                        'final_validation_date' => 'required|date',
-                        'validated_by' => 'required|string|max:255',
-                        'notes' => 'nullable|string',
-                    ];
-                    break;
+    /**
+     * Get the next allowed step number based on integration type.
+     */
+    private function getNextAllowedStep(IntegrationCandidate $integration, int $stepNumber): int
+    {
+        $steps = $this->getApplicableStepNumbers($integration);
+        foreach ($steps as $step) {
+            if ($step >= $stepNumber) {
+                return $step;
             }
-
-            return $request->validate($rules);
-        } catch (\Throwable $e) {
-            Log::error('Failed to validate step data', [
-                'error' => $e->getMessage(),
-            ]);
-            return redirect()->route('integrations.index')
-                ->with('error', __('messages.error_validating_step_data'));
         }
+
+        return end($steps);
+    }
+
+    /**
+     * Determine the most appropriate redirect step for the integration.
+     */
+    private function resolveRedirectStep(IntegrationCandidate $integration, int $fallbackStep): int
+    {
+        $stepNumbers = $this->getApplicableStepNumbers($integration);
+        if (in_array($integration->current_step, $stepNumbers, true)) {
+            return $integration->current_step;
+        }
+
+        return $this->getNextAllowedStep($integration, $fallbackStep);
     }
 
     /**
@@ -827,7 +939,7 @@ class IntegrationController extends Controller
         try {
             // Handle photo upload
             if ($request->hasFile('photo')) {
-                $photoPath = $request->file('photo')->store('integration/photos', 'public');
+                $photoPath = $request->file('photo')->store('integration/photos', 'uploads');
                 $validated['photo_path'] = $photoPath;
             }
 
@@ -835,7 +947,7 @@ class IntegrationController extends Controller
             if ($request->hasFile('documents')) {
                 $documents = [];
                 foreach ($request->file('documents') as $file) {
-                    $docPath = $file->store('integration/documents', 'public');
+                    $docPath = $file->store('integration/documents', 'uploads');
                     $documents[] = [
                         'name' => $file->getClientOriginalName(),
                         'path' => $docPath,
@@ -859,71 +971,144 @@ class IntegrationController extends Controller
      */
     private function handleStep3Uploads(Request $request, array $validated): array
     {
-        try {
-            // Documents reviewed are stored as array of document names/paths
-            if ($request->hasFile('documents_files')) {
-                $documents = [];
-                foreach ($request->file('documents_files') as $file) {
-                    $path = $file->store('integration/document-verification', 'public');
-                    $documents[] = [
-                        'name' => $file->getClientOriginalName(),
-                        'path' => $path,
-                    ];
-                }
-                $validated['documents_files'] = $documents;
+        // Documents reviewed are stored as array of document names/paths
+        if ($request->hasFile('documents_files')) {
+            $documents = [];
+            foreach ($request->file('documents_files') as $file) {
+                $path = $file->store('integration/document-verification', 'uploads');
+                $documents[] = [
+                    'name' => $file->getClientOriginalName(),
+                    'path' => $path,
+                ];
             }
-
-            return $validated;
-        } catch (\Throwable $e) {
-            Log::error('Failed to handle step 3 uploads', [
-                'error' => $e->getMessage(),
-            ]);
-            return redirect()->route('integrations.index')
-                ->with('error', __('messages.error_handling_step_3_uploads'));
+            $validated['documents_files'] = $documents;
         }
+
+        return $validated;
     }
 
     /**
-     * Handle file uploads for Step 6 (contract).
+     * Handle file uploads for Step 4 (Oral Test).
+     */
+    private function handleStep4Uploads(Request $request, array $validated): array
+    {
+        if ($request->hasFile('documents')) {
+            $documents = [];
+            foreach ($request->file('documents') as $file) {
+                $path = $file->store('integration/step4-documents', 'uploads');
+                $documents[] = [
+                    'name' => $file->getClientOriginalName(),
+                    'path' => $path,
+                ];
+            }
+            $validated['documents'] = $documents;
+        }
+
+        return $validated;
+    }
+
+    /**
+     * Handle file uploads for Step 5 (Written Test).
+     */
+    private function handleStep5Uploads(Request $request, array $validated): array
+    {
+        if ($request->hasFile('documents')) {
+            $documents = [];
+            foreach ($request->file('documents') as $file) {
+                $path = $file->store('integration/step5-documents', 'uploads');
+                $documents[] = [
+                    'name' => $file->getClientOriginalName(),
+                    'path' => $path,
+                ];
+            }
+            $validated['documents'] = $documents;
+        }
+
+        return $validated;
+    }
+
+    /**
+     * Handle file uploads for Step 6 (Driving Test).
      */
     private function handleStep6Uploads(Request $request, array $validated): array
     {
-        try {
-            if ($request->hasFile('contract')) {
-                $contractPath = $request->file('contract')->store('integration/contracts', 'public');
-                $validated['contract_path'] = $contractPath;
+        if ($request->hasFile('documents')) {
+            $documents = [];
+            foreach ($request->file('documents') as $file) {
+                $path = $file->store('integration/step6-documents', 'uploads');
+                $documents[] = [
+                    'name' => $file->getClientOriginalName(),
+                    'path' => $path,
+                ];
             }
-
-            return $validated;
-        } catch (\Throwable $e) {
-            Log::error('Failed to handle step 6 uploads', [
-                'error' => $e->getMessage(),
-            ]);
-            return redirect()->route('integrations.index')
-                ->with('error', __('messages.error_handling_step_6_uploads'));
+            $validated['documents'] = $documents;
         }
+
+        return $validated;
     }
 
     /**
-     * Required document keys for step 3 verification.
+     * Handle file uploads for Step 7 (Contract).
      */
-    private function getStep3DocumentKeys(): array
+    private function handleStep7Uploads(Request $request, array $validated): array
     {
-        return [
-            'cin',
-            'cv',
-            'lettre_motivation',
-            'permis_conduire',
-            'casier_judiciaire',
-            'certificat_medical',
-            'certificat_yeux',
-            'carte_professionnelle',
-            'attestation_travail',
-            'attestation_demission',
-            'formations',
-            'sold_permis',
-            'rib',
-        ];
+        if ($request->hasFile('contract')) {
+            $contracts = [];
+            foreach ($request->file('contract') as $file) {
+                $path = $file->store('integration/contracts', 'uploads');
+                $contracts[] = [
+                    'name' => $file->getClientOriginalName(),
+                    'path' => $path,
+                ];
+            }
+            $validated['contract_paths'] = $contracts;
+            // Keep backward compatibility with single contract_path
+            if (count($contracts) === 1) {
+                $validated['contract_path'] = $contracts[0]['path'];
+            }
+        }
+
+        return $validated;
+    }
+
+    /**
+     * Handle file uploads for Step 8 (Accompaniment).
+     */
+    private function handleStep8Uploads(Request $request, array $validated): array
+    {
+        if ($request->hasFile('documents')) {
+            $documents = [];
+            foreach ($request->file('documents') as $file) {
+                $path = $file->store('integration/step8-documents', 'uploads');
+                $documents[] = [
+                    'name' => $file->getClientOriginalName(),
+                    'path' => $path,
+                ];
+            }
+            $validated['documents'] = $documents;
+        }
+
+        return $validated;
+    }
+
+    /**
+     * Handle file uploads for Step 9 (Final Validation).
+     */
+    private function handleStep9Uploads(Request $request, array $validated): array
+    {
+        if ($request->hasFile('documents')) {
+            $documents = [];
+            foreach ($request->file('documents') as $file) {
+                $path = $file->store('integration/step9-documents', 'uploads');
+                $documents[] = [
+                    'name' => $file->getClientOriginalName(),
+                    'path' => $path,
+                ];
+            }
+            $validated['documents'] = $documents;
+        }
+
+        return $validated;
     }
 
     /**
@@ -1304,22 +1489,26 @@ class IntegrationController extends Controller
             // In production, consider generating a secure random password and sending it via email
             $tempPassword = Hash::make('password@trans-marhaba');
 
+            $email = $step2Data['email'] ?? null;
+            if (empty($email)) {
+                throw new \Exception('Email is required to promote integration candidate to user.');
+            }
+
+            if (User::where('email', $email)->exists()) {
+                throw new \RuntimeException('integration_email_exists');
+            }
+
             $user = User::create([
                 'name' => $step2Data['full_name'] ?? '',
-                'email' => $step2Data['email'] ?? '',
-                'role' => 'administration',
+                'email' => $email,
+                'email_verified_at' => now(),
                 'password' => $tempPassword,
-                'statu' => 'inactive',
-                'phone_numbre' => $step2Data['phone'] ?? null,
+                'phone' => $step2Data['phone'] ?? null,
+                'department' => 'other',
+                'role' => 'manager',
+                'status' => 'inactive',
             ]);
-
-            // Log promotion for tracking
-            Log::info('User created from integration', [
-                'integration_id' => $integration->id,
-                'user_id' => $user->id,
-                'user_name' => $user->name,
-                'email' => $user->email,
-            ]);
+            
         } catch (\Throwable $e) {
             Log::error('Failed to promote to user', [
                 'error' => $e->getMessage(),

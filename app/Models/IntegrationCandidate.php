@@ -87,6 +87,9 @@ class IntegrationCandidate extends Model
 
         // Check if all previous steps are validated
         for ($i = 1; $i < $stepNumber; $i++) {
+            if ($this->type !== 'driver' && in_array($i, [5, 6, 8], true)) {
+                continue;
+            }
             $step = $this->getStep($i);
             if (!$step || $step->status !== 'validated') {
                 return false;
@@ -166,11 +169,21 @@ class IntegrationCandidate extends Model
      */
     public function moveToNextStep(): void
     {
-        if ($this->current_step < 8) {
-            $this->update([
-                'current_step' => $this->current_step + 1,
-                'status' => 'in_progress',
-            ]);
+        if ($this->current_step >= 9) {
+            return;
         }
+
+        $nextStep = $this->current_step + 1;
+
+        if ($this->type !== 'driver') {
+            while (in_array($nextStep, [5, 6, 8], true) && $nextStep < 9) {
+                $nextStep++;
+            }
+        }
+
+        $this->update([
+            'current_step' => min($nextStep, 9),
+            'status' => 'in_progress',
+        ]);
     }
 }

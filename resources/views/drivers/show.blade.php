@@ -6,18 +6,31 @@
     <div class="container-fluid py-4">
         <!-- Breadcrumb -->
         <nav aria-label="breadcrumb" class="mb-4">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">{{ __('messages.dashboard') }}</a></li>
-                <li class="breadcrumb-item"><a href="{{ route('drivers.index') }}">{{ __('messages.drivers') }}</a></li>
-                <li class="breadcrumb-item active">{{ $driver->full_name ?? __('messages.driver_number') . $driver->id }}</li>
-            </ol>
+            <div class="d-flex justify-content-between align-items-center">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">{{ __('messages.dashboard') }}</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('drivers.index') }}">{{ __('messages.drivers') }}</a></li>
+                    <li class="breadcrumb-item active">{{ $driver->full_name ?? __('messages.driver_number') . $driver->id }}</li>
+                </ol>
+                
+                <div class="d-flex gap-2">
+                    <a href="{{ route('drivers.index') }}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-arrow-left me-1"></i>
+                        {{ __('messages.back') }}
+                    </a>
+                    <a href="{{ route('drivers.edit', $driver) }}" class="btn btn-warning btn-sm">
+                        <i class="bi bi-pencil me-1"></i>
+                        {{ __('messages.edit_driver') ?? __('messages.edit') }}
+                    </a>
+                </div>
+            </div>
         </nav>
 
         <!-- Driver Information Box -->
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-body p-4">
                 <div class="row align-items-center">
-                    <div class="col-md-3 text-center mb-3 mb-md-0">
+                    <div class="col-md-2 text-center mb-3 mb-md-0">
                         <div class="position-relative d-inline-block">
                             <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style="width: 120px; height: 120px;">
                                 <i class="bi bi-person-fill text-primary" style="font-size: 4rem;"></i>
@@ -29,24 +42,58 @@
                             @endif
                         </div>
                     </div>
-                    <div class="col-md-9">
+                    <div class="col-md-10">
                         <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <h3 class="mb-2 text-dark fw-bold">{{ $driver->full_name ?? __('messages.driver_number') . $driver->id }}</h3>
-                                        <div class="d-flex flex-wrap gap-3 mb-3">
-                                            <div>
-                                                <small class="text-muted d-block">{{ __('messages.license_number') }}</small>
-                                                <strong class="text-dark">{{ $driver->license_number ?? 'N/A' }}</strong>
-                                            </div>
-                                            <div>
-                                                <small class="text-muted d-block">{{ __('messages.nationality') }}</small>
-                                                <strong class="text-dark">N/A</strong>
-                                            </div>
-                                        </div>
-                                    </div>
-                            <div class="col-md-6">
+                            <div class="col-md-3">
+                                <h3 class="mb-2 text-dark fw-bold">{{ $driver->full_name ?? __('messages.driver_number') . $driver->id }}</h3>
                                 <div class="row g-3">
                                     <div class="col-6">
+                                        <small class="text-muted d-block">{{ __('messages.license_number') }}</small>
+                                        <strong class="text-dark">{{ $driver->license_number ?? 'N/A' }}</strong>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted d-block">{{ __('messages.phone') }}</small>
+                                        <span class="text-dark">
+                                            {{ $driver->phone ?? $driver->phone_number ?? $driver->phone_numbre ?? 'N/A' }}
+                                        </span>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted d-block">{{ __('messages.assigned_vehicle') }}</small>
+                                        <span class="text-dark">
+                                            @if($driver->assignedVehicle && $driver->assignedVehicle->license_plate)
+                                                {{ $driver->assignedVehicle->license_plate }}
+                                            @else
+                                                {{ $driver->vehicle_matricule ?? $driver->matricule ?? __('messages.not_assigned') }}
+                                            @endif
+                                        </span>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted d-block">{{ __('messages.flotte') }}</small>
+                                        <span class="text-dark">
+                                            {{ $driver->flotte->name ?? 'N/A' }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-9">
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <div class="bg-warning bg-opacity-10 rounded p-3 text-center h-100">
+                                            <i class="bi bi-bell text-warning fs-4 d-block mb-2"></i>
+                                            <small class="text-muted d-block">{{ __('messages.driver_alerts_total') }}</small>
+                                            <h4 class="mb-0 fw-bold text-dark">
+                                                {{ $criticalAlerts + $warningAlerts }}
+                                            </h4>
+                                            <div class="small text-muted">
+                                                {{ __('messages.driver_alerts_detail', ['critical' => $criticalAlerts, 'warning' => $warningAlerts]) }}
+                                            </div>
+                                            <a href="{{ route('drivers.alerts') }}" class="small fw-semibold text-warning text-decoration-none mt-2 d-inline-block">
+                                                {{ __('messages.view_alerts_overview') }}
+                                                <i class="bi bi-arrow-right-circle ms-1"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
                                         <div class="bg-info bg-opacity-10 rounded p-3 text-center h-100">
                                             <i class="bi bi-clock-history text-info fs-4 d-block mb-2"></i>
                                             <small class="text-muted d-block">{{ __('messages.driving_hours') }}</small>
@@ -54,7 +101,7 @@
                                             <small class="text-muted">{{ __('messages.this_week') }}</small>
                                         </div>
                                     </div>
-                                    <div class="col-6">
+                                    <div class="col-md-4">
                                         <div class="bg-danger bg-opacity-10 rounded p-3 text-center h-100">
                                             <i class="bi bi-exclamation-triangle text-danger fs-4 d-block mb-2"></i>
                                             <small class="text-muted d-block">{{ __('messages.total_violations') }}</small>
@@ -62,32 +109,6 @@
                                             <small class="text-muted">{{ __('messages.total') }}</small>
                                         </div>
                                     </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="mt-3 pt-3 border-top">
-                            <div class="row g-3">
-                                <div class="col-md-4">
-                                    <small class="text-muted d-block">{{ __('messages.phone') }}</small>
-                                    <span class="text-dark">
-                                        {{ $driver->phone ?? $driver->phone_number ?? $driver->phone_numbre ?? 'N/A' }}
-                                    </span>
-                                </div>
-                                <div class="col-md-4">
-                                    <small class="text-muted d-block">{{ __('messages.assigned_vehicle') }}</small>
-                                    <span class="text-dark">
-                                        @if($driver->assignedVehicle && $driver->assignedVehicle->license_plate)
-                                            {{ $driver->assignedVehicle->license_plate }}
-                                        @else
-                                            {{ $driver->vehicle_matricule ?? $driver->matricule ?? __('messages.not_assigned') }}
-                                        @endif
-                                    </span>
-                                </div>
-                                <div class="col-md-4">
-                                    <small class="text-muted d-block">{{ __('messages.flotte') }}</small>
-                                    <span class="text-dark">
-                                        {{ $driver->flotte->name ?? 'N/A' }}
-                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -156,105 +177,16 @@
                         <i class="bi bi-calendar-range me-2 text-primary"></i>
                         {{ __('messages.timeline_activity') }}
                     </h5>
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-sm btn-outline-primary" onclick="exportTimelinePDF()">
-                            <i class="bi bi-file-pdf me-1"></i> {{ __('messages.export_pdf') }}
-                        </button>
-                        <button class="btn btn-sm btn-outline-success" onclick="exportTimelineCSV()">
-                            <i class="bi bi-file-earmark-spreadsheet me-1"></i> {{ __('messages.export_csv') }}
-                        </button>
-                    </div>
                 </div>
             </div>
             <div class="card-body">
-                <div class="timeline-container" style="overflow-x: auto;">
-                    <div class="timeline-wrapper" style="min-width: 800px;">
-                        @forelse($timelineData as $day)
-                            <div class="timeline-day mb-4 p-3 border rounded">
-                                <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <div>
-                                        <h6 class="mb-0 fw-bold text-dark">{{ $day['day_name'] }}</h6>
-                                        <small class="text-muted">{{ $day['date_label'] }}</small>
-                                    </div>
-                                    <div class="text-end">
-                                        <small class="text-muted d-block">{{ __('messages.driving') }}: <strong class="text-primary">{{ $day['driving_hours'] }}{{ __('messages.hour') }}</strong></small>
-                                        <small class="text-muted d-block">{{ __('messages.rest') }}: <strong class="text-success">{{ $day['rest_hours'] }}{{ __('messages.hour') }}</strong></small>
-                                    </div>
-                                </div>
-                                
-                                <!-- Gantt Bar -->
-                                <div class="gantt-bar-container mb-3" style="height: 40px; position: relative; background: #f8f9fa; border-radius: 4px;">
-                                    <div class="d-flex h-100" style="position: relative;">
-                                        <!-- Driving Hours -->
-                                        <div class="driving-hours bg-primary" 
-                                             style="width: {{ ($day['driving_hours'] / 24) * 100 }}%; border-radius: 4px 0 0 4px;"
-                                             title="Heures de conduite: {{ $day['driving_hours'] }}h">
-                                        </div>
-                                        <!-- Rest Hours -->
-                                        <div class="rest-hours bg-success" 
-                                             style="width: {{ ($day['rest_hours'] / 24) * 100 }}%; border-radius: 0 4px 4px 0;"
-                                             title="Heures de repos: {{ $day['rest_hours'] }}h">
-                                        </div>
-                                        
-                                        <!-- Violation Markers -->
-                                        @foreach($day['violations'] as $violation)
-                                            @php
-                                                $hour = (int)explode(':', $violation['time'])[0];
-                                                $minute = (int)explode(':', $violation['time'])[1];
-                                                $position = (($hour * 60 + $minute) / (24 * 60)) * 100;
-                                                $severityColors = [
-                                                    'low' => 'warning',
-                                                    'medium' => 'warning',
-                                                    'high' => 'danger'
-                                                ];
-                                                $color = $severityColors[$violation['severity']] ?? 'danger';
-                                            @endphp
-                                            <div class="violation-marker position-absolute" 
-                                                 style="left: {{ $position }}%; top: 50%; transform: translate(-50%, -50%); z-index: 10;"
-                                                 data-bs-toggle="tooltip" 
-                                                 data-bs-placement="top"
-                                                 title="{{ $violation['time'] }} - {{ $violation['type_label'] }}: {{ $violation['rule'] }} ({{ $violation['location'] }})">
-                                                <i class="bi bi-exclamation-circle-fill text-{{ $color }}" style="font-size: 1.5rem; filter: drop-shadow(0 0 2px rgba(0,0,0,0.3));"></i>
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                </div>
-                                
-                                <!-- Violations List for this day -->
-                                @if(count($day['violations']) > 0)
-                                    <div class="violations-list">
-                                        <small class="text-muted d-block mb-2">
-                                            <i class="bi bi-exclamation-triangle me-1"></i>
-                                            {{ count($day['violations']) }} {{ __('messages.violations_this_day') }}
-                                        </small>
-                                        <div class="d-flex flex-wrap gap-2">
-                                            @foreach($day['violations'] as $violation)
-                                                @php
-                                                    $severityBadges = [
-                                                        'low' => 'warning',
-                                                        'medium' => 'warning',
-                                                        'high' => 'danger'
-                                                    ];
-                                                    $badgeColor = $severityBadges[$violation['severity']] ?? 'secondary';
-                                                @endphp
-                                                <span class="badge bg-{{ $badgeColor }} bg-opacity-10 text-{{ $badgeColor }}">
-                                                    {{ $violation['time'] }} - {{ $violation['type_label'] }}
-                                                </span>
-                                            @endforeach
-                                        </div>
-                                    </div>
-                                @endif
-                            </div>
-                        @empty
-                            <div class="text-center text-muted py-5">
-                                <i class="bi bi-calendar-x display-6 d-block mb-2"></i>
-                                <div>{{ __('messages.no_activity_data') }}</div>
-                            </div>
-                        @endforelse
-                    </div>
+                <div class="text-center text-muted py-5">
+                    <i class="bi bi-calendar-x display-6 d-block mb-3"></i>
+                    <p class="mb-0">{{ __('messages.timeline_placeholder') ?? 'Driver Activity Timeline - Coming Soon' }}</p>
                 </div>
             </div>
         </div>
+
 
         <!-- Violations Table -->
         <div class="card border-0 shadow-sm mb-4">
@@ -387,36 +319,35 @@
                     <table class="table table-hover mb-0 align-middle">
                         <thead class="table-light">
                             <tr>
-                                <th class="border-0 py-3 px-4">{{ __('messages.formation_type_name') }}</th>
+                                <th class="border-0 py-3 px-4">{{ __('messages.formation_name') }}</th>
                                 <th class="border-0 py-3 px-4">{{ __('messages.last_realized_date') }}</th>
                                 <th class="border-0 py-3 px-4">{{ __('messages.status') }}</th>
                                 <th class="border-0 py-3 px-4">{{ __('messages.next_realizing_date') }}</th>
+                                <th class="border-0 py-3 px-4">{{ __('messages.formation_alert') ?? 'Alert' }}</th>
                                 <th class="border-0 py-3 px-4 text-center">{{ __('messages.formation_count') }}</th>
                                 <th class="border-0 py-3 px-4 text-center">{{ __('messages.action') }}</th>
                             </tr>
                         </thead>
                         <tbody>
                             @php
-                                $formationsByType = ($formations ?? collect())->groupBy('formation_type_id');
+                                $formationsByFormation = ($formations ?? collect())->groupBy('formation_id');
                             @endphp
-                            @forelse(($formationTypes ?? collect()) as $formationType)
+                            @forelse(($formationsCatalog ?? collect()) as $formationItem)
                                 @php
-                                    $formationsForType = $formationsByType->get($formationType->id, collect());
-                                    $lastDone = $formationsForType
+                                    $driverFormationsForItem = $formationsByFormation->get($formationItem->id, collect());
+                                    $lastDone = $driverFormationsForItem
                                         ->filter(fn($formation) => $formation->status === 'done' && $formation->done_at)
                                         ->sortByDesc(fn($formation) => $formation->done_at)
                                         ->first();
-                                    $nextPlanned = $formationsForType
+                                    $nextPlanned = $driverFormationsForItem
                                         ->filter(fn($formation) => $formation->status === 'planned' && $formation->planned_at)
                                         ->sortBy(fn($formation) => $formation->planned_at)
                                         ->first();
                                     $lastRealizedDate = $lastDone?->done_at?->format('d/m/Y') ?? __('messages.not_available');
 
-                                    if ($lastDone && $lastDone->done_at) {
-                                        $nextRealizingDate = $lastDone->done_at
-                                            ->copy()
-                                            ->addMonthsNoOverflow(6)
-                                            ->format('d/m/Y');
+                                    // Calculate next realizing date based on formation reference
+                                    if ($lastDone) {
+                                        $nextRealizingDate = $lastDone->getNextRealizingDateFormatted('d/m/Y') ?? __('messages.not_available');
                                     } elseif ($nextPlanned && $nextPlanned->planned_at) {
                                         $nextRealizingDate = $nextPlanned->planned_at->format('d/m/Y');
                                     } else {
@@ -432,12 +363,35 @@
                                         $statusColor = 'secondary';
                                         $statusLabel = __('messages.not_started');
                                     }
-                                    $currentProcessFormation = $formationsForType->first(function ($formation) {
+                                    $currentProcessFormation = $driverFormationsForItem->first(function ($formation) {
                                         return $formation->formationProcess && $formation->formationProcess->isValidated();
-                                    }) ?? $formationsForType->first(function ($formation) {
+                                    }) ?? $driverFormationsForItem->first(function ($formation) {
                                         return $formation->formationProcess !== null;
                                     });
                                     $currentProcess = $currentProcessFormation?->formationProcess;
+                                    $categoryName = optional($formationItem->category)->name;
+                                    $normalizedCategoryName = $categoryName ? \Illuminate\Support\Str::of($categoryName)->lower()->trim()->__toString() : null;
+                                    $isQuickFormation = in_array($normalizedCategoryName, ['tmd', '16 module'], true);
+                                    
+                                    // Calculate alert using Formation model with latest completion date
+                                    $latestCompletionDate = $lastDone?->done_at;
+                                    $alertSummary = $formationItem ? $formationItem->getAlertSummary($latestCompletionDate) : ['state' => 'none'];
+                                    $alertState = $alertSummary['state'] ?? 'none';
+                                    $elapsedPercent = isset($alertSummary['elapsed_percent']) && $alertSummary['elapsed_percent'] !== null
+                                        ? round($alertSummary['elapsed_percent'])
+                                        : null;
+                                    $daysRemaining = $alertSummary['days_remaining'] ?? null;
+                                    $alertBadgeClass = [
+                                        'warning' => 'warning',
+                                        'critical' => 'danger',
+                                        'none' => 'secondary',
+                                    ][$alertState] ?? 'secondary';
+                                    $alertIcon = [
+                                        'warning' => 'bi-exclamation-triangle',
+                                        'critical' => 'bi-exclamation-octagon',
+                                        'none' => 'bi-info-circle',
+                                    ][$alertState] ?? 'bi-info-circle';
+                                    $isOverdue = $daysRemaining !== null && $daysRemaining < 0;
                                 @endphp
                                 <tr class="border-bottom">
                                     <td class="py-3 px-4">
@@ -446,11 +400,7 @@
                                                 <i class="bi bi-book text-primary"></i>
                                             </div>
                                             <div>
-                                                <strong class="text-dark">{{ $formationType->name ?? __('messages.not_available') }}</strong>
-                                                @if(!empty($formationType->code))
-                                                    <br>
-                                                    <small class="text-muted">{{ $formationType->code }}</small>
-                                                @endif
+                                                <strong class="text-dark">{{ $formationItem->name ?? __('messages.not_available') }}</strong>
                                             </div>
                                         </div>
                                     </td>
@@ -465,9 +415,33 @@
                                     <td class="py-3 px-4">
                                         <span class="text-dark">{{ $nextRealizingDate }}</span>
                                     </td>
+                                    <td class="py-3 px-4">
+                                        @if($alertState !== 'none')
+                                            <span class="badge bg-{{ $alertBadgeClass }} bg-opacity-10 text-{{ $alertBadgeClass }} d-inline-flex align-items-center gap-1">
+                                                <i class="bi {{ $alertIcon }}"></i>
+                                                {{ $alertState === 'critical' ? __('messages.formation_alert_critical') : __('messages.formation_alert_warning') }}
+                                            </span>
+                                            <div class="small text-muted mt-1">
+                                                @if($elapsedPercent !== null)
+                                                    {{ __('messages.formation_alert_elapsed', ['percent' => $elapsedPercent]) }}
+                                                @endif
+                                                @if($daysRemaining !== null)
+                                                    <span class="d-block">
+                                                        {{ $isOverdue
+                                                            ? __('messages.formation_alert_overdue', ['days' => abs($daysRemaining)])
+                                                            : __('messages.formation_alert_days_remaining', ['days' => $daysRemaining]) }}
+                                                    </span>
+                                                @endif
+                                            </div>
+                                        @else
+                                            <span class="text-muted">
+                                                {{ __('messages.formation_alert_none') }}
+                                            </span>
+                                        @endif
+                                    </td>
                                     <td class="py-3 px-4 text-center">
                                         <span class="badge bg-secondary bg-opacity-10 text-secondary">
-                                            {{ $formationsForType->count() }}
+                                            {{ $driverFormationsForItem->count() }}
                                         </span>
                                     </td>
                                     @php
@@ -479,6 +453,11 @@
                                     @endphp
                                     <td class="py-3 px-4 text-center">
                                         <div class="btn-group" role="group">
+                                            @if($lastDone && $lastDone->certificate_path)
+                                                <a href="{{ route('drivers.formations.download-certificate', $lastDone) }}" class="btn btn-outline-success btn-sm" title="{{ __('messages.download_certificate') }}">
+                                                    <i class="bi bi-download"></i>
+                                                </a>
+                                            @endif
                                             @if($currentProcess && $currentProcess->isValidated())
                                                 <button type="button"
                                                         class="btn btn-outline-success btn-sm btn-generate-report"
@@ -494,17 +473,32 @@
                                                 </a>
                                             @endif
                                             @if($showStartButton)
-                                                <a href="{{ route('formation-processes.create') }}?driver_id={{ $driver->id }}&formation_type_id={{ $formationType->id }}" class="btn btn-dark btn-sm" title="{{ __('messages.start_formation_process') }}">
-                                                    <i class="bi bi-play-circle me-1"></i>
-                                                    {{ __('messages.start') }}
-                                                </a>
+                                                @if($isQuickFormation)
+                                                    @php
+                                                        $calculatedNextDate = $lastDone ? $lastDone->getNextRealizingDate() : null;
+                                                        $nextDateValue = $calculatedNextDate ? $calculatedNextDate->format('Y-m-d') : '';
+                                                    @endphp
+                                                    <button type="button"
+                                                            class="btn btn-dark btn-sm btn-quick-formation-start"
+                                                            data-formation-id="{{ $formationItem->id }}"
+                                                            data-formation-name="{{ $formationItem->name ?? '' }}"
+                                                            data-next-date="{{ $nextDateValue }}">
+                                                        <i class="bi bi-play-circle me-1"></i>
+                                                        {{ __('messages.start') }}
+                                                    </button>
+                                                @else
+                                                    <a href="{{ route('formation-processes.create') }}?driver_id={{ $driver->id }}&formation_id={{ $formationItem->id }}" class="btn btn-dark btn-sm" title="{{ __('messages.start_formation_process') }}">
+                                                        <i class="bi bi-play-circle me-1"></i>
+                                                        {{ __('messages.start') }}
+                                                    </a>
+                                                @endif
                                             @endif
                                         </div>
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="5" class="text-center py-5">
+                                    <td colspan="6" class="text-center py-5">
                                         <div class="text-muted">
                                             <i class="bi bi-book display-1 mb-3"></i>
                                             <h5 class="mb-2">{{ __('messages.no_formations_found') }}</h5>
@@ -523,8 +517,77 @@
             </div>
         </div>
 
+        <!-- Quick Formation Modal -->
+        <div class="modal fade" id="quickFormationModal" tabindex="-1" aria-labelledby="quickFormationModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="quickFormationModalLabel">
+                            {{ __('messages.start') }} {{ 'Formation' }}
+                            <small class="d-block text-muted" id="quick-formation-name"></small>
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('messages.close') }}"></button>
+                    </div>
+                    <form method="POST"
+                          action="{{ route('drivers.formations.quick-store', $driver) }}"
+                          enctype="multipart/form-data">
+                        @csrf
+                        <div class="modal-body">
+                            <input type="hidden" name="formation_id" id="quick-formation-id" value="{{ old('formation_id') }}">
+
+                            <div class="mb-3">
+                                <label for="quick-due-at" class="form-label">
+                                    {{ __('messages.next_realizing_date') ?? 'Date d\'échéance' }}
+                                    <span class="text-danger">*</span>
+                                </label>
+                                <input type="date"
+                                       class="form-control @error('due_at') is-invalid @enderror"
+                                       id="quick-due-at"
+                                       name="due_at"
+                                       value="{{ old('due_at') }}">
+                                @error('due_at')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="quick-report-file" class="form-label">
+                                    {{ __('messages.completion_certificate') ?? 'Rapport' }}
+                                    <span class="text-danger">*</span>
+                                </label>
+                                <input type="file"
+                                       class="form-control @error('report_file') is-invalid @enderror"
+                                       id="quick-report-file"
+                                       name="report_file"
+                                       accept=".pdf,.doc,.docx,.xlsx">
+                                @error('report_file')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                                <small class="text-muted">{{ __('messages.upload_certificate_hint') ?? 'Formats acceptés : PDF, DOC, DOCX, XLSX (5 Mo max).' }}</small>
+                            </div>
+
+                            @error('formation_id')
+                                <div class="alert alert-danger py-2">{{ $message }}</div>
+                            @enderror
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                                {{ __('messages.cancel') }}
+                            </button>
+                            <button type="submit" class="btn btn-dark">
+                                <i class="bi bi-save me-1"></i>
+                                {{ __('messages.save') ?? 'Enregistrer' }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Activity Modal -->
+
         <!-- Comments/Notes Section -->
-        <div class="card border-0 shadow-sm">
+        {{-- <div class="card border-0 shadow-sm">
             <div class="card-header bg-white border-0 py-3">
                 <h5 class="mb-0 text-dark fw-bold">
                     <i class="bi bi-chat-left-text me-2 text-primary"></i>
@@ -550,7 +613,7 @@
                     <p class="text-muted mb-0">{{ __('messages.no_notes') }}</p>
                 </div>
             </div>
-        </div>
+        </div> --}}
     </div>
 
     <!-- Violation Details Modal -->
@@ -570,36 +633,6 @@
             </div>
         </div>
     </div>
-
-    @push('styles')
-    <style>
-        .timeline-day {
-            transition: all 0.3s ease;
-        }
-        .timeline-day:hover {
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-        .violation-marker {
-            cursor: pointer;
-            transition: transform 0.2s ease;
-        }
-        .violation-marker:hover {
-            transform: translate(-50%, -50%) scale(1.2);
-        }
-        .gantt-bar-container {
-            position: relative;
-        }
-        .driving-hours, .rest-hours {
-            transition: all 0.3s ease;
-        }
-        .comment-item {
-            border-left: 3px solid #0d6efd;
-        }
-        .table-hover tbody tr:hover {
-            background-color: rgba(0, 0, 0, 0.02);
-        }
-    </style>
-    @endpush
 
     <div class="modal fade" id="reportGenerationModal" tabindex="-1" aria-labelledby="reportGenerationModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -636,6 +669,68 @@
         </div>
     </div>
 
+    @push('styles')
+    <style>
+        /* Timeline styles removed - placeholder only */
+        @if(false)
+        .timeline-day {
+            transition: all 0.3s ease;
+        }
+        .timeline-day:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        .timeline-day.border-danger {
+            animation: pulse-border 2s ease-in-out infinite;
+        }
+        @keyframes pulse-border {
+            0%, 100% {
+                border-color: #dc3545;
+            }
+            50% {
+                border-color: #ff6b7a;
+            }
+        }
+        .violation-marker {
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+        .violation-marker:hover {
+            transform: translate(-50%, -50%) scale(1.3);
+            z-index: 20 !important;
+        }
+        .gantt-bar-container {
+            position: relative;
+            overflow: visible;
+        }
+        .driving-hours, .rest-hours {
+            transition: all 0.3s ease;
+            min-height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .driving-hours:hover {
+            opacity: 0.9;
+            filter: brightness(1.1);
+        }
+        .rest-hours:hover {
+            opacity: 0.9;
+            filter: brightness(1.1);
+        }
+        @endif
+        .comment-item {
+            border-left: 3px solid #0d6efd;
+        }
+        .table-hover tbody tr:hover {
+            background-color: rgba(0, 0, 0, 0.02);
+        }
+        .violations-list {
+            border-left: 3px solid #dc3545;
+        }
+    </style>
+    @endpush
+
     @push('scripts')
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js" 
     crossorigin="anonymous" defer></script>
@@ -647,6 +742,62 @@
                 return new bootstrap.Tooltip(tooltipTriggerEl);
             });
         });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const quickModalEl = document.getElementById('quickFormationModal');
+            if (!quickModalEl || typeof bootstrap === 'undefined') {
+                return;
+            }
+
+            const quickModal = new bootstrap.Modal(quickModalEl);
+            const formationIdInput = document.getElementById('quick-formation-id');
+            const formationNameEl = document.getElementById('quick-formation-name');
+            const dueAtInput = document.getElementById('quick-due-at');
+            const fileInput = document.getElementById('quick-report-file');
+            const formationLookup = @json($formationsCatalog->pluck('name', 'id'));
+
+            document.querySelectorAll('.btn-quick-formation-start').forEach(function(button) {
+                button.addEventListener('click', function() {
+                    const formationId = this.dataset.formationId;
+                    const formationName = this.dataset.formationName || formationLookup[formationId] || '';
+                    const nextDate = this.dataset.nextDate || '';
+
+                    if (formationIdInput) {
+                        formationIdInput.value = formationId;
+                    }
+                    if (formationNameEl) {
+                        formationNameEl.textContent = formationName;
+                    }
+                    if (dueAtInput) {
+                        dueAtInput.value = nextDate;
+                    }
+                    if (fileInput) {
+                        fileInput.value = '';
+                    }
+
+                    quickModal.show();
+                });
+            });
+
+            const shouldOpenQuickModal = @json(session('open_quick_modal', false));
+            if (shouldOpenQuickModal) {
+                const oldFormationId = @json(old('formation_id'));
+                if (oldFormationId && formationIdInput) {
+                    formationIdInput.value = oldFormationId;
+                }
+                if (formationNameEl) {
+                    const oldName = oldFormationId ? (formationLookup[oldFormationId] || '') : '';
+                    formationNameEl.textContent = oldName;
+                }
+                const oldDueAt = @json(old('due_at'));
+                if (oldDueAt && dueAtInput) {
+                    dueAtInput.value = oldDueAt;
+                }
+                quickModal.show();
+            }
+        });
+
+        // Activity modal removed - timeline system rejected
 
         // Table sorting
         let sortDirection = {};
@@ -729,15 +880,6 @@
             // TODO: Implement CSV export
         }
 
-        function exportTimelinePDF() {
-            alert('{{ __('messages.export_timeline_pdf') }}');
-            // TODO: Implement PDF export
-        }
-
-        function exportTimelineCSV() {
-            alert('{{ __('messages.export_timeline_csv') }}');
-            // TODO: Implement CSV export
-        }
 
         // Comment form submission
         document.getElementById('commentForm').addEventListener('submit', function(e) {

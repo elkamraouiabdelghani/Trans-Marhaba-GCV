@@ -12,6 +12,11 @@
 
         <form action="{{ route('integrations.save-step', ['integration' => $integration->id, 'stepNumber' => 2]) }}" method="POST" enctype="multipart/form-data">
             @csrf
+            <input type="hidden" name="submit_action" value="">
+            @php
+                $prevStepLink = $previousAvailableStep ?? ($stepNumber > 1 ? $stepNumber - 1 : null);
+                $nextStepLink = $nextAvailableStep ?? ($stepNumber < 9 ? $stepNumber + 1 : null);
+            @endphp
 
             <div class="row">
                 <div class="col-md-6 mb-3">
@@ -28,13 +33,12 @@
                 </div>
 
                 <div class="col-md-6 mb-3">
-                    <label for="email" class="form-label">{{ __('messages.email') }} <span class="text-danger">*</span></label>
+                    <label for="email" class="form-label">{{ __('messages.email') }}</label>
                     <input type="email" 
                            class="form-control @error('email') is-invalid @enderror" 
                            id="email" 
                            name="email" 
-                           value="{{ old('email', $stepData['email'] ?? '') }}" 
-                           required>
+                           value="{{ old('email', $stepData['email'] ?? '') }}">
                     @error('email')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
@@ -84,51 +88,53 @@
                 </div>
             </div>
 
-            <div class="row">
-                <div class="col-md-4 mb-3">
-                    <label for="license_number" class="form-label">{{ __('messages.license_number') }} <span class="text-danger">*</span></label>
-                    <input type="text"
-                           class="form-control @error('license_number') is-invalid @enderror"
-                           id="license_number"
-                           name="license_number"
-                           value="{{ old('license_number', $stepData['license_number'] ?? '') }}"
-                           required>
-                    @error('license_number')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
-                </div>
+            @if($integration->type === 'driver')
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="license_number" class="form-label">{{ __('messages.license_number') }} <span class="text-danger">*</span></label>
+                        <input type="text"
+                               class="form-control @error('license_number') is-invalid @enderror"
+                               id="license_number"
+                               name="license_number"
+                               value="{{ old('license_number', $stepData['license_number'] ?? '') }}"
+                               required>
+                        @error('license_number')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
 
-                <div class="col-md-4 mb-3">
-                    <label for="license_type" class="form-label">{{ __('messages.license_type') }} <span class="text-danger">*</span></label>
-                    <select class="form-select @error('license_type') is-invalid @enderror"
-                            id="license_type"
-                            name="license_type"
-                            required>
-                        <option value="">{{ __('messages.select_option') }}</option>
-                        @foreach(['B', 'C', 'D', 'E'] as $licenseOption)
-                            <option value="{{ $licenseOption }}" {{ old('license_type', $stepData['license_type'] ?? '') === $licenseOption ? 'selected' : '' }}>
-                                {{ $licenseOption }}
-                            </option>
-                        @endforeach
-                    </select>
-                    @error('license_type')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
-                </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="license_type" class="form-label">{{ __('messages.license_type') }} <span class="text-danger">*</span></label>
+                        <select class="form-select @error('license_type') is-invalid @enderror"
+                                id="license_type"
+                                name="license_type"
+                                required>
+                            <option value="">{{ __('messages.select_option') }}</option>
+                            @foreach(['B', 'C', 'D', 'E'] as $licenseOption)
+                                <option value="{{ $licenseOption }}" {{ old('license_type', $stepData['license_type'] ?? '') === $licenseOption ? 'selected' : '' }}>
+                                    {{ $licenseOption }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('license_type')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
 
-                <div class="col-md-4 mb-3">
-                    <label for="license_issue_date" class="form-label">{{ __('messages.license_issue_date') }} <span class="text-danger">*</span></label>
-                    <input type="date"
-                           class="form-control @error('license_issue_date') is-invalid @enderror"
-                           id="license_issue_date"
-                           name="license_issue_date"
-                           value="{{ old('license_issue_date', $stepData['license_issue_date'] ?? '') }}"
-                           required>
-                    @error('license_issue_date')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
+                    <div class="col-md-4 mb-3">
+                        <label for="license_issue_date" class="form-label">{{ __('messages.license_issue_date') }} <span class="text-danger">*</span></label>
+                        <input type="date"
+                               class="form-control @error('license_issue_date') is-invalid @enderror"
+                               id="license_issue_date"
+                               name="license_issue_date"
+                               value="{{ old('license_issue_date', $stepData['license_issue_date'] ?? '') }}"
+                               required>
+                        @error('license_issue_date')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
                 </div>
-            </div>
+            @endif
 
             <div class="mb-3">
                 <label for="address" class="form-label">{{ __('messages.address') }} <span class="text-danger">*</span></label>
@@ -179,48 +185,46 @@
 
             <hr class="my-4">
             @if($step && $step->isValidated())
-                {{-- Show Next button when validated --}}
+                {{-- Show Update and Next buttons when validated --}}
                 <div class="d-flex gap-2 justify-content-between">
                     <div>
-                        @if($stepNumber > 1)
-                            <a href="{{ route('integrations.step', ['integration' => $integration->id, 'stepNumber' => $stepNumber - 1]) }}" class="btn btn-outline-secondary">
-                                <i class="bi bi-arrow-left me-1"></i>
-                                {{ __('messages.previous') }}
-                            </a>
-                        @endif
-                    </div>
-                    <div>
-                        @if($stepNumber < 8)
-                            <a href="{{ route('integrations.step', ['integration' => $integration->id, 'stepNumber' => $stepNumber + 1]) }}" class="btn btn-primary">
-                                {{ __('messages.next') }} <i class="bi bi-arrow-right ms-1"></i>
-                            </a>
-                        @endif
-                    </div>
-                </div>
-            @else
-                {{-- Show Save/Validate buttons when not validated --}}
-                <div class="d-flex gap-2 justify-content-between">
-                    <div>
-                        @if($stepNumber > 1)
-                            <a href="{{ route('integrations.step', ['integration' => $integration->id, 'stepNumber' => $stepNumber - 1]) }}" class="btn btn-outline-secondary">
+                        @if($prevStepLink)
+                            <a href="{{ route('integrations.step', ['integration' => $integration->id, 'stepNumber' => $prevStepLink]) }}" class="btn btn-outline-secondary">
                                 <i class="bi bi-arrow-left me-1"></i>
                                 {{ __('messages.previous') }}
                             </a>
                         @endif
                     </div>
                     <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-dark">
-                            <i class="bi bi-check-circle me-1"></i>
-                            {{ __('messages.save') }}
+                        <button type="submit" class="btn btn-outline-success" data-submit-action="update">
+                            <i class="bi bi-pencil me-1"></i>
+                            {{ __('messages.update') }}
                         </button>
-                    @if($step && $step->isPending() && auth()->check())
-                        <button type="button" 
-                                class="btn btn-success" 
-                                onclick="validateStep({{ $integration->id }}, 2)">
+                        @if($nextStepLink)
+                            <a href="{{ route('integrations.step', ['integration' => $integration->id, 'stepNumber' => $nextStepLink]) }}" class="btn btn-primary">
+                                {{ __('messages.next') }} <i class="bi bi-arrow-right ms-1"></i>
+                            </a>
+                        @endif
+                    </div>
+                </div>
+            @else
+                {{-- Show Validate button when not validated --}}
+                <div class="d-flex gap-2 justify-content-between">
+                    <div>
+                        @if($prevStepLink)
+                            <a href="{{ route('integrations.step', ['integration' => $integration->id, 'stepNumber' => $prevStepLink]) }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-1"></i>
+                                {{ __('messages.previous') }}
+                            </a>
+                        @endif
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit"
+                                class="btn btn-success"
+                                data-submit-action="validate">
                             <i class="bi bi-check-lg me-1"></i>
-                            {{ __('messages.validate') }}
+                            {{ __('messages.validate_and_next') }}
                         </button>
-                    @endif
                     </div>
                 </div>
             @endif

@@ -10,6 +10,10 @@
                     {{ __('messages.violations') }}
                 @elseif(request()->routeIs('reports.*'))
                     {{ __('messages.reports') }}
+                @elseif(request()->routeIs('integrations.*'))
+                    {{ __('messages.driver_integrations') }}
+                @elseif(request()->routeIs('formations.*') || request()->routeIs('formation-processes.*') || request()->routeIs('formation-categories.*'))
+                    {{ __('messages.formations') }}
                 @else
                     {{ __('messages.brand') }}
                 @endif

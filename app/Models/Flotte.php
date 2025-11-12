@@ -45,4 +45,12 @@ class Flotte extends Model
     {
         return $this->hasMany(Driver::class);
     }
+
+    /**
+     * Get the formations for the flotte.
+     */
+    public function formations()
+    {
+        return $this->hasMany(Formation::class);
+    }
 }

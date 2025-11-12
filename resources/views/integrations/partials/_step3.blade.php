@@ -8,6 +8,8 @@
     <div class="card-body">
         @php
             $stepData = $step ? $step->step_data : [];
+            $prevStepLink = $previousAvailableStep ?? ($stepNumber > 1 ? $stepNumber - 1 : null);
+            $nextStepLink = $nextAvailableStep ?? ($stepNumber < 9 ? $stepNumber + 1 : null);
         @endphp
 
         <div class="alert alert-warning">
@@ -15,8 +17,9 @@
             {{ __('messages.verification_documentaire_warning') }}
         </div>
 
-        <form action="{{ route('integrations.save-step', ['integration' => $integration->id, 'stepNumber' => 3]) }}" method="POST">
+        <form action="{{ route('integrations.save-step', ['integration' => $integration->id, 'stepNumber' => 3]) }}" method="POST" enctype="multipart/form-data">
             @csrf
+            <input type="hidden" name="submit_action" value="">
 
             <div class="row">
                 <div class="col-md-6 mb-3">
@@ -146,49 +149,49 @@
 
             <hr class="my-4">
             @if($step && $step->isValidated())
-                {{-- Show Next button when validated --}}
+                {{-- Show Update and Next buttons when validated --}}
                 <div class="d-flex gap-2 justify-content-between">
                     <div>
-                        @if($stepNumber > 1)
-                            <a href="{{ route('integrations.step', ['integration' => $integration->id, 'stepNumber' => $stepNumber - 1]) }}" class="btn btn-outline-secondary">
-                                <i class="bi bi-arrow-left me-1"></i>
-                                {{ __('messages.previous') }}
-                            </a>
-                        @endif
-                    </div>
-                    <div>
-                        @if($stepNumber < 8)
-                            <a href="{{ route('integrations.step', ['integration' => $integration->id, 'stepNumber' => $stepNumber + 1]) }}" class="btn btn-primary">
-                                {{ __('messages.next') }} <i class="bi bi-arrow-right ms-1"></i>
-                            </a>
-                        @endif
-                    </div>
-                </div>
-            @else
-                {{-- Show Save/Validate buttons when not validated --}}
-                <div class="d-flex gap-2 justify-content-between">
-                    <div>
-                        @if($stepNumber > 1)
-                            <a href="{{ route('integrations.step', ['integration' => $integration->id, 'stepNumber' => $stepNumber - 1]) }}" class="btn btn-outline-secondary">
+                        @if($prevStepLink)
+                            <a href="{{ route('integrations.step', ['integration' => $integration->id, 'stepNumber' => $prevStepLink]) }}" class="btn btn-outline-secondary">
                                 <i class="bi bi-arrow-left me-1"></i>
                                 {{ __('messages.previous') }}
                             </a>
                         @endif
                     </div>
                     <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-dark">
-                            <i class="bi bi-check-circle me-1"></i>
-                            {{ __('messages.save') }}
+                        <button type="submit" class="btn btn-outline-success" data-submit-action="update">
+                            <i class="bi bi-pencil me-1"></i>
+                            {{ __('messages.update') }}
+                        </button>
+                        @if($nextStepLink)
+                            <a href="{{ route('integrations.step', ['integration' => $integration->id, 'stepNumber' => $nextStepLink]) }}" class="btn btn-primary">
+                                {{ __('messages.next') }} <i class="bi bi-arrow-right ms-1"></i>
+                            </a>
+                        @endif
+                    </div>
+                </div>
+            @else
+                {{-- Show Validate button when not validated --}}
+                <div class="d-flex gap-2 justify-content-between">
+                    <div>
+                        @if($prevStepLink)
+                            <a href="{{ route('integrations.step', ['integration' => $integration->id, 'stepNumber' => $prevStepLink]) }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-1"></i>
+                                {{ __('messages.previous') }}
+                            </a>
+                        @endif
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit"
+                                class="btn btn-success"
+                                data-submit-action="validate">
+                            <i class="bi bi-check-lg me-1"></i>
+                            {{ __('messages.validate_and_next') }}
                         </button>
                         @if($step && $step->isPending() && auth()->check())
-                            <button type="button" 
-                                    class="btn btn-success" 
-                                    onclick="validateStep({{ $integration->id }}, 3)">
-                                <i class="bi bi-check-lg me-1"></i>
-                                {{ __('messages.validate') }}
-                            </button>
-                            <button type="button" 
-                                    class="btn btn-danger" 
+                            <button type="button"
+                                    class="btn btn-danger"
                                     onclick="rejectStep({{ $integration->id }}, 3)">
                                 <i class="bi bi-x-lg me-1"></i>
                                 {{ __('messages.reject') }}

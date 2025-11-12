@@ -3,35 +3,6 @@
         @include('layouts.topnav')
     </x-slot>
 
-    <!-- Toast Container -->
-    <div class="toast-container position-fixed top-0 start-50 translate-middle-x p-3" style="z-index: 1055;">
-        @if(session('success'))
-            <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="true" data-bs-delay="5000">
-                <div class="toast-header bg-success text-white">
-                    <i class="bi bi-check-circle me-2"></i>
-                    <strong class="me-auto">{{ __('messages.success') }}</strong>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
-                </div>
-                <div class="toast-body">
-                    {{ session('success') }}
-                </div>
-            </div>
-        @endif
-
-        @if(session('error'))
-            <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="true" data-bs-delay="5000">
-                <div class="toast-header bg-danger text-white">
-                    <i class="bi bi-exclamation-triangle me-2"></i>
-                    <strong class="me-auto">{{ __('messages.error') }}</strong>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
-                </div>
-                <div class="toast-body">
-                    {{ session('error') }}
-                </div>
-            </div>
-        @endif
-    </div>
-
     <div class="container-fluid py-4">
         <!-- Breadcrumb -->
         <nav aria-label="breadcrumb" class="mb-4">
@@ -43,38 +14,63 @@
             </ol>
         </nav>
 
-        <!-- Header -->
-        <div class="card border-0 shadow-sm mb-4">
-            <div class="card-header bg-white border-0 py-3">
+        <!-- Success/Error Messages -->
+        @if(session('success'))
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="bi bi-check-circle me-2"></i>
+                {{ session('success') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        @endif
+
+        @if(session('error'))
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                {{ session('error') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        @endif
+
+        <!-- Edit Form -->
+        <div class="card border-0 shadow-sm col-md-10 mx-auto">
+            <div class="card-header bg-white border-bottom py-3">
                 <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h5 class="mb-0 text-dark fw-bold">
-                            <i class="bi bi-pencil-square me-2 text-primary"></i>
-                            {{ __('messages.edit_driver') }}: {{ $driver->full_name ?? __('messages.driver_number') . $driver->id }}
-                        </h5>
-                        <small class="text-muted">{{ __('messages.complete_driver_information') }}</small>
-                    </div>
+                    <h5 class="mb-0 text-dark fw-bold">
+                        <i class="bi bi-pencil-square me-2 text-primary"></i>
+                        {{ __('messages.edit_driver') }}: {{ $driver->full_name ?? __('messages.driver_number') . $driver->id }}
+                    </h5>
                     <a href="{{ route('drivers.show', $driver) }}" class="btn btn-outline-secondary btn-sm">
                         <i class="bi bi-arrow-left me-1"></i>
                         {{ __('messages.back') }}
                     </a>
                 </div>
             </div>
-        </div>
-
-        <!-- Edit Form -->
-        <div class="card border-0 shadow-sm col-lg-10 mx-auto">
             <div class="card-body p-4">
-                <form action="{{ route('drivers.update', $driver) }}" method="POST">
+                <form action="{{ route('drivers.update', $driver) }}" method="POST" enctype="multipart/form-data" id="driverEditForm">
                     @csrf
                     @method('PATCH')
+
+                    @if ($errors->any())
+                        <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+                            <h6 class="alert-heading mb-2">
+                                <i class="bi bi-exclamation-triangle me-2"></i>
+                                {{ __('messages.validation_errors') ?? 'Please fix the following errors:' }}
+                            </h6>
+                            <ul class="mb-0">
+                                @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    @endif
 
                     <!-- Personal Information -->
                     <h6 class="text-primary mb-3 border-bottom pb-2">
                         <i class="bi bi-person me-2"></i>
                         {{ __('messages.personal_information') }}
                     </h6>
-                    <div class="row">
+                    <div class="row mb-4">
                         <div class="col-md-6 mb-3">
                             <label for="full_name" class="form-label">{{ __('messages.name') }} <span class="text-danger">*</span></label>
                             <input type="text" 
@@ -99,9 +95,7 @@
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
-                    </div>
 
-                    <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="phone" class="form-label">{{ __('messages.phone') }}</label>
                             <input type="text" 
@@ -125,9 +119,7 @@
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
-                    </div>
 
-                    <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="date_of_birth" class="form-label">{{ __('messages.date_of_birth') }}</label>
                             <input type="date" 
@@ -151,17 +143,17 @@
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
-                    </div>
 
-                    <div class="mb-3">
-                        <label for="address" class="form-label">{{ __('messages.address') }}</label>
-                        <textarea class="form-control @error('address') is-invalid @enderror" 
-                                  id="address" 
-                                  name="address" 
-                                  rows="2">{{ old('address', $driver->address ?? '') }}</textarea>
-                        @error('address')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
+                        <div class="col-12 mb-3">
+                            <label for="address" class="form-label">{{ __('messages.address') }}</label>
+                            <textarea class="form-control @error('address') is-invalid @enderror" 
+                                      id="address" 
+                                      name="address" 
+                                      rows="2">{{ old('address', $driver->address ?? '') }}</textarea>
+                            @error('address')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
                     </div>
 
                     <!-- License Information -->
@@ -169,7 +161,7 @@
                         <i class="bi bi-card-text me-2"></i>
                         {{ __('messages.license_information') }}
                     </h6>
-                    <div class="row">
+                    <div class="row mb-4">
                         <div class="col-md-6 mb-3">
                             <label for="license_number" class="form-label">{{ __('messages.license_number') }} <span class="text-danger">*</span></label>
                             <input type="text" 
@@ -194,9 +186,7 @@
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
-                    </div>
 
-                    <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="license_issue_date" class="form-label">{{ __('messages.license_issue_date') }}</label>
                             <input type="date" 
@@ -227,7 +217,7 @@
                         <i class="bi bi-heart-pulse me-2"></i>
                         {{ __('messages.medical_formation') }}
                     </h6>
-                    <div class="row">
+                    <div class="row mb-4">
                         <div class="col-md-6 mb-3">
                             <label for="visite_medical" class="form-label">{{ __('messages.visite_medical') }}</label>
                             <input type="date" 
@@ -251,9 +241,7 @@
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
-                    </div>
 
-                    <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="formation_imd" class="form-label">{{ __('messages.formation_imd') }}</label>
                             <input type="date" 
@@ -284,7 +272,7 @@
                         <i class="bi bi-briefcase me-2"></i>
                         {{ __('messages.administrative_information') }}
                     </h6>
-                    <div class="row">
+                    <div class="row mb-4">
                         <div class="col-md-6 mb-3">
                             <label for="date_integration" class="form-label">{{ __('messages.date_integration') }}</label>
                             <input type="date" 
@@ -310,9 +298,7 @@
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
-                    </div>
 
-                    <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="n_cnss" class="form-label">{{ __('messages.n_cnss') }}</label>
                             <input type="text" 
@@ -336,9 +322,7 @@
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
-                    </div>
 
-                    <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="attestation_travail" class="form-label">{{ __('messages.attestation_travail') }}</label>
                             <input type="text" 
@@ -369,7 +353,7 @@
                         <i class="bi bi-truck me-2"></i>
                         {{ __('messages.assignment_information') }}
                     </h6>
-                    <div class="row">
+                    <div class="row mb-4">
                         <div class="col-md-6 mb-3">
                             <label for="flotte_id" class="form-label">{{ __('messages.flotte') }}</label>
                             <select class="form-select @error('flotte_id') is-invalid @enderror" 
@@ -405,8 +389,77 @@
                         </div>
                     </div>
 
+                    <!-- Supporting Documents -->
+                    <h6 class="text-primary mb-3 mt-4 border-bottom pb-2">
+                        <i class="bi bi-file-earmark-text me-2"></i>
+                        {{ __('messages.driver_documents') }}
+                    </h6>
+                    <div class="mb-4">
+                        <div class="mb-3">
+                            <label for="documents" class="form-label">{{ __('messages.upload_documents') }}</label>
+                            <input type="file"
+                                   class="form-control @error('documents') is-invalid @enderror @error('documents.*') is-invalid @enderror"
+                                   id="documents"
+                                   name="documents[]"
+                                   multiple>
+                            @error('documents')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                            @error('documents.*')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                            <small class="form-text text-muted">{{ __('messages.multiple_files_allowed') }}</small>
+                        </div>
+
+                        @if(!empty($driver->documents) && is_array($driver->documents))
+                            <div class="mb-3">
+                                <label class="form-label">{{ __('messages.uploaded_documents') }}</label>
+                                <div class="list-group">
+                                    @foreach($driver->documents as $index => $doc)
+                                        <div class="list-group-item">
+                                            <div class="d-flex align-items-center justify-content-between">
+                                                <div class="flex-grow-1 text-truncate">
+                                                    <i class="bi bi-file-earmark me-2 text-primary"></i>
+                                                    <span title="{{ $doc['name'] ?? basename($doc['path'] ?? '') }}">
+                                                        {{ $doc['name'] ?? basename($doc['path'] ?? '') }}
+                                                    </span>
+                                                </div>
+                                                <div class="d-flex gap-1">
+                                                    @if(isset($doc['path']))
+                                                        <a href="{{ Storage::disk('uploads')->url($doc['path']) }}" 
+                                                           target="_blank" 
+                                                           class="btn btn-sm btn-outline-primary"
+                                                           title="{{ __('messages.view') }}">
+                                                            <i class="bi bi-eye"></i>
+                                                        </a>
+                                                        <a href="{{ Storage::disk('uploads')->url($doc['path']) }}" 
+                                                           download
+                                                           class="btn btn-sm btn-outline-success"
+                                                           title="{{ __('messages.download') }}">
+                                                            <i class="bi bi-download"></i>
+                                                        </a>
+                                                    @endif
+                                                    <button type="button" 
+                                                            class="btn btn-sm btn-outline-danger"
+                                                            onclick="deleteDocument({{ $index }})"
+                                                            title="{{ __('messages.delete') }}">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
+                    </div>
+
                     <!-- Notes -->
-                    <div class="mb-3 mt-4">
+                    <h6 class="text-primary mb-3 mt-4 border-bottom pb-2">
+                        <i class="bi bi-sticky me-2"></i>
+                        {{ __('messages.notes') }}
+                    </h6>
+                    <div class="mb-4">
                         <label for="notes" class="form-label">{{ __('messages.notes') }}</label>
                         <textarea class="form-control @error('notes') is-invalid @enderror" 
                                   id="notes" 
@@ -418,12 +471,12 @@
                     </div>
 
                     <!-- Form Actions -->
-                    <div class="d-flex justify-content-between mt-4 pt-3 border-top">
+                    <div class="d-flex justify-content-center gap-2 mt-4 pt-3 border-top">
                         <a href="{{ route('drivers.show', $driver) }}" class="btn btn-outline-secondary">
                             <i class="bi bi-x-circle me-1"></i>
                             {{ __('messages.cancel') }}
                         </a>
-                        <button type="submit" class="btn btn-primary">
+                        <button type="submit" class="btn btn-dark" id="submitBtn">
                             <i class="bi bi-check-circle me-1"></i>
                             {{ __('messages.save') }}
                         </button>
@@ -432,5 +485,39 @@
             </div>
         </div>
     </div>
-</x-app-layout>
 
+    <!-- Hidden forms for document deletion -->
+    @if(!empty($driver->documents) && is_array($driver->documents))
+        @foreach($driver->documents as $index => $doc)
+            <form id="deleteDocumentForm{{ $index }}" 
+                  action="{{ route('drivers.delete-document', ['driver' => $driver->id, 'index' => $index]) }}" 
+                  method="POST" 
+                  style="display: none;">
+                @csrf
+                @method('DELETE')
+            </form>
+        @endforeach
+    @endif
+
+    @push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('driverEditForm');
+            const submitBtn = document.getElementById('submitBtn');
+            
+            if (form && submitBtn) {
+                form.addEventListener('submit', function(e) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> {{ __('messages.saving') ?? "Saving..." }}';
+                });
+            }
+        });
+
+        function deleteDocument(index) {
+            if (confirm('{{ __('messages.confirm_delete_document') }}')) {
+                document.getElementById('deleteDocumentForm' + index).submit();
+            }
+        }
+    </script>
+    @endpush
+</x-app-layout>

@@ -2,12 +2,14 @@
     <div class="card-header bg-white border-0 py-3">
         <h5 class="mb-0 text-dark fw-bold">
             <i class="bi bi-4-circle me-2 text-primary"></i>
-            {{ __('messages.test_oral_ecrit') }}
+            {{ __('messages.test_oral') }}
         </h5>
     </div>
     <div class="card-body">
         @php
             $stepData = $step ? $step->step_data : [];
+            $prevStepLink = $previousAvailableStep ?? ($stepNumber > 1 ? $stepNumber - 1 : null);
+            $nextStepLink = $nextAvailableStep ?? ($stepNumber < 9 ? $stepNumber + 1 : null);
         @endphp
 
         <div class="alert alert-warning">
@@ -15,8 +17,9 @@
             {{ __('messages.test_failed_warning') }}
         </div>
 
-        <form action="{{ route('integrations.save-step', ['integration' => $integration->id, 'stepNumber' => 4]) }}" method="POST">
+        <form action="{{ route('integrations.save-step', ['integration' => $integration->id, 'stepNumber' => 4]) }}" method="POST" enctype="multipart/form-data">
             @csrf
+            <input type="hidden" name="submit_action" value="">
 
             <div class="row">
                 <div class="col-md-6 mb-3">
@@ -46,34 +49,15 @@
                 </div>
             </div>
 
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label for="oral_score" class="form-label">{{ __('messages.oral_score') }}</label>
-                    <input type="number" 
-                           class="form-control @error('oral_score') is-invalid @enderror" 
-                           id="oral_score" 
-                           name="oral_score" 
-                           value="{{ old('oral_score', $stepData['oral_score'] ?? '') }}" 
-                           min="0" 
-                           max="100">
-                    @error('oral_score')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
-                </div>
-
-                <div class="col-md-6 mb-3">
-                    <label for="written_score" class="form-label">{{ __('messages.written_score') }}</label>
-                    <input type="number" 
-                           class="form-control @error('written_score') is-invalid @enderror" 
-                           id="written_score" 
-                           name="written_score" 
-                           value="{{ old('written_score', $stepData['written_score'] ?? '') }}" 
-                           min="0" 
-                           max="100">
-                    @error('written_score')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
-                </div>
+            <div class="mb-3">
+                <label for="oral_note" class="form-label">{{ __('messages.oral_note') }}</label>
+                <textarea class="form-control @error('oral_note') is-invalid @enderror" 
+                          id="oral_note" 
+                          name="oral_note" 
+                          rows="4">{{ old('oral_note', $stepData['oral_note'] ?? '') }}</textarea>
+                @error('oral_note')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
             </div>
 
             <div class="mb-3">
@@ -89,6 +73,29 @@
                 @error('result')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
+            </div>
+
+            <div class="mb-3">
+                <label for="documents" class="form-label">{{ __('messages.supporting_documents') }}</label>
+                <input type="file"
+                       class="form-control @error('documents') is-invalid @enderror @error('documents.*') is-invalid @enderror"
+                       id="documents"
+                       name="documents[]"
+                       multiple>
+                @error('documents')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+                @error('documents.*')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+                <small class="form-text text-muted">{{ __('messages.multiple_files_allowed') }}</small>
+                @if(!empty($stepData['documents']) && is_array($stepData['documents']))
+                    <div class="mt-2">
+                        @foreach($stepData['documents'] as $doc)
+                            <small class="d-block text-muted">{{ __('messages.file_uploaded') }}: {{ $doc['name'] ?? basename($doc['path']) }}</small>
+                        @endforeach
+                    </div>
+                @endif
             </div>
 
             <div class="mb-3">
@@ -116,47 +123,47 @@
 
             <hr class="my-4">
             @if($step && $step->isValidated())
-                {{-- Show Next button when validated --}}
+                {{-- Show Update and Next buttons when validated --}}
                 <div class="d-flex gap-2 justify-content-between">
                     <div>
-                        @if($stepNumber > 1)
-                            <a href="{{ route('integrations.step', ['integration' => $integration->id, 'stepNumber' => $stepNumber - 1]) }}" class="btn btn-outline-secondary">
-                                <i class="bi bi-arrow-left me-1"></i>
-                                {{ __('messages.previous') }}
-                            </a>
-                        @endif
-                    </div>
-                    <div>
-                        @if($stepNumber < 8)
-                            <a href="{{ route('integrations.step', ['integration' => $integration->id, 'stepNumber' => $stepNumber + 1]) }}" class="btn btn-primary">
-                                {{ __('messages.next') }} <i class="bi bi-arrow-right ms-1"></i>
-                            </a>
-                        @endif
-                    </div>
-                </div>
-            @else
-                {{-- Show Save/Validate buttons when not validated --}}
-                <div class="d-flex gap-2 justify-content-between">
-                    <div>
-                        @if($stepNumber > 1)
-                            <a href="{{ route('integrations.step', ['integration' => $integration->id, 'stepNumber' => $stepNumber - 1]) }}" class="btn btn-outline-secondary">
+                        @if($prevStepLink)
+                            <a href="{{ route('integrations.step', ['integration' => $integration->id, 'stepNumber' => $prevStepLink]) }}" class="btn btn-outline-secondary">
                                 <i class="bi bi-arrow-left me-1"></i>
                                 {{ __('messages.previous') }}
                             </a>
                         @endif
                     </div>
                     <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-dark">
-                            <i class="bi bi-check-circle me-1"></i>
-                            {{ __('messages.save') }}
+                        <button type="submit" class="btn btn-outline-success" data-submit-action="update">
+                            <i class="bi bi-pencil me-1"></i>
+                            {{ __('messages.update') }}
+                        </button>
+                        @if($nextStepLink)
+                            <a href="{{ route('integrations.step', ['integration' => $integration->id, 'stepNumber' => $nextStepLink]) }}" class="btn btn-primary">
+                                {{ __('messages.next') }} <i class="bi bi-arrow-right ms-1"></i>
+                            </a>
+                        @endif
+                    </div>
+                </div>
+            @else
+                {{-- Show Validate button when not validated --}}
+                <div class="d-flex gap-2 justify-content-between">
+                    <div>
+                        @if($prevStepLink)
+                            <a href="{{ route('integrations.step', ['integration' => $integration->id, 'stepNumber' => $prevStepLink]) }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-1"></i>
+                                {{ __('messages.previous') }}
+                            </a>
+                        @endif
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit"
+                                class="btn btn-success"
+                                data-submit-action="validate">
+                            <i class="bi bi-check-lg me-1"></i>
+                            {{ __('messages.validate_and_next') }}
                         </button>
                         @if($step && $step->isPending() && auth()->check())
-                            <button type="button" 
-                                    class="btn btn-success" 
-                                    onclick="validateStep({{ $integration->id }}, 4)">
-                                <i class="bi bi-check-lg me-1"></i>
-                                {{ __('messages.validate') }}
-                            </button>
                             <button type="button" 
                                     class="btn btn-danger" 
                                     onclick="rejectStep({{ $integration->id }}, 4)">

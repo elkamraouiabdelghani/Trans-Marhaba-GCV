@@ -18,9 +18,8 @@ return new class extends Migration
             $table->text('identification_besoin')->nullable();
             $table->enum('poste_type', ['chauffeur', 'administration']);
             $table->text('description_poste')->nullable();
-            $table->enum('prospection_method', ['reseaux_social', 'bouche_a_oreil', 'autre'])->nullable();
+            $table->enum('prospection_method', ['reseaux_social', 'bouche_a_oreil', 'bureau_recrutement', 'autre'])->nullable();
             $table->date('prospection_date')->nullable();
-            // $table->integer('nombre_candidats')->nullable();
             $table->text('notes_prospection')->nullable();
             $table->enum('status', ['draft', 'in_progress', 'rejected', 'validated'])->default('draft');
             $table->tinyInteger('current_step')->default(1)->comment('Current step number (1-8)');

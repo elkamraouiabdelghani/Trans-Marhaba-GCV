@@ -100,6 +100,14 @@ class Driver extends Model
         return $this->hasMany(DriverFormation::class);
     }
 
+    /**
+     * Get all activities for this driver
+     */
+    public function activities()
+    {
+        return $this->hasMany(DriverActivity::class);
+    }
+
     // Scopes
     public function scopeActive($query)
     {

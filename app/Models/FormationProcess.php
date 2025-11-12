@@ -13,7 +13,7 @@ class FormationProcess extends Model
 
     protected $fillable = [
         'driver_id',
-        'formation_type_id',
+        'formation_id',
         'driver_formation_id',
         'site',
         'flotte_id',
@@ -41,11 +41,11 @@ class FormationProcess extends Model
     }
 
     /**
-     * Get the formation type
+     * Get the formation
      */
-    public function formationType(): BelongsTo
+    public function formation(): BelongsTo
     {
-        return $this->belongsTo(FormationType::class, 'formation_type_id');
+        return $this->belongsTo(Formation::class, 'formation_id');
     }
 
     /**
@@ -184,7 +184,7 @@ class FormationProcess extends Model
      */
     public function moveToNextStep(): void
     {
-        if ($this->current_step < 8) {
+        if ($this->current_step < 7) {
             $this->update([
                 'current_step' => $this->current_step + 1,
                 'status' => 'in_progress',

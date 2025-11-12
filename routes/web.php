@@ -4,7 +4,8 @@ use App\Http\Controllers\RegisteredUserController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DriversController;
-use App\Http\Controllers\FormationTypeController;
+use App\Http\Controllers\FormationController;
+use App\Http\Controllers\FormationCategoryController;
 use App\Http\Controllers\IntegrationController;
 use App\Http\Controllers\FormationProcessController;
 use Illuminate\Support\Facades\Route;
@@ -33,12 +34,22 @@ Route::middleware('auth')->group(function () {
 
     // Drivers
     Route::get('/drivers', [DriversController::class, 'index'])->name('drivers.index');
+    Route::get('/drivers/alerts', [DriversController::class, 'alerts'])->name('drivers.alerts');
+    Route::get('/drivers/alerts/export', [DriversController::class, 'exportAlerts'])->name('drivers.alerts.export');
     Route::get('/drivers/{driver}', [DriversController::class, 'show'])->name('drivers.show');
     Route::get('/drivers/{driver}/edit', [DriversController::class, 'edit'])->name('drivers.edit');
     Route::patch('/drivers/{driver}', [DriversController::class, 'update'])->name('drivers.update');
+    Route::post('/drivers/{driver}/documents', [DriversController::class, 'uploadDocuments'])->name('drivers.upload-documents');
+    Route::delete('/drivers/{driver}/documents/{index}', [DriversController::class, 'deleteDocument'])->name('drivers.delete-document');
+    Route::post('/drivers/{driver}/formations/quick-store', [DriversController::class, 'storeQuickFormation'])->name('drivers.formations.quick-store');
+    Route::get('/driver-formations/{driverFormation}/certificate', [DriversController::class, 'downloadFormationCertificate'])->name('drivers.formations.download-certificate');
+    Route::post('/drivers/{driver}/activities', [DriversController::class, 'storeActivity'])->name('drivers.activities.store');
+    Route::get('/drivers/{driver}/activities/export-pdf', [DriversController::class, 'exportTimelinePDF'])->name('drivers.activities.export-pdf');
+    Route::get('/drivers/{driver}/activities/export-csv', [DriversController::class, 'exportTimelineCSV'])->name('drivers.activities.export-csv');
 
-    // Formation Types
-    Route::resource('formation-types', FormationTypeController::class);
+    // Formation Types & Categories
+    Route::resource('formations', FormationController::class);
+    Route::resource('formation-categories', FormationCategoryController::class)->except(['show']);
 
     // Integrations
     Route::get('/integrations', [IntegrationController::class, 'index'])->name('integrations.index');

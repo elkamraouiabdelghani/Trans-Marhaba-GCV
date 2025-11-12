@@ -8,6 +8,7 @@
     <div class="card-body">
         @php
             $stepData = $step ? $step->step_data : [];
+            $nextStepLink = $nextAvailableStep ?? ($stepNumber < 9 ? $stepNumber + 1 : null);
         @endphp
 
         <div class="row mb-3">
@@ -32,6 +33,7 @@
                         $methods = [
                             'reseaux_social' => __('messages.reseaux_sociaux'),
                             'bouche_a_oreil' => __('messages.bouche_a_oreille'),
+                            'bureau_recrutement' => __('messages.bureau_recrutement'),
                             'autre' => __('messages.autres'),
                         ];
                         $method = $stepData['prospection_method'] ?? '';
@@ -61,9 +63,9 @@
         @endif
 
         {{-- Next button if this step is validated and not the last step --}}
-        @if($step && $step->isValidated() && $stepNumber < 8)
+        @if($step && $step->isValidated() && $nextStepLink)
             <div class="d-flex justify-content-end mt-3">
-                <a href="{{ route('integrations.step', ['integration' => $integration->id, 'stepNumber' => $stepNumber + 1]) }}" class="btn btn-primary">
+                <a href="{{ route('integrations.step', ['integration' => $integration->id, 'stepNumber' => $nextStepLink]) }}" class="btn btn-primary">
                     {{ __('messages.next') }} <i class="bi bi-arrow-right ms-1"></i>
                 </a>
             </div>
