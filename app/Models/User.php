@@ -53,4 +53,20 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    /**
+     * Get all turnovers for this user (administration staff).
+     */
+    public function turnovers()
+    {
+        return $this->hasMany(Turnover::class);
+    }
+
+    /**
+     * Get all turnovers confirmed by this user.
+     */
+    public function confirmedTurnovers()
+    {
+        return $this->hasMany(Turnover::class, 'confirmed_by');
+    }
 }

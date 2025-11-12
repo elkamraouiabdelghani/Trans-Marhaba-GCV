@@ -14,6 +14,8 @@
                     {{ __('messages.driver_integrations') }}
                 @elseif(request()->routeIs('formations.*') || request()->routeIs('formation-processes.*') || request()->routeIs('formation-categories.*'))
                     {{ __('messages.formations') }}
+                @elseif(request()->routeIs('turnovers.*') || request()->routeIs('turnovers.index') || request()->routeIs('turnovers.create') || request()->routeIs('turnovers.edit') || request()->routeIs('turnovers.show'))
+                    {{ __('messages.turnovers') }}
                 @else
                     {{ __('messages.brand') }}
                 @endif

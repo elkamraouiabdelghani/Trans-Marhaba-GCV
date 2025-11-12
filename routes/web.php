@@ -8,6 +8,7 @@ use App\Http\Controllers\FormationController;
 use App\Http\Controllers\FormationCategoryController;
 use App\Http\Controllers\IntegrationController;
 use App\Http\Controllers\FormationProcessController;
+use App\Http\Controllers\TurnoverController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Session;
 
@@ -61,6 +62,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/integrations/{integration}/step/{stepNumber}/validate', [IntegrationController::class, 'validateStep'])->name('integrations.validate-step');
     Route::post('/integrations/{integration}/step/{stepNumber}/reject', [IntegrationController::class, 'rejectStep'])->name('integrations.reject-step');
     Route::post('/integrations/{integration}/finalize', [IntegrationController::class, 'finalize'])->name('integrations.finalize');
+
+    // Turnovers
+    Route::resource('turnovers', TurnoverController::class);
+    Route::post('/turnovers/{turnover}/confirm', [TurnoverController::class, 'confirm'])->name('turnovers.confirm');
 
     // Formation Processes
     Route::get('/formation-processes', [FormationProcessController::class, 'index'])->name('formation-processes.index');

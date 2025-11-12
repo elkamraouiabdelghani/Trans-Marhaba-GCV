@@ -50,6 +50,7 @@ class Driver extends Model
         'license_issue_date',
         'license_class',
         'status',
+        'terminated_date',
         'assigned_vehicle_id',
         'notes',
         'documents',
@@ -64,6 +65,7 @@ class Driver extends Model
         'formation_imd' => 'date',
         'formation_16_module' => 'date',
         'date_integration' => 'date',
+        'terminated_date' => 'date',
         'license_issue_date' => 'date',
         'documents' => 'array',
     ];
@@ -106,6 +108,14 @@ class Driver extends Model
     public function activities()
     {
         return $this->hasMany(DriverActivity::class);
+    }
+
+    /**
+     * Get all turnovers for this driver
+     */
+    public function turnovers()
+    {
+        return $this->hasMany(Turnover::class);
     }
 
     // Scopes

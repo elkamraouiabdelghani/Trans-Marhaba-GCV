@@ -59,6 +59,12 @@
             </a>
         </li>
         <li class="mb-2">
+            <a href="{{ route('turnovers.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('turnovers.*') ? 'active' : '' }}">
+                <i class="bi bi-arrow-left-right me-2 text-gray-600 sidebar-icon"></i>
+                <span class="sidebar-text">{{ __('messages.turnovers') }}</span>
+            </a>
+        </li>
+        <li class="mb-2">
             <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ (request()->routeIs('formations.*') || request()->routeIs('formation-processes.*') || request()->routeIs('formation-categories.*')) ? 'active' : '' }}" 
                data-bs-toggle="collapse" 
                data-bs-target="#formationsSubmenu" 
@@ -216,38 +222,44 @@
                     {{ __('messages.driver_integrations') }}
                 </a>
             </li>
-        <li class="mb-2">
-            <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ (request()->routeIs('formations.*') || request()->routeIs('formation-processes.*') || request()->routeIs('formation-categories.*')) ? 'active' : '' }}" 
-                   data-bs-toggle="collapse" 
-                   data-bs-target="#formationsSubmenuMobile" 
-                   aria-expanded="{{ (request()->routeIs('formations.*') || request()->routeIs('formation-processes.*') || request()->routeIs('formation-categories.*')) ? 'true' : 'false' }}"
-                   aria-controls="formationsSubmenuMobile">
-                    <i class="bi bi-book me-2 text-gray-600"></i>
-                    {{ __('messages.formations') }}
-                    <i class="bi bi-chevron-down ms-auto"></i>
+            <li class="mb-2">
+                <a href="{{ route('turnovers.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('turnovers.*') ? 'active' : '' }}">
+                    <i class="bi bi-arrow-left-right me-2 text-gray-600 sidebar-icon"></i>
+                    <span class="sidebar-text">{{ __('messages.turnovers') }}</span>
                 </a>
-                <ul class="collapse list-unstyled ms-3 {{ (request()->routeIs('formations.*') || request()->routeIs('formation-processes.*') || request()->routeIs('formation-categories.*')) ? 'show' : '' }}" id="formationsSubmenuMobile">
-                    <li class="mb-1">
-                        <a href="{{ route('formation-categories.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('formation-categories.*') ? 'active' : '' }}">
-                            <i class="bi bi-collection me-2 text-gray-600"></i>
-                            {{ __('messages.formation_categories_title') }}
-                        </a>
-                    </li>
-                    <li class="mb-1">
-                        <a href="{{ route('formations.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('formations.*') ? 'active' : '' }}">
-                            <i class="bi bi-book me-2 text-gray-600"></i>
-                            {{ __('messages.formations') }}
-                        </a>
-                    </li>
-                    <li class="mb-1">
-                        <a href="{{ route('formation-processes.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('formation-processes.*') ? 'active' : '' }}">
-                            <i class="bi bi-book-half me-2 text-gray-600"></i>
-                            {{ __('messages.formation_processes') }}
-                        </a>
-                    </li>
-                </ul>
             </li>
-        </ul>
+            <li class="mb-2">
+                <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ (request()->routeIs('formations.*') || request()->routeIs('formation-processes.*') || request()->routeIs('formation-categories.*')) ? 'active' : '' }}" 
+                    data-bs-toggle="collapse" 
+                    data-bs-target="#formationsSubmenuMobile" 
+                    aria-expanded="{{ (request()->routeIs('formations.*') || request()->routeIs('formation-processes.*') || request()->routeIs('formation-categories.*')) ? 'true' : 'false' }}"
+                    aria-controls="formationsSubmenuMobile">
+                        <i class="bi bi-book me-2 text-gray-600"></i>
+                        {{ __('messages.formations') }}
+                        <i class="bi bi-chevron-down ms-auto"></i>
+                    </a>
+                    <ul class="collapse list-unstyled ms-3 {{ (request()->routeIs('formations.*') || request()->routeIs('formation-processes.*') || request()->routeIs('formation-categories.*')) ? 'show' : '' }}" id="formationsSubmenuMobile">
+                        <li class="mb-1">
+                            <a href="{{ route('formation-categories.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('formation-categories.*') ? 'active' : '' }}">
+                                <i class="bi bi-collection me-2 text-gray-600"></i>
+                                {{ __('messages.formation_categories_title') }}
+                            </a>
+                        </li>
+                        <li class="mb-1">
+                            <a href="{{ route('formations.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('formations.*') ? 'active' : '' }}">
+                                <i class="bi bi-book me-2 text-gray-600"></i>
+                                {{ __('messages.formations') }}
+                            </a>
+                        </li>
+                        <li class="mb-1">
+                            <a href="{{ route('formation-processes.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('formation-processes.*') ? 'active' : '' }}">
+                                <i class="bi bi-book-half me-2 text-gray-600"></i>
+                                {{ __('messages.formation_processes') }}
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
 
         {{-- mobile sidebar footer --}}
         <div class="border-top mt-auto">
