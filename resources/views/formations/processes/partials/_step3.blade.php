@@ -33,7 +33,7 @@
                 <div class="mb-3">
                     <label class="form-label">{{ __('messages.budget_approved') }}</label>
                     <div class="form-check">
-                        <input class="form-check-input" type="radio" name="budget_approved" id="budget_approved_yes" value="1" {{ old('budget_approved', $stepData['budget_approved'] ?? '') == '1' ? 'checked' : '' }}>
+                        <input class="form-check-input" type="radio" name="budget_approved" id="budget_approved_yes" value="1" {{ old('budget_approved', $stepData['budget_approved'] ?? '') == '1' ? 'checked' : '' }} checked>
                         <label class="form-check-label" for="budget_approved_yes">{{ __('messages.yes') }}</label>
                     </div>
                     <div class="form-check">
@@ -60,7 +60,7 @@
                                class="form-control @error('validated_by_dga') is-invalid @enderror" 
                                id="validated_by_dga" 
                                name="validated_by_dga" 
-                               value="{{ old('validated_by_dga', $stepData['validated_by_dga'] ?? '') }}">
+                               value="{{ old('validated_by_dga', $stepData['validated_by_dga'] ?? 'Admin') }}">
                         @error('validated_by_dga')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
@@ -72,7 +72,7 @@
                     <textarea class="form-control @error('validation_notes') is-invalid @enderror" 
                               id="validation_notes" 
                               name="validation_notes" 
-                              rows="3">{{ old('validation_notes', $stepData['validation_notes'] ?? '') }}</textarea>
+                              rows="3">{{ old('validation_notes', $stepData['validation_notes'] ?? 'Admin') }}</textarea>
                     @error('validation_notes')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror

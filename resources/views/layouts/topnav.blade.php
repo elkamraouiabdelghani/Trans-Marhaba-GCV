@@ -21,6 +21,8 @@
                     || request()->routeIs('concerns.driver-concerns.*')
                 )
                     {{ __('messages.concerns') }}
+                @elseif(request()->routeIs('organigram.*'))
+                    {{ __('messages.organigram') }}
                 @else
                     {{ __('messages.brand') }}
                 @endif

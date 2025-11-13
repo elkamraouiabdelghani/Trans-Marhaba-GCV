@@ -90,7 +90,10 @@ class FormationProcessController extends Controller
     public function create(Request $request): View
     {
         $drivers = Driver::orderBy('full_name')->get();
-        $formations = Formation::active()->orderBy('name')->get();
+        $formations = Formation::active()
+            ->whereNull('flotte_id')
+            ->orderBy('name')
+            ->get();
         $flottes = Flotte::orderBy('name')->get();
 
         // Pre-select driver and formation type if provided in query parameters
@@ -726,7 +729,7 @@ class FormationProcessController extends Controller
             }
 
             // Create or update DriverFormation
-            $this->createOrUpdateDriverFormation($formationProcess);
+            $driverFormation = $this->createOrUpdateDriverFormation($formationProcess);
 
             // Update driver formation validation status for associated formation
             DriverFormation::where('formation_process_id', $formationProcess->id)
@@ -735,6 +738,20 @@ class FormationProcessController extends Controller
 
             // Generate formation report
             $reportPath = $this->generateFormationReport($formationProcess);
+
+            if ($reportPath) {
+                if ($driverFormation) {
+                    $driverFormation->update(['certificate_path' => $reportPath]);
+                }
+
+                if ($step7) {
+                    $step7->setStepDataArray([
+                        'completion_certificate_path' => $reportPath,
+                        'report_path' => $reportPath,
+                    ]);
+                    $step7->save();
+                }
+            }
 
             // Mark formation process as validated
             $formationProcess->update([
@@ -745,17 +762,6 @@ class FormationProcessController extends Controller
             
             // Refresh to get latest data
             $formationProcess->refresh();
-
-            // Persist report path in Step 7 data if available (formerly step 8)
-            // if ($reportPath) {
-            //     $step7 = $formationProcess->getStep(7);
-            //     if ($step7) {
-            //         $step7Data = $step7->step_data ?? [];
-            //         $step7Data['report_path'] = $reportPath;
-            //         $step7->setStepDataArray($step7Data);
-            //         $step7->save();
-            //     }
-            // }
 
             Log::info('Formation process finalized', [
                 'formation_process_id' => $formationProcess->id,
@@ -773,50 +779,6 @@ class FormationProcessController extends Controller
             ]);
             return redirect()->route('formation-processes.show', $formationProcess->id)
                 ->with('error', __('messages.error_finalizing_formation_process'));
-        }
-    }
-
-    /**
-     * Download the formation report, generating it if necessary.
-     */
-    public function downloadReport(FormationProcess $formationProcess)
-    {
-        try {
-            if (!$formationProcess->isValidated()) {
-                return back()->with('error', __('messages.formation_process_not_validated'));
-            }
-
-            $step7 = $formationProcess->getStep(7); // Final Validation (formerly step 8)
-
-            if (!$step7 || !$step7->isValidated()) {
-                return back()->with('error', __('messages.step7_must_be_validated'));
-            }
-
-            $reportPath = data_get($step7->step_data, 'report_path');
-
-            if (!$reportPath || !Storage::disk('uploads')->exists($reportPath)) {
-                $reportPath = $this->generateFormationReport($formationProcess);
-
-                if ($reportPath) {
-                    $step7->setStepDataArray(['report_path' => $reportPath]);
-                    $step7->save();
-                }
-            }
-
-            if (!$reportPath || !Storage::disk('uploads')->exists($reportPath)) {
-                return back()->with('error', __('messages.error_generating_formation_report'));
-            }
-
-            $fileName = sprintf('formation-report-%d.pdf', $formationProcess->id);
-
-            return Storage::disk('uploads')->download($reportPath, $fileName);
-        } catch (\Throwable $e) {
-            Log::error('Failed to download formation report', [
-                'formation_process_id' => $formationProcess->id,
-                'error' => $e->getMessage(),
-            ]);
-
-            return back()->with('error', __('messages.error_generating_formation_report'));
         }
     }
 
@@ -978,7 +940,7 @@ class FormationProcessController extends Controller
     /**
      * Create or update DriverFormation record.
      */
-    private function createOrUpdateDriverFormation(FormationProcess $formationProcess): void
+    private function createOrUpdateDriverFormation(FormationProcess $formationProcess): ?DriverFormation
     {
         try {
             // Get step data
@@ -1035,10 +997,14 @@ class FormationProcessController extends Controller
                 $formationProcess->update(['driver_formation_id' => $driverFormation->id]);
             }
 
-            Log::info('DriverFormation created/updated', [
-                'formation_process_id' => $formationProcess->id,
-                'driver_formation_id' => $driverFormation->id,
-            ]);
+            if ($driverFormation) {
+                Log::info('DriverFormation created/updated', [
+                    'formation_process_id' => $formationProcess->id,
+                    'driver_formation_id' => $driverFormation->id,
+                ]);
+            }
+
+            return $driverFormation;
         } catch (\Throwable $e) {
             Log::error('Failed to create/update DriverFormation', [
                 'formation_process_id' => $formationProcess->id,

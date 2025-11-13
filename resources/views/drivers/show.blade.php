@@ -392,6 +392,10 @@
                                         'none' => 'bi-info-circle',
                                     ][$alertState] ?? 'bi-info-circle';
                                     $isOverdue = $daysRemaining !== null && $daysRemaining < 0;
+                                    $formationFlotteId = $formationItem->flotte_id ?? null;
+                                    $formationFlotteName = optional($formationItem->flotte)->name;
+                                    $driverFlotteId = $driver->flotte_id ?? null;
+                                    $canStartForFlotte = !($formationFlotteId && $driverFlotteId && (int) $formationFlotteId !== (int) $driverFlotteId);
                                 @endphp
                                 <tr class="border-bottom">
                                     <td class="py-3 px-4">
@@ -458,7 +462,7 @@
                                                     <i class="bi bi-download"></i>
                                                 </a>
                                             @endif
-                                            @if($currentProcess && $currentProcess->isValidated())
+                                            {{-- @if($currentProcess && $currentProcess->isValidated())
                                                 <button type="button"
                                                         class="btn btn-outline-success btn-sm btn-generate-report"
                                                         data-process-id="{{ $currentProcess->id }}"
@@ -466,34 +470,50 @@
                                                         title="{{ __('messages.download_report') }}">
                                                     <i class="bi bi-download"></i>
                                                 </button>
-                                            @endif
+                                            @endif --}}
                                             @if($currentProcess)
                                                 <a href="{{ route('formation-processes.show', $currentProcess) }}" class="btn btn-outline-primary btn-sm" title="{{ __('messages.view') }}">
                                                     <i class="bi bi-eye"></i>
                                                 </a>
                                             @endif
                                             @if($showStartButton)
-                                                @if($isQuickFormation)
-                                                    @php
-                                                        $calculatedNextDate = $lastDone ? $lastDone->getNextRealizingDate() : null;
-                                                        $nextDateValue = $calculatedNextDate ? $calculatedNextDate->format('Y-m-d') : '';
-                                                    @endphp
-                                                    <button type="button"
-                                                            class="btn btn-dark btn-sm btn-quick-formation-start"
-                                                            data-formation-id="{{ $formationItem->id }}"
-                                                            data-formation-name="{{ $formationItem->name ?? '' }}"
-                                                            data-next-date="{{ $nextDateValue }}">
-                                                        <i class="bi bi-play-circle me-1"></i>
-                                                        {{ __('messages.start') }}
-                                                    </button>
+                                                @if($canStartForFlotte)
+                                                    @if($isQuickFormation)
+                                                        @php
+                                                            $calculatedNextDate = $lastDone ? $lastDone->getNextRealizingDate() : null;
+                                                            $nextDateValue = $calculatedNextDate ? $calculatedNextDate->format('Y-m-d') : '';
+                                                        @endphp
+                                                        <button type="button"
+                                                                class="btn btn-dark btn-sm btn-quick-formation-start"
+                                                                data-formation-id="{{ $formationItem->id }}"
+                                                                data-formation-name="{{ $formationItem->name ?? '' }}"
+                                                                data-next-date="{{ $nextDateValue }}">
+                                                            <i class="bi bi-play-circle me-1"></i>
+                                                            {{ __('messages.start') }}
+                                                        </button>
+                                                    @else
+                                                        <a href="{{ route('formation-processes.create') }}?driver_id={{ $driver->id }}&formation_id={{ $formationItem->id }}" class="btn btn-dark btn-sm" title="{{ __('messages.start_formation_process') }}">
+                                                            <i class="bi bi-play-circle me-1"></i>
+                                                            {{ __('messages.start') }}
+                                                        </a>
+                                                    @endif
                                                 @else
-                                                    <a href="{{ route('formation-processes.create') }}?driver_id={{ $driver->id }}&formation_id={{ $formationItem->id }}" class="btn btn-dark btn-sm" title="{{ __('messages.start_formation_process') }}">
-                                                        <i class="bi bi-play-circle me-1"></i>
-                                                        {{ __('messages.start') }}
-                                                    </a>
+                                                    <button type="button"
+                                                            class="btn btn-outline-secondary btn-sm"
+                                                            disabled
+                                                            data-bs-toggle="tooltip"
+                                                            data-bs-placement="top"
+                                                            title="{{ $formationFlotteName ? __('messages.formation_start_restricted_with_flotte', ['flotte' => $formationFlotteName]) : __('messages.formation_start_restricted') }}">
+                                                        <i class="bi bi-lock"></i>
+                                                    </button>
                                                 @endif
                                             @endif
                                         </div>
+                                        @if($showStartButton && !$canStartForFlotte)
+                                            <div class="small text-muted mt-2">
+                                                {{ $formationFlotteName ? __('messages.formation_start_restricted_with_flotte', ['flotte' => $formationFlotteName]) : __('messages.formation_start_restricted') }}
+                                            </div>
+                                        @endif
                                     </td>
                                 </tr>
                             @empty
@@ -583,37 +603,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- Add Activity Modal -->
-
-        <!-- Comments/Notes Section -->
-        {{-- <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white border-0 py-3">
-                <h5 class="mb-0 text-dark fw-bold">
-                    <i class="bi bi-chat-left-text me-2 text-primary"></i>
-                    {{ __('messages.supervisor_notes') }}
-                </h5>
-            </div>
-            <div class="card-body">
-                <form id="commentForm">
-                    @csrf
-                    <div class="mb-3">
-                        <label for="commentText" class="form-label">{{ __('messages.add_note') }}</label>
-                        <textarea class="form-control" id="commentText" rows="3" placeholder="{{ __('messages.note_placeholder') }}"></textarea>
-                    </div>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-save me-1"></i> {{ __('messages.save_note') }}
-                    </button>
-                </form>
-                
-                <hr class="my-4">
-                
-                <h6 class="mb-3">{{ __('messages.previous_notes') }}</h6>
-                <div id="commentsList">
-                    <p class="text-muted mb-0">{{ __('messages.no_notes') }}</p>
-                </div>
-            </div>
-        </div> --}}
     </div>
 
     <!-- Violation Details Modal -->
@@ -628,41 +617,6 @@
                     <!-- Content will be populated by JavaScript -->
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('messages.close') }}</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal fade" id="reportGenerationModal" tabindex="-1" aria-labelledby="reportGenerationModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="reportGenerationModalLabel">{{ __('messages.generate_report') }}</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('messages.close') }}"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="d-flex align-items-center gap-3 mb-3" id="reportGenerationProgress">
-                        <div class="spinner-border text-primary" role="status" aria-hidden="true"></div>
-                        <div>
-                            <p class="mb-0 fw-semibold">{{ __('messages.generating_report') }}</p>
-                            <small class="text-muted">{{ __('messages.generating_report_description') }}</small>
-                        </div>
-                    </div>
-                    <div class="alert alert-success d-none" id="reportGenerationSuccess">
-                        <i class="bi bi-check-circle-fill me-2"></i>
-                        <span>{{ __('messages.report_ready_download') }}</span>
-                    </div>
-                    <div class="alert alert-danger d-none" id="reportGenerationError">
-                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                        <span id="reportGenerationErrorMessage">{{ __('messages.report_generation_failed') }}</span>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <a href="#" class="btn btn-success d-none" id="reportDownloadButton" download>
-                        <i class="bi bi-download me-1"></i>
-                        {{ __('messages.download_report') }}
-                    </a>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('messages.close') }}</button>
                 </div>
             </div>

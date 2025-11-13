@@ -396,6 +396,8 @@ return [
     'formation_alert_days_label' => 'Remaining',
     'view_driver' => 'View Driver',
     'no_formation_alerts' => 'No formation alerts at the moment.',
+    'formation_start_restricted' => 'Start unavailable: this formation is assigned to another fleet.',
+    'formation_start_restricted_with_flotte' => 'Start unavailable: this formation is restricted to the :flotte fleet.',
     'driver_alerts_total' => 'Formation Alerts',
     'driver_alerts_detail' => 'Critical: :critical • Warning: :warning',
     'view_alerts_overview' => 'View alerts overview',
@@ -563,6 +565,21 @@ return [
     'uploaded' => 'Uploaded',
     'unknown_date' => 'Unknown date',
     'upload' => 'Upload',
+    
+    // Organigram
+    'organigram_member_created' => 'Member added to the organigram.',
+    'organigram_member_updated' => 'Organigram member updated.',
+    'organigram_member_deleted' => 'Organigram member removed.',
+    'members' => 'Members',
+    'organigram' => 'Organigram',
+    'download_organigram' => 'Download PDF',
+    'manage_organigram_description' => 'Manage company members by position.',
+    'add_member' => 'Add Member',
+    'edit_member' => 'Edit Member',
+    'no_organigram_members' => 'No members recorded yet.',
+    'no_available_positions' => 'All positions are already assigned.',
+    'confirm_delete' => 'Are you sure you want to delete this entry?',
+    'last_update_date' => 'Last Update Date',
     
     // Driver Activity Timeline
     'add_activity' => 'Add Activity',

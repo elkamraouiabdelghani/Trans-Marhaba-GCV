@@ -11,6 +11,7 @@ use App\Http\Controllers\FormationProcessController;
 use App\Http\Controllers\TurnoverController;
 use App\Http\Controllers\DriverConcernController;
 use App\Http\Controllers\ConcernTypeController;
+use App\Http\Controllers\OrganigramMemberController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Session;
 
@@ -78,6 +79,11 @@ Route::middleware('auth')->group(function () {
     Route::post('driver-concerns/{driver_concern}/complete', [DriverConcernController::class, 'complete'])
         ->name('concerns.driver-concerns.complete');
 
+    // Organigram
+    Route::get('organigram/download', [OrganigramMemberController::class, 'download'])->name('organigram.download');
+    Route::resource('organigram', OrganigramMemberController::class)
+        ->except(['show', 'create', 'edit']);
+
     // Integrations
     Route::get('/integrations', [IntegrationController::class, 'index'])->name('integrations.index');
     Route::get('/integrations/create', [IntegrationController::class, 'create'])->name('integrations.create');
@@ -106,7 +112,6 @@ Route::middleware('auth')->group(function () {
     Route::post('/formation-processes/{formationProcess}/step/{stepNumber}/validate', [FormationProcessController::class, 'validateStep'])->name('formation-processes.validate-step');
     Route::post('/formation-processes/{formationProcess}/step/{stepNumber}/reject', [FormationProcessController::class, 'rejectStep'])->name('formation-processes.reject-step');
     Route::post('/formation-processes/{formationProcess}/finalize', [FormationProcessController::class, 'finalize'])->name('formation-processes.finalize');
-    Route::get('/formation-processes/{formationProcess}/report', [FormationProcessController::class, 'downloadReport'])->name('formation-processes.download-report');
     
 });
 

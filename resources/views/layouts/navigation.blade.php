@@ -64,7 +64,6 @@
                 <span class="sidebar-text">{{ __('messages.turnovers') }}</span>
             </a>
         </li>
-        {{-- concerns dropdown --}}
         <li class="mb-2">
             @php
                 $concernRoutesActive = request()->routeIs('concerns.concern-types.*') || request()->routeIs('concerns.driver-concerns.*');
@@ -126,6 +125,13 @@
                     </a>
                 </li>
             </ul>
+        </li>
+        {{-- organigram route --}}
+        <li class="mb-2">
+            <a href="{{ route('organigram.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('organigram.*') ? 'active' : '' }}">
+                <i class="bi bi-people me-2 text-gray-600 sidebar-icon"></i>
+                <span class="sidebar-text">{{ __('messages.members') }}</span>
+            </a>
         </li>
     </ul>
 
@@ -325,6 +331,13 @@
                             </a>
                         </li>
                     </ul>
+                </li>
+                {{-- organigram route --}}
+                <li class="mb-2">
+                    <a href="{{ route('organigram.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('organigram.*') ? 'active' : '' }}">
+                        <i class="bi bi-people me-2 text-gray-600 sidebar-icon"></i>
+                        <span class="sidebar-text">{{ __('messages.members') }}</span>
+                    </a>
                 </li>
             </ul>
 

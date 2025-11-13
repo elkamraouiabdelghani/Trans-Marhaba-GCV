@@ -224,27 +224,9 @@ class DriversController extends Controller
         $warningAlerts = $alertStates->filter(fn ($state) => $state === 'warning')->count();
         $criticalAlerts = $alertStates->filter(fn ($state) => $state === 'critical')->count();
 
-        $driverFlotteName = optional($driver->flotte)->name;
-        $normalizedFlotte = $driverFlotteName ? Str::of($driverFlotteName)->lower()->trim()->__toString() : null;
-
-        $formationsCatalog = Formation::with('category')
+        $formationsCatalog = Formation::with(['category', 'flotte'])
             ->orderBy('name')
-            ->get()
-            ->filter(function ($formation) use ($normalizedFlotte) {
-                $categoryName = optional($formation->category)->name;
-                $normalizedCategory = $categoryName ? Str::of($categoryName)->lower()->trim()->__toString() : null;
-
-                if ($normalizedCategory === 'tmd') {
-                    return $normalizedFlotte === 'total';
-                }
-
-                if ($normalizedCategory === '16 module') {
-                    return $normalizedFlotte === 'vivo';
-                }
-
-                return true;
-            })
-            ->values();
+            ->get();
 
         return view('drivers.show', compact(
             'driver',

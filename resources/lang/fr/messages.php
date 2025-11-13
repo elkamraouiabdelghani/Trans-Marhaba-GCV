@@ -250,6 +250,8 @@ return [
     'formation_alert_days_label' => 'Restant',
     'view_driver' => 'Voir le conducteur',
     'no_formation_alerts' => 'Aucune alerte de formation pour le moment.',
+    'formation_start_restricted' => 'Démarrage impossible : cette formation est associée à une autre flotte.',
+    'formation_start_restricted_with_flotte' => 'Démarrage impossible : cette formation est réservée à la flotte :flotte.',
     'driver_alerts_total' => 'Alertes de formation',
     'driver_alerts_detail' => 'Critiques : :critical • Préavis : :warning',
     'view_alerts_overview' => 'Voir les alertes',
@@ -762,4 +764,19 @@ return [
     'status' => 'Statut',
     'concern_type' => 'Type de préoccupation',
     'driver_not_available' => 'Informations conducteur indisponibles.',
+    
+    // Organigramme
+    'organigram_member_created' => 'Membre ajouté à l’organigramme.',
+    'organigram_member_updated' => 'Membre de l’organigramme mis à jour.',
+    'organigram_member_deleted' => 'Membre retiré de l’organigramme.',
+    'members' => 'Membres',
+    'organigram' => 'Organigramme',
+    'download_organigram' => 'Télécharger PDF',
+    'manage_organigram_description' => 'Gérez les membres de l’entreprise par poste.',
+    'add_member' => 'Ajouter un membre',
+    'edit_member' => 'Modifier le membre',
+    'no_organigram_members' => 'Aucun membre enregistré pour le moment.',
+    'no_available_positions' => 'Tous les postes sont déjà attribués.',
+    'confirm_delete' => 'Êtes-vous sûr de vouloir supprimer cet enregistrement ?',
+    'last_update_date' => 'Date de mise à jour',
 ];

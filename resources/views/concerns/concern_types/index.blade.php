@@ -107,16 +107,6 @@
                                                 title="{{ __('messages.edit') }}">
                                                 <i class="bi bi-pencil"></i>
                                             </button>
-                                            <form action="{{ route('concerns.concern-types.destroy', $concernType) }}"
-                                                  method="POST"
-                                                  class="d-inline-block ms-2"
-                                                  onsubmit="return confirm('{{ __('messages.confirm_delete') }}');">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="{{ __('messages.delete') }}">
-                                                    <i class="bi bi-trash"></i>
-                                                </button>
-                                            </form>
                                         </div>
                                     </td>
                                 </tr>
