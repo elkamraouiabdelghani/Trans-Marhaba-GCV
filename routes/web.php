@@ -10,7 +10,6 @@ use App\Http\Controllers\IntegrationController;
 use App\Http\Controllers\FormationProcessController;
 use App\Http\Controllers\TurnoverController;
 use App\Http\Controllers\DriverConcernController;
-use App\Http\Controllers\ConcernTypeController;
 use App\Http\Controllers\OrganigramMemberController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Session;
@@ -55,16 +54,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('formations', FormationController::class);
     Route::resource('formation-categories', FormationCategoryController::class)->except(['show']);
     
-    // Concerns Types & Driver Concerns
-    Route::resource('concern-types', ConcernTypeController::class)
-        ->except(['show', 'create', 'edit'])
-        ->names([
-            'index' => 'concerns.concern-types.index',
-            'store' => 'concerns.concern-types.store',
-            'update' => 'concerns.concern-types.update',
-            'destroy' => 'concerns.concern-types.destroy',
-        ]);
-
+    // Driver Concerns
     Route::resource('driver-concerns', DriverConcernController::class)
         ->names([
             'index' => 'concerns.driver-concerns.index',

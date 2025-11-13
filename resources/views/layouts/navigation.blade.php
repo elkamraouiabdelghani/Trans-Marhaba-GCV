@@ -65,35 +65,11 @@
             </a>
         </li>
         <li class="mb-2">
-            @php
-                $concernRoutesActive = request()->routeIs('concerns.concern-types.*') || request()->routeIs('concerns.driver-concerns.*');
-            @endphp
-            <a href="#"
-               class="text-dark text-decoration-none d-flex align-items-center p-2 {{ $concernRoutesActive ? 'active' : '' }}"
-               data-bs-toggle="collapse"
-               data-bs-target="#concernsSubmenu"
-               aria-expanded="{{ $concernRoutesActive ? 'true' : 'false' }}"
-               aria-controls="concernsSubmenu">
+            <a href="{{ route('concerns.driver-concerns.index') }}"
+               class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('concerns.driver-concerns.*') ? 'active' : '' }}">
                 <i class="bi bi-exclamation-triangle me-2 text-gray-600 sidebar-icon"></i>
                 <span class="sidebar-text">{{ __('messages.concerns') }}</span>
-                <i class="bi bi-chevron-down ms-auto sidebar-icon"></i>
             </a>
-            <ul class="collapse list-unstyled ms-3 {{ $concernRoutesActive ? 'show' : '' }}" id="concernsSubmenu">
-                <li class="mb-1">
-                    <a href="{{ route('concerns.concern-types.index') }}"
-                       class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('concerns.concern-types.*') ? 'active' : '' }}">
-                        <i class="bi bi-list-check me-2 text-gray-600 sidebar-icon"></i>
-                        <span class="sidebar-text">{{ __('messages.concern_types') }}</span>
-                    </a>
-                </li>
-                <li class="mb-1">
-                    <a href="{{ route('concerns.driver-concerns.index') }}"
-                       class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('concerns.driver-concerns.*') ? 'active' : '' }}">
-                        <i class="bi bi-card-checklist me-2 text-gray-600 sidebar-icon"></i>
-                        <span class="sidebar-text">{{ __('messages.concerns') }}</span>
-                    </a>
-                </li>
-            </ul>
         </li>
         <li class="mb-2">
             <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ (request()->routeIs('formations.*') || request()->routeIs('formation-processes.*') || request()->routeIs('formation-categories.*')) ? 'active' : '' }}" 
@@ -270,36 +246,12 @@
                     <span class="sidebar-text">{{ __('messages.turnovers') }}</span>
                 </a>
             </li>
-            @php
-                $concernRoutesActiveMobile = request()->routeIs('concerns.concern-types.*') || request()->routeIs('concerns.driver-concerns.*');
-            @endphp
             <li class="mb-2">
-                <a href="#"
-                   class="text-dark text-decoration-none d-flex align-items-center p-2 {{ $concernRoutesActiveMobile ? 'active' : '' }}"
-                   data-bs-toggle="collapse"
-                   data-bs-target="#concernsSubmenuMobile"
-                   aria-expanded="{{ $concernRoutesActiveMobile ? 'true' : 'false' }}"
-                   aria-controls="concernsSubmenuMobile">
+                <a href="{{ route('concerns.driver-concerns.index') }}"
+                   class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('concerns.driver-concerns.*') ? 'active' : '' }}">
                     <i class="bi bi-exclamation-triangle me-2 text-gray-600"></i>
                     {{ __('messages.concerns') }}
-                    <i class="bi bi-chevron-down ms-auto"></i>
                 </a>
-                <ul class="collapse list-unstyled ms-3 {{ $concernRoutesActiveMobile ? 'show' : '' }}" id="concernsSubmenuMobile">
-                    <li class="mb-1">
-                        <a href="{{ route('concerns.concern-types.index') }}"
-                           class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('concerns.concern-types.*') ? 'active' : '' }}">
-                            <i class="bi bi-list-check me-2 text-gray-600"></i>
-                            {{ __('messages.concern_types') }}
-                        </a>
-                    </li>
-                    <li class="mb-1">
-                        <a href="{{ route('concerns.driver-concerns.index') }}"
-                           class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('concerns.driver-concerns.*') ? 'active' : '' }}">
-                            <i class="bi bi-card-checklist me-2 text-gray-600"></i>
-                            {{ __('messages.concerns') }}
-                        </a>
-                    </li>
-                </ul>
             </li>
             <li class="mb-2">
                 <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ (request()->routeIs('formations.*') || request()->routeIs('formation-processes.*') || request()->routeIs('formation-categories.*')) ? 'active' : '' }}" 

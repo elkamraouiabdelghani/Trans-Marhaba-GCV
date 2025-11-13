@@ -16,7 +16,7 @@
             'resolved' => 'success',
             'closed' => 'dark',
         ];
-        $concernType = $concern->concernType;
+        $concernTypeLabel = $concern->concern_type ? (\App\Models\DriverConcern::TYPES[$concern->concern_type] ?? $concern->concern_type) : null;
     @endphp
 
     <div class="container-fluid py-4 mt-4">
@@ -54,8 +54,7 @@
                             <div class="col-md-6">
                                 <div class="border rounded-3 p-3 h-100">
                                     <h6 class="text-uppercase text-muted small fw-semibold">{{ __('messages.concern_type') }}</h6>
-                                    <p class="fw-semibold mb-1">{{ $concernType?->name ?? __('messages.not_available') }}</p>
-                                    <p class="text-muted mb-0">{{ $concernType?->description ?? __('messages.no_description') }}</p>
+                                    <p class="fw-semibold mb-1">{{ $concernTypeLabel ?? __('messages.not_available') }}</p>
                                 </div>
                             </div>
                             <div class="col-md-6">

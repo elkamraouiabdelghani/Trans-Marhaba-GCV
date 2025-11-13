@@ -14,7 +14,7 @@ class DriverConcern extends Model
         'reported_at',
         'driver_id',
         'vehicle_licence_plate',
-        'concern_type_id',
+        'concern_type',
         'description',
         'immediate_action',
         'responsible_party',
@@ -35,13 +35,19 @@ class DriverConcern extends Model
         'closed',
     ];
 
+    public const TYPES = [
+        'safety' => 'Safety',
+        'vehicle_issue' => 'Vehicle Issue',
+        'scheduling' => 'Scheduling',
+        'pay_compensation' => 'Pay/Compensation',
+        'customer_interaction' => 'Customer Interaction',
+        'policy_compliance' => 'Policy Compliance',
+        'personal_family_support' => 'Personal/Family Support',
+        'other' => 'Other',
+    ];
+
     public function driver(): BelongsTo
     {
         return $this->belongsTo(Driver::class);
-    }
-
-    public function concernType(): BelongsTo
-    {
-        return $this->belongsTo(ConcernType::class);
     }
 }

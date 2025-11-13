@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\DriverConcernRequest;
-use App\Models\ConcernType;
 use App\Models\Driver;
 use App\Models\DriverConcern;
 use Illuminate\Http\RedirectResponse;
@@ -18,15 +17,15 @@ class DriverConcernController extends Controller
     {
         try {
             $concernsQuery = DriverConcern::query()
-                ->with(['driver', 'concernType'])
+                ->with(['driver'])
                 ->latest('reported_at');
 
             if ($request->filled('status')) {
                 $concernsQuery->where('status', $request->input('status'));
             }
 
-            if ($request->filled('concern_type_id')) {
-                $concernsQuery->where('concern_type_id', $request->input('concern_type_id'));
+            if ($request->filled('concern_type')) {
+                $concernsQuery->where('concern_type', $request->input('concern_type'));
             }
 
             if ($request->filled('driver_id')) {
@@ -72,11 +71,11 @@ class DriverConcernController extends Controller
             return view('concerns.driver_concerns.index', [
                 'concerns' => $concerns,
                 'drivers' => Driver::orderBy('full_name')->pluck('full_name', 'id'),
-                'concernTypes' => ConcernType::orderBy('name')->pluck('name', 'id'),
+                'concernTypes' => DriverConcern::TYPES,
                 'statuses' => DriverConcern::STATUSES,
                 'filters' => $request->all([
                     'status',
-                    'concern_type_id',
+                    'concern_type',
                     'driver_id',
                     'search',
                 ]),
@@ -102,7 +101,7 @@ class DriverConcernController extends Controller
         try {
             return view('concerns.driver_concerns.create', [
                 'drivers' => Driver::with('assignedVehicle')->orderBy('full_name')->get(),
-                'concernTypes' => ConcernType::orderBy('name')->pluck('name', 'id'),
+                'concernTypes' => DriverConcern::TYPES,
                 'statuses' => DriverConcern::STATUSES,
             ]);
         } catch (Throwable $exception) {
@@ -138,7 +137,7 @@ class DriverConcernController extends Controller
     public function show(DriverConcern $driverConcern): View|RedirectResponse
     {
         try {
-            $driverConcern->load(['driver', 'concernType']);
+            $driverConcern->load(['driver']);
 
             return view('concerns.driver_concerns.show', [
                 'concern' => $driverConcern,
@@ -156,9 +155,9 @@ class DriverConcernController extends Controller
     {
         try {
             return view('concerns.driver_concerns.edit', [
-                'concern' => $driverConcern->load(['driver', 'concernType']),
+                'concern' => $driverConcern->load(['driver']),
                 'drivers' => Driver::with('assignedVehicle')->orderBy('full_name')->get(),
-                'concernTypes' => ConcernType::orderBy('name')->pluck('name', 'id'),
+                'concernTypes' => DriverConcern::TYPES,
                 'statuses' => DriverConcern::STATUSES,
             ]);
         } catch (Throwable $exception) {
@@ -175,7 +174,19 @@ class DriverConcernController extends Controller
         try {
             $data = $request->validated();
 
+            // Check if completion_date is provided and validate it's not older than reported_at
             if (!empty($data['completion_date'])) {
+                $completionDate = \Carbon\Carbon::parse($data['completion_date']);
+                $reportedAt = $driverConcern->reported_at;
+
+                // Explicit check: completion_date must not be older than reported_at
+                if ($completionDate->lt($reportedAt)) {
+                    return redirect()
+                        ->route('concerns.driver-concerns.edit', $driverConcern)
+                        ->withInput()
+                        ->with('error', __('messages.completion_date_before_reported_date_error'));
+                }
+
                 $data['status'] = 'closed';
             }
 
@@ -217,6 +228,16 @@ class DriverConcernController extends Controller
         ]);
 
         try {
+            $completionDate = \Carbon\Carbon::parse($validated['completion_date']);
+            $reportedAt = $driverConcern->reported_at;
+
+            // Explicit check: completion_date must not be older than reported_at
+            if ($completionDate->lt($reportedAt)) {
+                return redirect()
+                    ->route('concerns.driver-concerns.index')
+                    ->with('error', __('messages.completion_date_before_reported_date_error'));
+            }
+
             $driverConcern->update([
                 'completion_date' => $validated['completion_date'],
                 'status' => 'closed',

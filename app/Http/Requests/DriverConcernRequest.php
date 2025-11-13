@@ -32,7 +32,7 @@ class DriverConcernRequest extends FormRequest
             'reported_at' => ['required', 'date'],
             'driver_id' => ['required', 'exists:drivers,id'],
             'vehicle_licence_plate' => ['nullable', 'string', 'max:50'],
-            'concern_type_id' => ['required', 'exists:concern_types,id'],
+            'concern_type' => ['required', 'string', Rule::in(array_keys(DriverConcern::TYPES))],
             'description' => ['nullable', 'string'],
             'immediate_action' => ['nullable', 'string'],
             'responsible_party' => ['nullable', 'string', 'max:255'],

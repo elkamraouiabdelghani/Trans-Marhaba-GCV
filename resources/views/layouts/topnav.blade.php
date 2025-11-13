@@ -16,10 +16,7 @@
                     {{ __('messages.formations') }}
                 @elseif(request()->routeIs('turnovers.*') || request()->routeIs('turnovers.index') || request()->routeIs('turnovers.create') || request()->routeIs('turnovers.edit') || request()->routeIs('turnovers.show'))
                     {{ __('messages.turnovers') }}
-                @elseif(
-                    request()->routeIs('concerns.concern-types.*')
-                    || request()->routeIs('concerns.driver-concerns.*')
-                )
+                @elseif(request()->routeIs('concerns.driver-concerns.*'))
                     {{ __('messages.concerns') }}
                 @elseif(request()->routeIs('organigram.*'))
                     {{ __('messages.organigram') }}

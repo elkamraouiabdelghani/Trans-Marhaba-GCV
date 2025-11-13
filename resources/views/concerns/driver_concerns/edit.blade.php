@@ -126,21 +126,21 @@
                                 </div>
 
                                 <div class="col-md-4">
-                                    <label for="concern_type_id" class="form-label fw-semibold">{{ __('messages.concern_type') }} <span class="text-danger">*</span></label>
+                                    <label for="concern_type" class="form-label fw-semibold">{{ __('messages.concern_type') }} <span class="text-danger">*</span></label>
                                     <select
-                                        id="concern_type_id"
-                                        name="concern_type_id"
-                                        class="form-select @error('concern_type_id') is-invalid @enderror"
+                                        id="concern_type"
+                                        name="concern_type"
+                                        class="form-select @error('concern_type') is-invalid @enderror"
                                         required
                                     >
                                         <option value="">{{ __('messages.select_concern_type') }}</option>
-                                        @foreach($concernTypes as $id => $label)
-                                            <option value="{{ $id }}" @selected((int) old('concern_type_id', $concern->concern_type_id) === (int) $id)>
+                                        @foreach($concernTypes as $key => $label)
+                                            <option value="{{ $key }}" @selected(old('concern_type', $concern->concern_type) === $key)>
                                                 {{ $label }}
                                             </option>
                                         @endforeach
                                     </select>
-                                    @error('concern_type_id')
+                                    @error('concern_type')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
@@ -153,6 +153,7 @@
                                         name="completion_date"
                                         class="form-control @error('completion_date') is-invalid @enderror"
                                         value="{{ old('completion_date', optional($concern->completion_date)->format('Y-m-d')) }}"
+                                        @if($concern->status === 'closed') readonly @endif
                                     >
                                     @error('completion_date')
                                         <div class="invalid-feedback">{{ $message }}</div>

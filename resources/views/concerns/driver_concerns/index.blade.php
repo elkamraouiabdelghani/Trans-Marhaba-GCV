@@ -99,10 +99,10 @@
                         </div>
                         <div class="col-12 col-md-3">
                             <label for="concernTypeFilter" class="form-label fw-semibold">{{ __('messages.concern_type') }}</label>
-                            <select name="concern_type_id" id="concernTypeFilter" class="form-select">
+                            <select name="concern_type" id="concernTypeFilter" class="form-select">
                                 <option value="">{{ __('messages.all_types') }}</option>
-                                @foreach($concernTypes as $id => $label)
-                                    <option value="{{ $id }}" @selected(($filters['concern_type_id'] ?? '') == $id)>{{ $label }}</option>
+                                @foreach($concernTypes as $key => $label)
+                                    <option value="{{ $key }}" @selected(($filters['concern_type'] ?? '') == $key)>{{ $label }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -177,11 +177,9 @@
                                         </span>
                                     </td>
                                     <td>
-                                        <div class="fw-semibold">{{ $concern->concernType?->name ?? __('messages.not_available') }}</div>
-                                        <small class="text-muted">
-                                            {{ __('messages.priority') }}:
-                                            <span class="text-capitalize">{{ $concern->concernType?->status ?? __('messages.not_available') }}</span>
-                                        </small>
+                                        <div class="fw-semibold">
+                                            {{ $concern->concern_type ? (\App\Models\DriverConcern::TYPES[$concern->concern_type] ?? $concern->concern_type) : __('messages.not_available') }}
+                                        </div>
                                     </td>
                                     <td>
                                         @php $status = $concern->status; @endphp

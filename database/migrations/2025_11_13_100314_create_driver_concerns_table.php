@@ -16,7 +16,7 @@ return new class extends Migration
             $table->date('reported_at');
             $table->foreignId('driver_id')->constrained('drivers')->cascadeOnDelete();
             $table->string('vehicle_licence_plate')->nullable();
-            $table->foreignId('concern_type_id')->constrained('concern_types')->cascadeOnDelete();
+            $table->string('concern_type')->nullable();
             $table->text('description')->nullable();
             $table->text('immediate_action')->nullable();
             $table->string('responsible_party')->nullable();
