@@ -9,6 +9,8 @@ use App\Http\Controllers\FormationCategoryController;
 use App\Http\Controllers\IntegrationController;
 use App\Http\Controllers\FormationProcessController;
 use App\Http\Controllers\TurnoverController;
+use App\Http\Controllers\DriverConcernController;
+use App\Http\Controllers\ConcernTypeController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Session;
 
@@ -51,6 +53,12 @@ Route::middleware('auth')->group(function () {
     // Formation Types & Categories
     Route::resource('formations', FormationController::class);
     Route::resource('formation-categories', FormationCategoryController::class)->except(['show']);
+    
+    // Concerns Types & Driver Concerns
+    Route::resource('concern-types', ConcernTypeController::class)->except(['show', 'create', 'edit']);
+    Route::resource('driver-concerns', DriverConcernController::class);
+    Route::post('driver-concerns/{driver_concern}/complete', [DriverConcernController::class, 'complete'])
+        ->name('driver-concerns.complete');
 
     // Integrations
     Route::get('/integrations', [IntegrationController::class, 'index'])->name('integrations.index');

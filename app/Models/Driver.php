@@ -111,6 +111,14 @@ class Driver extends Model
     }
 
     /**
+     * Get all concerns for this driver
+     */
+    public function concerns()
+    {
+        return $this->hasMany(DriverConcern::class);
+    }
+
+    /**
      * Get all turnovers for this driver
      */
     public function turnovers()
