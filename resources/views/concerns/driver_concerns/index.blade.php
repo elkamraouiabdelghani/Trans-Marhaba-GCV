@@ -84,7 +84,7 @@
 
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-body p-4">
-                <form action="{{ route('driver-concerns.index') }}" method="GET" id="concernFiltersForm">
+                <form action="{{ route('concerns.driver-concerns.index') }}" method="GET" id="concernFiltersForm">
                     <div class="row g-3 align-items-end">
                         <div class="col-12 col-md-3">
                             <label for="statusFilter" class="form-label fw-semibold">{{ __('messages.status') }}</label>
@@ -127,10 +127,10 @@
                                 <button type="submit" class="btn btn-primary">
                                     <i class="bi bi-funnel me-1"></i>{{ __('messages.filter') }}
                                 </button>
-                                <a href="{{ route('driver-concerns.index') }}" class="btn btn-outline-secondary">
+                                <a href="{{ route('concerns.driver-concerns.index') }}" class="btn btn-outline-secondary">
                                     <i class="bi bi-x-circle me-1"></i>{{ __('messages.clear_filters') }}
                                 </a>
-                                <a href="{{ route('driver-concerns.create') }}" class="btn btn-dark ms-auto">
+                                <a href="{{ route('concerns.driver-concerns.create') }}" class="btn btn-dark ms-auto">
                                     <i class="bi bi-plus-circle me-2"></i>{{ __('messages.add_concern') }}
                                 </a>
                             </div>
@@ -196,10 +196,10 @@
                                     </td>
                                     <td class="text-end pe-3">
                                         <div class="btn-group" role="group">
-                                            <a href="{{ route('driver-concerns.show', $concern) }}" class="btn btn-sm btn-outline-secondary" title="{{ __('messages.view_details') }}">
+                                            <a href="{{ route('concerns.driver-concerns.show', $concern) }}" class="btn btn-sm btn-outline-secondary" title="{{ __('messages.view_details') }}">
                                                 <i class="bi bi-eye"></i>
                                             </a>
-                                            <a href="{{ route('driver-concerns.edit', $concern) }}" class="btn btn-sm btn-outline-primary" title="{{ __('messages.edit') }}">
+                                            <a href="{{ route('concerns.driver-concerns.edit', $concern) }}" class="btn btn-sm btn-outline-primary" title="{{ __('messages.edit') }}">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
                                             @if($concern->status !== 'closed')
@@ -226,7 +226,7 @@
                                                     </h5>
                                                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('messages.close') }}"></button>
                                                 </div>
-                                                <form action="{{ route('driver-concerns.complete', $concern) }}" method="POST">
+                                                <form action="{{ route('concerns.driver-concerns.complete', $concern) }}" method="POST">
                                                     @csrf
                                                     <div class="modal-body">
                                                         <p class="text-muted">{{ __('messages.complete_concern_confirmation') }}</p>

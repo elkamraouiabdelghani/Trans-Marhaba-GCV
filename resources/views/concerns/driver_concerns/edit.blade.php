@@ -38,17 +38,18 @@
                     <div class="card-header bg-white border-0 py-3">
                         <div class="d-flex justify-content-between align-items-center">
                             <h5 class="mb-0 text-dark fw-bold">
-                                <i class="bi bi-plus-circle me-2 text-primary"></i>
-                                {{ __('messages.add_concern') }}
+                                <i class="bi bi-pencil me-2 text-primary"></i>
+                                {{ __('messages.edit_concern') }}
                             </h5>
-                            <a href="{{ route('driver-concerns.index') }}" class="btn btn-outline-secondary">
-                                <i class="bi bi-x-circle me-1"></i> {{ __('messages.cancel') }}
+                            <a href="{{ route('concerns.driver-concerns.index') }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-1"></i> {{ __('messages.back') }}
                             </a>
                         </div>
                     </div>
                     <div class="card-body">
-                        <form action="{{ route('driver-concerns.store') }}" method="POST" novalidate>
+                        <form action="{{ route('concerns.driver-concerns.update', $concern) }}" method="POST" novalidate>
                             @csrf
+                            @method('PUT')
 
                             <div class="row g-4">
                                 <div class="col-md-4">
@@ -58,7 +59,7 @@
                                         id="reported_at"
                                         name="reported_at"
                                         class="form-control @error('reported_at') is-invalid @enderror"
-                                        value="{{ old('reported_at', now()->format('Y-m-d')) }}"
+                                        value="{{ old('reported_at', optional($concern->reported_at)->format('Y-m-d')) }}"
                                         required
                                     >
                                     @error('reported_at')
@@ -79,7 +80,7 @@
                                             <option
                                                 value="{{ $driver->id }}"
                                                 data-vehicle="{{ $driver->assignedVehicle->license_plate ?? '' }}"
-                                                @selected((int) old('driver_id') === (int) $driver->id)
+                                                @selected((int) old('driver_id', $concern->driver_id) === (int) $driver->id)
                                             >
                                                 {{ $driver->full_name }}
                                             </option>
@@ -91,13 +92,32 @@
                                 </div>
 
                                 <div class="col-md-4">
+                                    <label for="status" class="form-label fw-semibold">{{ __('messages.status') }} <span class="text-danger">*</span></label>
+                                    <select
+                                        id="status"
+                                        name="status"
+                                        class="form-select @error('status') is-invalid @enderror"
+                                        required
+                                    >
+                                        @foreach($statuses as $status)
+                                            <option value="{{ $status }}" @selected(old('status', $concern->status) === $status)>
+                                                {{ __('messages.status_'. $status) }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @error('status')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+
+                                <div class="col-md-4">
                                     <label for="vehicle_licence_plate" class="form-label fw-semibold">{{ __('messages.vehicle_licence_plate') }}</label>
                                     <input
                                         type="text"
                                         id="vehicle_licence_plate"
                                         name="vehicle_licence_plate"
                                         class="form-control @error('vehicle_licence_plate') is-invalid @enderror"
-                                        value="{{ old('vehicle_licence_plate') }}"
+                                        value="{{ old('vehicle_licence_plate', $concern->vehicle_licence_plate) }}"
                                         placeholder="{{ __('messages.vehicle_licence_plate_placeholder') }}"
                                     >
                                     @error('vehicle_licence_plate')
@@ -115,7 +135,7 @@
                                     >
                                         <option value="">{{ __('messages.select_concern_type') }}</option>
                                         @foreach($concernTypes as $id => $label)
-                                            <option value="{{ $id }}" @selected((int) old('concern_type_id') === (int) $id)>
+                                            <option value="{{ $id }}" @selected((int) old('concern_type_id', $concern->concern_type_id) === (int) $id)>
                                                 {{ $label }}
                                             </option>
                                         @endforeach
@@ -125,14 +145,28 @@
                                     @enderror
                                 </div>
 
-                                <div class="col-md-8">
+                                <div class="col-md-4">
+                                    <label for="completion_date" class="form-label fw-semibold">{{ __('messages.completion_date') }}</label>
+                                    <input
+                                        type="date"
+                                        id="completion_date"
+                                        name="completion_date"
+                                        class="form-control @error('completion_date') is-invalid @enderror"
+                                        value="{{ old('completion_date', optional($concern->completion_date)->format('Y-m-d')) }}"
+                                    >
+                                    @error('completion_date')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+
+                                <div>
                                     <label for="responsible_party" class="form-label fw-semibold">{{ __('messages.responsible_party') }}</label>
                                     <input
                                         type="text"
                                         id="responsible_party"
                                         name="responsible_party"
                                         class="form-control @error('responsible_party') is-invalid @enderror"
-                                        value="{{ old('responsible_party', auth()->user()->name ?? '') }}"
+                                        value="{{ old('responsible_party', $concern->responsible_party) }}"
                                         placeholder="{{ __('messages.responsible_party_placeholder') }}"
                                     >
                                     @error('responsible_party')
@@ -148,7 +182,7 @@
                                         rows="4"
                                         class="form-control @error('description') is-invalid @enderror"
                                         required
-                                    >{{ old('description') }}</textarea>
+                                    >{{ old('description', $concern->description) }}</textarea>
                                     @error('description')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
@@ -162,7 +196,7 @@
                                         rows="3"
                                         class="form-control @error('immediate_action') is-invalid @enderror"
                                         placeholder="{{ __('messages.immediate_action_placeholder') }}"
-                                    >{{ old('immediate_action') }}</textarea>
+                                    >{{ old('immediate_action', $concern->immediate_action) }}</textarea>
                                     @error('immediate_action')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
@@ -176,17 +210,19 @@
                                         rows="3"
                                         class="form-control @error('resolution_comments') is-invalid @enderror"
                                         placeholder="{{ __('messages.resolution_comments_placeholder') }}"
-                                    >{{ old('resolution_comments') }}</textarea>
+                                    >{{ old('resolution_comments', $concern->resolution_comments) }}</textarea>
                                     @error('resolution_comments')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
                             </div>
 
-                            <div class="d-flex justify-content-end mt-4">
-                                {{-- <input type="hidden" name="status" value="in_progress"> --}}
+                            <div class="d-flex justify-content-between mt-4">
+                                <a href="{{ route('concerns.driver-concerns.show', $concern) }}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-eye me-1"></i>{{ __('messages.view_details') }}
+                                </a>
                                 <button type="submit" class="btn btn-dark">
-                                    <i class="bi bi-save me-2"></i>{{ __('messages.save') }}
+                                    <i class="bi bi-save me-2"></i>{{ __('messages.save_changes') }}
                                 </button>
                             </div>
                         </form>

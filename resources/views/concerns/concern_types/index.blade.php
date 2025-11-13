@@ -107,7 +107,7 @@
                                                 title="{{ __('messages.edit') }}">
                                                 <i class="bi bi-pencil"></i>
                                             </button>
-                                            <form action="{{ route('concern-types.destroy', $concernType) }}"
+                                            <form action="{{ route('concerns.concern-types.destroy', $concernType) }}"
                                                   method="POST"
                                                   class="d-inline-block ms-2"
                                                   onsubmit="return confirm('{{ __('messages.confirm_delete') }}');">
@@ -135,7 +135,7 @@
                                                 </h5>
                                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                             </div>
-                                            <form action="{{ route('concern-types.update', $concernType) }}" method="POST">
+                                            <form action="{{ route('concerns.concern-types.update', $concernType) }}" method="POST">
                                                 @csrf
                                                 @method('PUT')
                                                 <input type="hidden" name="form_mode" value="edit">
@@ -243,7 +243,7 @@
                     <h5 class="modal-title" id="createConcernTypeModalLabel">{{ __('messages.add_concern_type') }}</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form action="{{ route('concern-types.store') }}" method="POST">
+                <form action="{{ route('concerns.concern-types.store') }}" method="POST">
                     @csrf
                     <input type="hidden" name="form_mode" value="create">
                     <div class="modal-body">

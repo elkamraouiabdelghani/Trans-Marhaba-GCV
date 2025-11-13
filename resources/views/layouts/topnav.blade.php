@@ -16,7 +16,10 @@
                     {{ __('messages.formations') }}
                 @elseif(request()->routeIs('turnovers.*') || request()->routeIs('turnovers.index') || request()->routeIs('turnovers.create') || request()->routeIs('turnovers.edit') || request()->routeIs('turnovers.show'))
                     {{ __('messages.turnovers') }}
-                @elseif(request()->routeIs('concern-types.*') || request()->routeIs('driver-concerns.*') || request()->routeIs('driver-concerns.index') || request()->routeIs('driver-concerns.create') || request()->routeIs('driver-concerns.edit') || request()->routeIs('driver-concerns.show'))
+                @elseif(
+                    request()->routeIs('concerns.concern-types.*')
+                    || request()->routeIs('concerns.driver-concerns.*')
+                )
                     {{ __('messages.concerns') }}
                 @else
                     {{ __('messages.brand') }}

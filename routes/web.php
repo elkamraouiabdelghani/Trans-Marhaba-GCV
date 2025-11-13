@@ -55,10 +55,28 @@ Route::middleware('auth')->group(function () {
     Route::resource('formation-categories', FormationCategoryController::class)->except(['show']);
     
     // Concerns Types & Driver Concerns
-    Route::resource('concern-types', ConcernTypeController::class)->except(['show', 'create', 'edit']);
-    Route::resource('driver-concerns', DriverConcernController::class);
+    Route::resource('concern-types', ConcernTypeController::class)
+        ->except(['show', 'create', 'edit'])
+        ->names([
+            'index' => 'concerns.concern-types.index',
+            'store' => 'concerns.concern-types.store',
+            'update' => 'concerns.concern-types.update',
+            'destroy' => 'concerns.concern-types.destroy',
+        ]);
+
+    Route::resource('driver-concerns', DriverConcernController::class)
+        ->names([
+            'index' => 'concerns.driver-concerns.index',
+            'create' => 'concerns.driver-concerns.create',
+            'store' => 'concerns.driver-concerns.store',
+            'show' => 'concerns.driver-concerns.show',
+            'edit' => 'concerns.driver-concerns.edit',
+            'update' => 'concerns.driver-concerns.update',
+            'destroy' => 'concerns.driver-concerns.destroy',
+        ]);
+
     Route::post('driver-concerns/{driver_concern}/complete', [DriverConcernController::class, 'complete'])
-        ->name('driver-concerns.complete');
+        ->name('concerns.driver-concerns.complete');
 
     // Integrations
     Route::get('/integrations', [IntegrationController::class, 'index'])->name('integrations.index');

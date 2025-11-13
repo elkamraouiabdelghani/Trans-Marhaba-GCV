@@ -23,11 +23,11 @@
         <div class="row justify-content-center">
             <div class="col-xl-9 col-lg-10">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <a href="{{ route('driver-concerns.index') }}" class="btn btn-outline-secondary">
+                    <a href="{{ route('concerns.driver-concerns.index') }}" class="btn btn-outline-secondary">
                         <i class="bi bi-arrow-left me-1"></i>{{ __('messages.back_to_list') }}
                     </a>
                     <div class="d-flex gap-2">
-                        <a href="{{ route('driver-concerns.edit', $concern) }}" class="btn btn-primary">
+                        <a href="{{ route('concerns.driver-concerns.edit', $concern) }}" class="btn btn-primary">
                             <i class="bi bi-pencil-square me-1"></i>{{ __('messages.edit') }}
                         </a>
                     </div>

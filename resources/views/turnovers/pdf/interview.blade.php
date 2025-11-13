@@ -165,6 +165,16 @@
                 <div class="signature-line">{{ $employeeSignature }}</div>
             </td>
         </tr>
+        <tr>
+            <td style="width: 50%; padding-top: 20px;">
+                <strong>{{ __('messages.rh_signature') }}:</strong>
+                <div class="signature-line">{{ $rhSignature ?? '__________________________' }}</div>
+            </td>
+            <td style="width: 50%; padding-top: 20px;" colspan="2">
+                <strong>{{ __('messages.dg_dga_signature') }}:</strong>
+                <div class="signature-line">{{ $dgSignature ?? '__________________________' }}</div>
+            </td>
+        </tr>
     </table>
 </body>
 </html>

@@ -1,6 +1,6 @@
 <!-- Sidebar -->
-<nav id="sidebar" class="bg-white text-dark d-none d-md-block" style="width: 250px; min-height: 100vh; position: fixed; top: 0; left: 0; box-shadow: 0 0 10px rgba(0,0,0,0.1); transition: width 0.3s;">
-    <div class="sidebar-header p-3 d-flex align-items-center justify-content-between">
+<nav id="sidebar" class="bg-white text-dark d-none d-md-block" style="width: 250px; min-height: 100vh; max-height: 100vh; position: fixed; top: 0; left: 0; box-shadow: 0 0 10px rgba(0,0,0,0.1); transition: width 0.3s; overflow-y: auto; overflow-x: hidden;">
+    <div class="sidebar-header p-3 d-flex align-items-center justify-content-between" style="position: sticky; top: 0; z-index: 2; background-color: #fff; border-bottom: 1px solid rgba(0,0,0,0.05);">
         <a href="{{ route('dashboard') }}" class="text-decoration-none d-flex align-items-center bg-white">
             <h1 class="offcanvas-title text-black fw-bold sidebar-logo-text" id="mobileSidebarLabel" style="font-size: 2rem;">GCV</h1>
         </a>
@@ -67,7 +67,7 @@
         {{-- concerns dropdown --}}
         <li class="mb-2">
             @php
-                $concernRoutesActive = request()->routeIs('concern-types.*') || request()->routeIs('driver-concerns.*');
+                $concernRoutesActive = request()->routeIs('concerns.concern-types.*') || request()->routeIs('concerns.driver-concerns.*');
             @endphp
             <a href="#"
                class="text-dark text-decoration-none d-flex align-items-center p-2 {{ $concernRoutesActive ? 'active' : '' }}"
@@ -81,15 +81,15 @@
             </a>
             <ul class="collapse list-unstyled ms-3 {{ $concernRoutesActive ? 'show' : '' }}" id="concernsSubmenu">
                 <li class="mb-1">
-                    <a href="{{ route('concern-types.index') }}"
-                       class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('concern-types.*') ? 'active' : '' }}">
+                    <a href="{{ route('concerns.concern-types.index') }}"
+                       class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('concerns.concern-types.*') ? 'active' : '' }}">
                         <i class="bi bi-list-check me-2 text-gray-600 sidebar-icon"></i>
                         <span class="sidebar-text">{{ __('messages.concern_types') }}</span>
                     </a>
                 </li>
                 <li class="mb-1">
-                    <a href="{{ route('driver-concerns.index') }}"
-                       class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('driver-concerns.*') ? 'active' : '' }}">
+                    <a href="{{ route('concerns.driver-concerns.index') }}"
+                       class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('concerns.driver-concerns.*') ? 'active' : '' }}">
                         <i class="bi bi-card-checklist me-2 text-gray-600 sidebar-icon"></i>
                         <span class="sidebar-text">{{ __('messages.concerns') }}</span>
                     </a>
@@ -174,12 +174,16 @@
                         {{ __('messages.drivers') }}
                     @elseif(request()->routeIs('integrations.*'))
                         {{ __('messages.driver_integrations') }}
-                    @elseif(request()->routeIs('formations.*') || request()->routeIs('formation-processes.*'))
+                    @elseif(request()->routeIs('formations.*') || request()->routeIs('formation-processes.*') || request()->routeIs('formation-categories.*'))
                         {{ __('messages.formations') }}
                     @elseif(request()->routeIs('violations.*'))
                         {{ __('messages.violations') }}
                     @elseif(request()->routeIs('reports.*'))
                         {{ __('messages.reports') }}
+                    @elseif(request()->routeIs('concerns.*') || request()->routeIs('concerns.concern-types.*') || request()->routeIs('concerns.driver-concerns.*'))
+                        {{ __('messages.concerns') }}
+                    @elseif(request()->routeIs('turnovers.*') || request()->routeIs('turnovers.index') || request()->routeIs('turnovers.create') || request()->routeIs('turnovers.edit') || request()->routeIs('turnovers.show'))
+                        {{ __('messages.turnovers') }}
                     @else
                         GCV
                     @endif
@@ -261,7 +265,7 @@
                 </a>
             </li>
             @php
-                $concernRoutesActiveMobile = request()->routeIs('concern-types.*') || request()->routeIs('driver-concerns.*');
+                $concernRoutesActiveMobile = request()->routeIs('concerns.concern-types.*') || request()->routeIs('concerns.driver-concerns.*');
             @endphp
             <li class="mb-2">
                 <a href="#"
@@ -276,15 +280,15 @@
                 </a>
                 <ul class="collapse list-unstyled ms-3 {{ $concernRoutesActiveMobile ? 'show' : '' }}" id="concernsSubmenuMobile">
                     <li class="mb-1">
-                        <a href="{{ route('concern-types.index') }}"
-                           class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('concern-types.*') ? 'active' : '' }}">
+                        <a href="{{ route('concerns.concern-types.index') }}"
+                           class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('concerns.concern-types.*') ? 'active' : '' }}">
                             <i class="bi bi-list-check me-2 text-gray-600"></i>
                             {{ __('messages.concern_types') }}
                         </a>
                     </li>
                     <li class="mb-1">
-                        <a href="{{ route('driver-concerns.index') }}"
-                           class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('driver-concerns.*') ? 'active' : '' }}">
+                        <a href="{{ route('concerns.driver-concerns.index') }}"
+                           class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('concerns.driver-concerns.*') ? 'active' : '' }}">
                             <i class="bi bi-card-checklist me-2 text-gray-600"></i>
                             {{ __('messages.concerns') }}
                         </a>
@@ -325,7 +329,7 @@
             </ul>
 
         {{-- mobile sidebar footer --}}
-        <div class="border-top mt-auto">
+        <div class="border-top mt-auto" style="position: sticky; bottom: 0; z-index: 2; background-color: #fff; border-top: 1px solid rgba(0,0,0,0.05);">
             <div class="p-3">
                 <div class="dropdown">
                     <button class="btn btn-light dropdown-toggle w-100 text-start" type="button" id="mobileUserDropdown" data-bs-toggle="dropdown" aria-expanded="false">
