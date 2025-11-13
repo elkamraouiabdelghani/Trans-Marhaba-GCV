@@ -30,15 +30,15 @@ class StoreInterviewAnswersRequest extends FormRequest
             $type = $question['type'] ?? 'text';
 
             if ($type === 'rating') {
-                $rules[$key] = ['required', 'integer', 'between:1,5'];
+                $rules[$key] = ['nullable', 'integer', 'between:1,5'];
             } else {
                 $rules[$key] = ['nullable', 'string', 'max:2000'];
             }
         }
 
-        $rules['employee_name'] = ['required', 'string', 'max:255'];
-        $rules['interview_date'] = ['required', 'date'];
-        $rules['employee_signature'] = ['required', 'string', 'max:1000'];
+        $rules['employee_name'] = ['nullable', 'string', 'max:255'];
+        $rules['interview_date'] = ['nullable', 'date'];
+        $rules['employee_signature'] = ['nullable', 'string', 'max:1000'];
 
         return $rules;
     }

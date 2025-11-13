@@ -14,6 +14,7 @@ use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class TurnoverController extends Controller
 {
@@ -82,8 +83,22 @@ class TurnoverController extends Controller
      */
     public function create()
     {
-        $drivers = Driver::orderBy('full_name')->get();
-        $users = User::orderBy('name')->get();
+        $drivers = Driver::orderBy('full_name')
+            ->get()
+            ->filter(function (Driver $driver) {
+                $status = Str::lower((string) ($driver->status ?? ''));
+                return $status !== 'terminated';
+            })
+            ->values();
+
+        $users = User::orderBy('name')
+            ->get()
+            ->filter(function (User $user) {
+                $status = Str::lower((string) ($user->status ?? ''));
+                $role = Str::lower((string) ($user->role ?? ''));
+                return $status !== 'terminated' && $role !== 'admin';
+            })
+            ->values();
         $flottes = Flotte::orderBy('name')->get();
 
         return view('turnovers.create', compact('drivers', 'users', 'flottes'));
