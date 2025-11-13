@@ -160,6 +160,7 @@
                                 <th class="border-0 py-3 px-4">{{ __('messages.position') ?? 'Poste' }}</th>
                                 <th class="border-0 py-3 px-4">{{ __('messages.departure_reason') ?? 'Raison de départ' }}</th>
                                 <th class="border-0 py-3 px-4">{{ __('messages.status') }}</th>
+                                <th class="border-0 py-3 px-4">{{ __('messages.exit_interview_status') }}</th>
                                 <th class="border-0 py-3 px-4">{{ __('messages.confirmed_at') }}</th>
                                 <th class="border-0 py-3 px-4 text-end">{{ __('messages.action') }}</th>
                             </tr>
@@ -198,15 +199,44 @@
                                         @endif
                                     </td>
                                     <td class="py-3 px-4">
+                                        @if($turnover->interview_completed)
+                                            <span class="badge bg-success bg-opacity-25 text-success">
+                                                <i class="bi bi-clipboard2-check me-1"></i>
+                                                {{ __('messages.exit_interview_completed') }}
+                                            </span>
+                                        @else
+                                            <span class="badge bg-secondary bg-opacity-25 text-secondary">
+                                                <i class="bi bi-clipboard2 me-1"></i>
+                                                {{ __('messages.exit_interview_pending') }}
+                                            </span>
+                                        @endif
+                                    </td>
+                                    <td class="py-3 px-4">
                                         {{ $turnover->confirmed_at ? $turnover->confirmed_at->format('d/m/Y') : 'N/A' }}
                                     </td>
                                     <td class="py-3 px-4 text-end">
-                                        <div class="d-flex gap-2 justify-content-end group" role="group">
+                                        @php
+                                            $canFillInterview = !empty($turnover->interview_notes) && !empty($turnover->interviewed_by);
+                                        @endphp
+                                        <div class="d-flex gap-2 justify-content-end group flex-wrap" role="group">
                                             <a href="{{ route('turnovers.edit', $turnover) }}" 
                                                 class="btn btn-sm btn-outline-warning" 
                                                 title="{{ __('messages.edit') ?? 'Modifier' }}">
                                                 <i class="bi bi-eye"></i>
                                             </a>
+                                            @if($turnover->interview_completed && $turnover->turnover_pdf_path)
+                                                <a href="{{ route('turnovers.interview.download', $turnover) }}"
+                                                   class="btn btn-sm btn-outline-primary"
+                                                   title="{{ __('messages.download_pdf') }}">
+                                                    <i class="bi bi-download"></i>
+                                                </a>
+                                            @elseif($canFillInterview)
+                                                <a href="{{ route('turnovers.interview', $turnover) }}"
+                                                   class="btn btn-sm btn-outline-info"
+                                                   title="{{ __('messages.complete_exit_interview') }}">
+                                                    <i class="bi bi-clipboard-plus"></i>
+                                                </a>
+                                            @endif
                                             @if(!$turnover->isConfirmed())
                                                 <button type="button" 
                                                         class="btn btn-sm btn-outline-success" 

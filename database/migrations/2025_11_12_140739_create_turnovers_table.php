@@ -21,6 +21,7 @@ return new class extends Migration
             $table->text('departure_reason');
             $table->text('interview_notes')->nullable();
             $table->string('interviewed_by')->nullable();
+            $table->json('interview_answers')->nullable();
             $table->text('observations')->nullable();
             $table->string('turnover_pdf_path')->nullable();
             $table->enum('status', ['pending', 'confirmed'])->default('pending');

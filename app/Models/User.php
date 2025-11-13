@@ -25,6 +25,9 @@ class User extends Authenticatable
         'role',
         'department',
         'status',
+        'date_integration',
+        'is_integrated',
+        'terminated_date',
         'phone',
         'email',
         'password',
@@ -51,6 +54,9 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'date_integration' => 'date',
+            'terminated_date' => 'date',
+            'is_integrated' => 'boolean',
         ];
     }
 

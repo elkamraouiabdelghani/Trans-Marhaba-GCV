@@ -66,6 +66,9 @@ Route::middleware('auth')->group(function () {
     // Turnovers
     Route::resource('turnovers', TurnoverController::class);
     Route::post('/turnovers/{turnover}/confirm', [TurnoverController::class, 'confirm'])->name('turnovers.confirm');
+    Route::get('/turnovers/{turnover}/interview', [TurnoverController::class, 'showInterviewForm'])->name('turnovers.interview');
+    Route::post('/turnovers/{turnover}/interview', [TurnoverController::class, 'storeInterviewAnswers'])->name('turnovers.interview.store');
+    Route::get('/turnovers/{turnover}/interview/download', [TurnoverController::class, 'downloadInterviewPdf'])->name('turnovers.interview.download');
 
     // Formation Processes
     Route::get('/formation-processes', [FormationProcessController::class, 'index'])->name('formation-processes.index');

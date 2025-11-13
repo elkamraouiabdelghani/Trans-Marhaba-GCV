@@ -1505,8 +1505,10 @@ class IntegrationController extends Controller
                 'password' => $tempPassword,
                 'phone' => $step2Data['phone'] ?? null,
                 'department' => 'other',
-                'role' => 'manager',
-                'status' => 'inactive',
+                'role' => 'other',
+                'status' => 'active',
+                'date_integration' => now()->format('Y-m-d'),
+                'is_integrated' => 1,
             ]);
             
         } catch (\Throwable $e) {

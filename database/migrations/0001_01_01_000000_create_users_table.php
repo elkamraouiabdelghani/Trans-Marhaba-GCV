@@ -14,7 +14,11 @@ return new class extends Migration
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->enum('role', ['admin', 'responsible', 'teacher', 'student']);
+            $table->enum('role', ['admin', 'manager', 'other']);
+            $table->enum('status', ['active', 'inactive', 'on_leave', 'terminated']);
+            $table->date('date_integration')->nullable();
+            $table->boolean('is_integrated')->default(false);
+            $table->date('terminated_date')->nullable();
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');

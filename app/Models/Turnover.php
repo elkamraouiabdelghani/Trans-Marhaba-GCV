@@ -24,6 +24,7 @@ class Turnover extends Model
         'departure_reason',
         'interview_notes',
         'interviewed_by',
+        'interview_answers',
         'observations',
         'turnover_pdf_path',
         'status',
@@ -37,6 +38,7 @@ class Turnover extends Model
     protected $casts = [
         'departure_date' => 'date',
         'confirmed_at' => 'datetime',
+        'interview_answers' => 'array',
     ];
 
     /**
@@ -98,7 +100,9 @@ class Turnover extends Model
                 if ($user) {
                     $user->update([
                         'department' => 'other',
-                        'status' => 'inactive',
+                        'status' => 'terminated',
+                        'terminated_date' => $confirmedAt->toDateString(),
+                        'is_integrated' => 0,
                         'role' => 'other',
                     ]);
                 }
@@ -142,5 +146,23 @@ class Turnover extends Model
         }
 
         return null;
+    }
+
+    /**
+     * Determine if the exit interview has been completed.
+     */
+    public function getInterviewCompletedAttribute(): bool
+    {
+        $answers = $this->interview_answers['answers'] ?? null;
+
+        return is_array($answers) && !empty($answers);
+    }
+
+    /**
+     * Helper alias for checking interview completion state.
+     */
+    public function hasInterviewAnswers(): bool
+    {
+        return $this->interview_completed;
     }
 }

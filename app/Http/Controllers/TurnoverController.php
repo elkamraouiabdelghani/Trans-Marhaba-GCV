@@ -2,17 +2,28 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreInterviewAnswersRequest;
 use App\Http\Requests\StoreTurnoverRequest;
 use App\Models\Turnover;
 use App\Models\Driver;
 use App\Models\User;
 use App\Models\Flotte;
+use App\Services\TurnoverPdfService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class TurnoverController extends Controller
 {
+    protected TurnoverPdfService $turnoverPdfService;
+
+    public function __construct(TurnoverPdfService $turnoverPdfService)
+    {
+        $this->turnoverPdfService = $turnoverPdfService;
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -188,6 +199,113 @@ class TurnoverController extends Controller
             return redirect()->route('turnovers.index')
                 ->with('error', __('messages.error_confirming_turnover'));
         }
+    }
+
+    /**
+     * Display the exit interview form for the specified turnover.
+     */
+    public function showInterviewForm(Turnover $turnover): RedirectResponse|View
+    {
+        if (empty($turnover->interview_notes) || empty($turnover->interviewed_by)) {
+            return redirect()
+                ->route('turnovers.edit', $turnover)
+                ->with('error', __('messages.exit_interview_prerequisites'));
+        }
+
+        $turnover->loadMissing(['driver', 'user']);
+
+        $questions = config('turnover_interview.questions', []);
+        $ratingScale = config('turnover_interview.rating_scale', [1, 2, 3, 4, 5]);
+
+        $interviewData = $turnover->interview_answers ?? [];
+        $answers = $interviewData['answers'] ?? [];
+        $meta = [
+            'employee_name' => $interviewData['employee_name'] ?? $turnover->person_name,
+            'interview_date' => $interviewData['interview_date'] ?? now()->toDateString(),
+            'employee_signature' => $interviewData['employee_signature'] ?? '',
+        ];
+
+        return view('turnovers.interview', compact(
+            'turnover',
+            'questions',
+            'ratingScale',
+            'answers',
+            'meta'
+        ));
+    }
+
+    /**
+     * Store the exit interview answers for the specified turnover.
+     */
+    public function storeInterviewAnswers(StoreInterviewAnswersRequest $request, Turnover $turnover): RedirectResponse
+    {
+        if (empty($turnover->interview_notes) || empty($turnover->interviewed_by)) {
+            return redirect()
+                ->route('turnovers.edit', $turnover)
+                ->with('error', __('messages.exit_interview_prerequisites'));
+        }
+
+        $validated = $request->validated();
+        $questions = config('turnover_interview.questions', []);
+
+        $answers = [];
+        foreach ($questions as $question) {
+            $key = $question['key'];
+            $answers[$key] = $validated[$key] ?? null;
+        }
+
+        $interviewPayload = [
+            'answers' => $answers,
+            'employee_name' => $validated['employee_name'],
+            'interview_date' => $validated['interview_date'],
+            'employee_signature' => $validated['employee_signature'],
+        ];
+
+        $turnover->update([
+            'interview_answers' => $interviewPayload,
+        ]);
+
+        try {
+            if ($turnover->turnover_pdf_path && Storage::disk('uploads')->exists($turnover->turnover_pdf_path)) {
+                Storage::disk('uploads')->delete($turnover->turnover_pdf_path);
+            }
+
+            $turnover->refresh();
+            $pdfPath = $this->turnoverPdfService->generateInterviewPdf($turnover);
+
+            $turnover->update([
+                'turnover_pdf_path' => $pdfPath,
+            ]);
+        } catch (\Throwable $exception) {
+            Log::error('Failed to generate exit interview PDF', [
+                'turnover_id' => $turnover->id,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return redirect()
+                ->route('turnovers.edit', $turnover)
+                ->with('error', __('messages.exit_interview_pdf_error'));
+        }
+
+        return redirect()
+            ->route('turnovers.edit', $turnover)
+            ->with('success', __('messages.exit_interview_saved'));
+    }
+
+    /**
+     * Download the stored exit interview PDF.
+     */
+    public function downloadInterviewPdf(Turnover $turnover)
+    {
+        if (!$turnover->turnover_pdf_path || !Storage::disk('uploads')->exists($turnover->turnover_pdf_path)) {
+            return redirect()
+                ->back()
+                ->with('error', __('messages.exit_interview_pdf_not_found'));
+        }
+
+        $fileName = sprintf('exit-interview-%d.pdf', $turnover->id);
+
+        return Storage::disk('uploads')->download($turnover->turnover_pdf_path, $fileName);
     }
 
     /**

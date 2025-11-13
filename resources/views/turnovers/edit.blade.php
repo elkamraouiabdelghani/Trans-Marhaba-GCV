@@ -30,6 +30,54 @@
             </div>
         @endif
 
+        @php
+            $canFillInterview = !empty($turnover->interview_notes) && !empty($turnover->interviewed_by);
+        @endphp
+
+        <div class="row mb-4">
+            <div class="col-md-10 mx-auto">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+                        <div>
+                            <h6 class="fw-bold text-dark mb-1">
+                                <i class="bi bi-clipboard-check me-2 text-success"></i>
+                                {{ __('messages.exit_interview') }}
+                            </h6>
+                            @if($turnover->interview_completed)
+                                <p class="mb-0 text-success small">
+                                    <i class="bi bi-check-circle me-1"></i>
+                                    {{ __('messages.exit_interview_completed_description') }}
+                                </p>
+                            @elseif($canFillInterview)
+                                <p class="mb-0 text-muted small">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    {{ __('messages.exit_interview_ready_to_fill') }}
+                                </p>
+                            @else
+                                <p class="mb-0 text-muted small">
+                                    <i class="bi bi-exclamation-circle me-1"></i>
+                                    {{ __('messages.exit_interview_missing_prerequisites') }}
+                                </p>
+                            @endif
+                        </div>
+                        <div class="d-flex gap-2">
+                            @if($turnover->interview_completed && $turnover->turnover_pdf_path)
+                                <a href="{{ route('turnovers.interview.download', $turnover) }}" class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-download me-1"></i>
+                                    {{ __('messages.download_pdf') }}
+                                </a>
+                            @elseif($canFillInterview)
+                                <a href="{{ route('turnovers.interview', $turnover) }}" class="btn btn-success btn-sm">
+                                    <i class="bi bi-clipboard-plus me-1"></i>
+                                    {{ __('messages.complete_exit_interview') }}
+                                </a>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Edit Form -->
         <div class="card border-0 shadow-sm col-md-10 mx-auto">
             <div class="card-header bg-white border-bottom py-3">
