@@ -10,7 +10,7 @@
             $stepData = $step ? $step->step_data : [];
             $isValidated = $step && $step->isValidated();
             $isRejected = $step && $step->isRejected();
-            $canEdit = !$isValidated && !$isRejected && !$changement->isValidated() && !$changement->isRejected();
+            $canEdit = !$isRejected && !$changement->isValidated() && !$changement->isRejected();
         @endphp
 
         @if(!$isRejected)
@@ -25,7 +25,7 @@
                               id="change_implementation" 
                               name="change_implementation" 
                               rows="5" 
-                              {{ !$canEdit ? 'readonly' : '' }}>{{ old('change_implementation', $stepData['change_implementation'] ?? '') }}</textarea>
+>{{ old('change_implementation', $stepData['change_implementation'] ?? '') }}</textarea>
                     @error('change_implementation')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
@@ -40,7 +40,7 @@
                                id="implemented_by" 
                                name="implemented_by" 
                                value="{{ old('implemented_by', $stepData['implemented_by'] ?? auth()->user()->name ?? '') }}"
-                               {{ !$canEdit ? 'readonly' : '' }}>
+>
                         @error('implemented_by')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
@@ -52,7 +52,7 @@
                                id="implementation_date" 
                                name="implementation_date" 
                                value="{{ old('implementation_date', $stepData['implementation_date'] ?? date('Y-m-d')) }}"
-                               {{ !$canEdit ? 'readonly' : '' }}>
+>
                         @error('implementation_date')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
@@ -83,12 +83,10 @@
                             @endif
                         </div>
                         <div class="d-flex gap-2">
-                            @if($canEdit)
-                                <button type="submit" class="btn btn-outline-success" data-submit-action="update">
-                                    <i class="bi bi-pencil me-1"></i>
-                                    {{ __('messages.update') }}
-                                </button>
-                            @endif
+                            <button type="submit" class="btn btn-outline-success" data-submit-action="update">
+                                <i class="bi bi-pencil me-1"></i>
+                                {{ __('messages.update') }}
+                            </button>
                             @if($stepNumber < 6)
                                 <a href="{{ route('changements.checklist', $changement) }}" class="btn btn-primary">
                                     {{ __('messages.next') }} <i class="bi bi-arrow-right ms-1"></i>

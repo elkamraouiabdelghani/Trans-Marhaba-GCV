@@ -57,38 +57,47 @@
             text-align: center;
         }
         th { 
-            background-color: #166534; 
-            color: #fff; 
+            background-color: #87ceeb; 
+            color: #000; 
             font-weight: bold; 
-            font-size: 9px;
+            font-size: 10px;
+            padding: 8px 4px;
         }
         td {
-            background-color: #fff;
+            background-color: #d3d3d3;
+        }
+        .changement-type-header {
+            background-color: #87ceeb;
+            text-align: left;
+            font-weight: bold;
+            padding: 8px;
+        }
+        .section-header {
+            background-color: #8b6f47;
+            color: #fff;
+            font-weight: bold;
+            text-align: left;
+            padding: 6px 8px;
         }
         .sous-cretaire-name {
             text-align: left;
-            font-weight: bold;
-            background-color: #f3f4f6;
-            width: 150px;
+            font-weight: normal;
+            background-color: #d3d3d3;
+            padding: 6px 8px;
         }
-        .status-ok {
-            background-color: #d1fae5;
-            color: #065f46;
+        .check-column {
+            text-align: center;
+            width: 60px;
             font-weight: bold;
+            font-size: 12px;
         }
-        .status-ko {
-            background-color: #fee2e2;
-            color: #991b1b;
-            font-weight: bold;
-        }
-        .status-na {
-            background-color: #f3f4f6;
-            color: #6b7280;
+        .check-mark {
+            color: #000;
         }
         .observation-cell {
             text-align: left;
             font-size: 8px;
-            max-width: 200px;
+            padding: 6px 8px;
             word-wrap: break-word;
         }
         .footer {
@@ -132,62 +141,85 @@
     <table>
         <thead>
             <tr>
-                <th class="sous-cretaire-name">Sous-Critère</th>
-                @foreach($principaleCretaires as $principale)
-                    <th>{{ $principale->name }}</th>
-                @endforeach
-                <th>Observation</th>
+                <th class="changement-type-header">{{ $changement->changementType->name ?? 'N/A' }}</th>
+                <th>OK</th>
+                <th>KO</th>
+                <th>N/A</th>
+                <th>OBSERVATIONS</th>
             </tr>
         </thead>
         <tbody>
             @php
                 // Group sous cretaire by principale cretaire
-                $allSousCretaires = collect();
+                $groupedSousCretaires = collect();
                 foreach ($principaleCretaires as $principale) {
+                    $sousList = collect();
                     foreach ($principale->sousCretaires as $sous) {
-                        $allSousCretaires->push([
+                        $sousList->push([
                             'sous' => $sous,
                             'principale' => $principale,
                         ]);
                     }
+                    if ($sousList->isNotEmpty()) {
+                        $sortedSousList = $sousList->sortBy(function($item) {
+                            return $item['sous']->name;
+                        });
+                        $groupedSousCretaires->push([
+                            'principale' => $principale,
+                            'sousList' => $sortedSousList,
+                        ]);
+                    }
                 }
-                // Sort by principale name, then sous name
-                $allSousCretaires = $allSousCretaires->sortBy([
-                    ['principale.name', 'asc'],
-                    ['sous.name', 'asc'],
-                ]);
+                $groupedSousCretaires = $groupedSousCretaires->sortBy(function($group) {
+                    return $group['principale']->name;
+                });
             @endphp
 
-            @foreach($allSousCretaires as $item)
+            @foreach($groupedSousCretaires as $group)
                 @php
-                    $sous = $item['sous'];
-                    $result = $checklistResults->get($sous->id);
-                    $sousPrincipaleId = $sous->principale_cretaire_id;
+                    $principale = $group['principale'];
+                    $sousList = $group['sousList'];
                 @endphp
                 <tr>
-                    <td class="sous-cretaire-name">{{ $sous->name }}</td>
-                    @foreach($principaleCretaires as $principale)
-                        @if($principale->id === $sousPrincipaleId)
-                            @php
-                                $status = $result ? $result->status : 'N/A';
-                                $statusClass = match($status) {
-                                    'OK' => 'status-ok',
-                                    'KO' => 'status-ko',
-                                    default => 'status-na',
-                                };
-                            @endphp
-                            <td class="{{ $statusClass }}">{{ $status }}</td>
-                        @else
-                            <td>-</td>
-                        @endif
-                    @endforeach
-                    <td class="observation-cell">{{ $result ? ($result->observation ?? '-') : '-' }}</td>
+                    <td colspan="5" class="section-header">{{ $principale->name }}</td>
                 </tr>
+                @foreach($sousList as $item)
+                    @php
+                        $sous = $item['sous'];
+                        $result = $checklistResults->get($sous->id);
+                        $status = $result ? $result->status : 'N/A';
+                    @endphp
+                    <tr>
+                        <td class="sous-cretaire-name">{{ $sous->name }}</td>
+                        <td class="check-column">
+                            @if($status === 'OK')
+                                <span class="check-mark">X</span>
+                            @else
+                                &nbsp;
+                            @endif
+                        </td>
+                        <td class="check-column">
+                            @if($status === 'KO')
+                                <span class="check-mark">X</span>
+                            @else
+                                &nbsp;
+                            @endif
+                        </td>
+                        <td class="check-column">
+                            @if($status === 'N/A')
+                                <span class="check-mark">X</span>
+                            @else
+                                &nbsp;
+                            @endif
+                        </td>
+                        <td class="observation-cell">{{ $result ? ($result->observation ?? '') : '' }}</td>
+                    </tr>
+                @endforeach
             @endforeach
 
-            @if($allSousCretaires->isEmpty())
+            @if($groupedSousCretaires->isEmpty())
                 <tr>
-                    <td colspan="{{ $principaleCretaires->count() + 2 }}" style="text-align: center; padding: 20px; color: #6b7280;">
+                    <td colspan="5" style="text-align: center; padding: 20px; color: #6b7280;">
                         Aucun sous-critère disponible
                     </td>
                 </tr>

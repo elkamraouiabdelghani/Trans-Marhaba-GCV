@@ -11,6 +11,7 @@ use App\Models\SousCretaire;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Throwable;
@@ -120,7 +121,7 @@ class ChangementController extends Controller
                 'action' => $validated['action'] ?? null,
                 'status' => 'draft',
                 'current_step' => 1,
-                'created_by' => auth()->id() ? (string) auth()->id() : null,
+                'created_by' => Auth::id() ? (string) Auth::id() : null,
             ]);
 
             // Create Step 1 record and mark as validated (since it's the initial step)
@@ -129,7 +130,7 @@ class ChangementController extends Controller
                 'step_number' => 1,
                 'step_data' => $validated,
                 'status' => 'validated',
-                'validated_by' => auth()->id() ? (string) auth()->id() : null,
+                'validated_by' => Auth::id() ? (string) Auth::id() : null,
                 'validated_at' => now(),
             ]);
 
@@ -360,7 +361,7 @@ class ChangementController extends Controller
             $changement->refresh();
             $changement->load('steps');
 
-            // Check if this is a validation request
+            // Check if this is a validation request or update request
             $submitAction = $request->input('submit_action');
             
             if ($submitAction === 'validate') {
@@ -373,9 +374,13 @@ class ChangementController extends Controller
                 return $this->validateStep($request, $changement, $stepNumber);
             }
 
-            // Redirect back to the step page after saving
+            // Redirect back to the step page after saving/updating
+            $successMessage = $submitAction === 'update' 
+                ? __('messages.changements_update_step_success')
+                : __('messages.changements_save_step_success');
+            
             return redirect()->route('changements.step', ['changement' => $changement->id, 'stepNumber' => $stepNumber])
-                ->with('success', __('messages.changements_save_step_success'));
+                ->with('success', $successMessage);
         } catch (Throwable $e) {
             Log::error('Failed to save step', [
                 'changement_id' => $changement->id,
@@ -414,7 +419,7 @@ class ChangementController extends Controller
             }
 
             // Mark the step as validated
-            $step->validateStep(auth()->id() ? (string) auth()->id() : null, $request->input('notes'));
+            $step->validateStep(Auth::id() ? (string) Auth::id() : null, $request->input('notes'));
 
             // Refresh changement to get latest step status
             $changement->refresh();
@@ -469,13 +474,13 @@ class ChangementController extends Controller
 
             $step->rejectStep(
                 $request->input('rejection_reason'),
-                auth()->id() ? (string) auth()->id() : null,
+                Auth::id() ? (string) Auth::id() : null,
                 $request->input('notes')
             );
 
             // Reject changement if critical step is rejected
             if (in_array($stepNumber, [2, 3, 4, 5])) {
-                $changement->markAsRejected($request->input('rejection_reason'), auth()->id() ? (string) auth()->id() : null);
+                $changement->markAsRejected($request->input('rejection_reason'), Auth::id() ? (string) Auth::id() : null);
             }
 
             return redirect()->route('changements.show', $changement->id)
@@ -552,6 +557,17 @@ class ChangementController extends Controller
             // Load changement type to get all sous cretaire
             $changement->load(['changementType.principaleCretaires.sousCretaires']);
 
+            // Delete old checklist if it exists
+            if ($changement->check_list_path) {
+                // Delete old PDF file from uploads folder
+                if (Storage::disk('uploads')->exists($changement->check_list_path)) {
+                    Storage::disk('uploads')->delete($changement->check_list_path);
+                }
+            }
+
+            // Delete old checklist results from database
+            $changement->checklistResults()->delete();
+
             // Get all sous cretaire for this changement type
             $allSousCretaires = SousCretaire::whereHas('principaleCretaire', function ($query) use ($changement) {
                 $query->where('changement_type_id', $changement->changement_type_id)
@@ -561,25 +577,21 @@ class ChangementController extends Controller
             ->pluck('id')
             ->toArray();
 
-            // Save or update checklist results
+            // Save new checklist results
             foreach ($request->input('checklist', []) as $sousCretaireId => $data) {
                 if (!in_array($sousCretaireId, $allSousCretaires)) {
                     continue; // Skip invalid sous cretaire IDs
                 }
 
-                ChangementChecklistResult::updateOrCreate(
-                    [
-                        'changement_id' => $changement->id,
-                        'sous_cretaire_id' => $sousCretaireId,
-                    ],
-                    [
-                        'status' => $data['status'] ?? 'N/A',
-                        'observation' => $data['observation'] ?? null,
-                    ]
-                );
+                ChangementChecklistResult::create([
+                    'changement_id' => $changement->id,
+                    'sous_cretaire_id' => $sousCretaireId,
+                    'status' => $data['status'] ?? 'N/A',
+                    'observation' => $data['observation'] ?? null,
+                ]);
             }
 
-            // Generate PDF report
+            // Generate new PDF report
             $pdfService = new \App\Services\ChangementPdfService();
             $pdfPath = $pdfService->generateChecklistPdf($changement);
 
@@ -597,19 +609,19 @@ class ChangementController extends Controller
                     'step_number' => 6,
                     'step_data' => ['checklist_completed' => true, 'pdf_path' => $pdfPath],
                     'status' => 'validated',
-                    'validated_by' => auth()->id() ? (string) auth()->id() : null,
+                    'validated_by' => Auth::id() ? (string) Auth::id() : null,
                     'validated_at' => now(),
                 ]);
             } else {
                 $step6->update([
                     'step_data' => array_merge($step6->step_data ?? [], ['checklist_completed' => true, 'pdf_path' => $pdfPath]),
                     'status' => 'validated',
-                    'validated_by' => auth()->id() ? (string) auth()->id() : null,
+                    'validated_by' => Auth::id() ? (string) Auth::id() : null,
                     'validated_at' => now(),
                 ]);
             }
 
-            return redirect()->route('changements.show', $changement)
+            return redirect()->route('changements.index')
                 ->with('success', __('messages.changements_save_checklist_success'));
         } catch (Throwable $e) {
             Log::error('Failed to save checklist', [
@@ -635,8 +647,9 @@ class ChangementController extends Controller
             }
 
             $fileName = sprintf('checklist-changement-%d-%s.pdf', $changement->id, now()->format('YmdHis'));
+            $filePath = Storage::disk('uploads')->path($changement->check_list_path);
 
-            return Storage::disk('uploads')->download($changement->check_list_path, $fileName);
+            return response()->download($filePath, $fileName);
         } catch (Throwable $e) {
             Log::error('Failed to download changement checklist', [
                 'changement_id' => $changement->id,
@@ -672,7 +685,7 @@ class ChangementController extends Controller
             }
 
             // Mark changement as approved
-            $changement->markAsValidated(auth()->id() ? (string) auth()->id() : null);
+            $changement->markAsValidated(Auth::id() ? (string) Auth::id() : null);
             $changement->update(['status' => 'approved']);
             
             // Refresh to get latest data

@@ -72,110 +72,103 @@
                         @csrf
 
                         <div class="table-responsive">
-                            <table class="table table-bordered table-hover align-middle">
-                                <thead class="table-light">
+                            <table class="table table-bordered align-middle checklist-table">
+                                <thead>
                                     <tr>
-                                        <th style="width: 30%;" class="text-center">{{ __('messages.sous_cretaires') }}</th>
-                                        @foreach($principaleCretaires as $principale)
-                                            <th class="text-center" style="min-width: 150px;">
-                                                <div class="fw-bold">{{ $principale->name }}</div>
-                                                @if($principale->code)
-                                                    <small class="text-muted">({{ $principale->code }})</small>
-                                                @endif
-                                            </th>
-                                        @endforeach
-                                        <th style="width: 25%;" class="text-center">{{ __('messages.observation') }}</th>
+                                        <th class="changement-type-header">{{ $changement->changementType->name ?? __('messages.not_available') }}</th>
+                                        <th class="text-center check-header">OK</th>
+                                        <th class="text-center check-header">KO</th>
+                                        <th class="text-center check-header">N/A</th>
+                                        <th class="text-center observation-header">OBSERVATIONS</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @php
-                                        // Collect all sous-cretaires with their principale
-                                        $allSousCretaires = collect();
+                                        // Group sous-cretaires by principale cretaire
+                                        $groupedSousCretaires = collect();
                                         foreach ($principaleCretaires as $principale) {
+                                            $sousList = collect();
                                             foreach ($principale->sousCretaires as $sous) {
-                                                $allSousCretaires->push([
+                                                $sousList->push([
                                                     'sous' => $sous,
                                                     'principale' => $principale,
                                                 ]);
                                             }
+                                            if ($sousList->isNotEmpty()) {
+                                                $sortedSousList = $sousList->sortBy(function($item) {
+                                                    return $item['sous']->name;
+                                                });
+                                                $groupedSousCretaires->push([
+                                                    'principale' => $principale,
+                                                    'sousList' => $sortedSousList,
+                                                ]);
+                                            }
                                         }
-                                        $allSousCretaires = $allSousCretaires->sortBy([
-                                            ['principale.name', 'asc'],
-                                            ['sous.name', 'asc'],
-                                        ]);
+                                        $groupedSousCretaires = $groupedSousCretaires->sortBy(function($group) {
+                                            return $group['principale']->name;
+                                        });
                                     @endphp
 
-                                    @foreach($allSousCretaires as $item)
+                                    @foreach($groupedSousCretaires as $group)
                                         @php
-                                            $sous = $item['sous'];
-                                            $principale = $item['principale'];
-                                            $result = $checklistResults->get($sous->id);
-                                            $currentStatus = old("checklist.{$sous->id}.status", $result ? $result->status : 'N/A');
-                                            $currentObservation = old("checklist.{$sous->id}.observation", $result ? $result->observation : '');
+                                            $principale = $group['principale'];
+                                            $sousList = $group['sousList'];
                                         @endphp
-                                        <tr>
-                                            <td class="fw-bold">
-                                                <div>{{ $sous->name }}</div>
-                                                @if($sous->description)
-                                                    <small class="text-muted">{{ $sous->description }}</small>
-                                                @endif
-                                            </td>
-                                            @foreach($principaleCretaires as $pc)
-                                                <td class="text-center">
-                                                    @if($pc->id === $principale->id)
-                                                        <div class="d-flex justify-content-center gap-3">
-                                                            <div class="form-check">
-                                                                <input class="form-check-input" 
-                                                                       type="radio" 
-                                                                       name="checklist[{{ $sous->id }}][status]" 
-                                                                       id="status_ok_{{ $sous->id }}" 
-                                                                       value="OK" 
-                                                                       {{ $currentStatus === 'OK' ? 'checked' : '' }}
-                                                                       required>
-                                                                <label class="form-check-label text-success fw-bold" for="status_ok_{{ $sous->id }}">
-                                                                    OK
-                                                                </label>
-                                                            </div>
-                                                            <div class="form-check">
-                                                                <input class="form-check-input" 
-                                                                       type="radio" 
-                                                                       name="checklist[{{ $sous->id }}][status]" 
-                                                                       id="status_ko_{{ $sous->id }}" 
-                                                                       value="KO" 
-                                                                       {{ $currentStatus === 'KO' ? 'checked' : '' }}>
-                                                                <label class="form-check-label text-danger fw-bold" for="status_ko_{{ $sous->id }}">
-                                                                    KO
-                                                                </label>
-                                                            </div>
-                                                            <div class="form-check">
-                                                                <input class="form-check-input" 
-                                                                       type="radio" 
-                                                                       name="checklist[{{ $sous->id }}][status]" 
-                                                                       id="status_na_{{ $sous->id }}" 
-                                                                       value="N/A" 
-                                                                       {{ $currentStatus === 'N/A' ? 'checked' : '' }}>
-                                                                <label class="form-check-label text-muted fw-bold" for="status_na_{{ $sous->id }}">
-                                                                    N/A
-                                                                </label>
-                                                            </div>
-                                                        </div>
-                                                    @else
-                                                        <span class="text-muted">-</span>
+                                        <tr class="section-header-row">
+                                            <td colspan="5" class="section-header-cell">{{ $principale->name }}</td>
+                                        </tr>
+                                        @foreach($sousList as $item)
+                                            @php
+                                                $sous = $item['sous'];
+                                                $result = $checklistResults->get($sous->id);
+                                                $currentStatus = old("checklist.{$sous->id}.status", $result ? $result->status : 'N/A');
+                                                $currentObservation = old("checklist.{$sous->id}.observation", $result ? $result->observation : '');
+                                            @endphp
+                                            <tr>
+                                                <td class="sous-cretaire-cell">
+                                                    <div class="fw-normal">{{ $sous->name }}</div>
+                                                    @if($sous->description)
+                                                        <small class="text-muted">{{ $sous->description }}</small>
                                                     @endif
                                                 </td>
-                                            @endforeach
-                                            <td>
-                                                <textarea class="form-control form-control-sm" 
-                                                          name="checklist[{{ $sous->id }}][observation]" 
-                                                          rows="2" 
-                                                          placeholder="{{ __('messages.observation_placeholder') }}">{{ $currentObservation }}</textarea>
-                                            </td>
-                                        </tr>
+                                                <td class="text-center check-cell">
+                                                    <input class="form-check-input" 
+                                                           type="radio" 
+                                                           name="checklist[{{ $sous->id }}][status]" 
+                                                           id="status_ok_{{ $sous->id }}" 
+                                                           value="OK" 
+                                                           {{ $currentStatus === 'OK' ? 'checked' : '' }}
+                                                           required>
+                                                </td>
+                                                <td class="text-center check-cell">
+                                                    <input class="form-check-input" 
+                                                           type="radio" 
+                                                           name="checklist[{{ $sous->id }}][status]" 
+                                                           id="status_ko_{{ $sous->id }}" 
+                                                           value="KO" 
+                                                           {{ $currentStatus === 'KO' ? 'checked' : '' }}>
+                                                </td>
+                                                <td class="text-center check-cell">
+                                                    <input class="form-check-input" 
+                                                           type="radio" 
+                                                           name="checklist[{{ $sous->id }}][status]" 
+                                                           id="status_na_{{ $sous->id }}" 
+                                                           value="N/A" 
+                                                           {{ $currentStatus === 'N/A' ? 'checked' : '' }}>
+                                                </td>
+                                                <td class="observation-cell">
+                                                    <textarea class="form-control form-control-sm" 
+                                                              name="checklist[{{ $sous->id }}][observation]" 
+                                                              rows="2" 
+                                                              placeholder="{{ __('messages.observation_placeholder') }}">{{ $currentObservation }}</textarea>
+                                                </td>
+                                            </tr>
+                                        @endforeach
                                     @endforeach
 
-                                    @if($allSousCretaires->isEmpty())
+                                    @if($groupedSousCretaires->isEmpty())
                                         <tr>
-                                            <td colspan="{{ $principaleCretaires->count() + 2 }}" class="text-center py-5">
+                                            <td colspan="5" class="text-center py-5">
                                                 <div class="text-muted">
                                                     <i class="bi bi-inbox display-6 mb-3"></i>
                                                     <p class="mb-0">{{ __('messages.no_sous_cretaires') }}</p>
@@ -228,19 +221,61 @@
     </script>
 
     <style>
-        .table th {
-            vertical-align: middle;
-            white-space: nowrap;
+        .checklist-table {
+            background-color: #d3d3d3;
         }
-        .table td {
+        .checklist-table thead th {
+            background-color: #87ceeb;
+            color: #000;
+            font-weight: bold;
             vertical-align: middle;
+            padding: 12px 8px;
+        }
+        .changement-type-header {
+            text-align: left;
+        }
+        .check-header {
+            width: 80px;
+        }
+        .observation-header {
+            min-width: 250px;
+        }
+        .checklist-table tbody td {
+            background-color: #d3d3d3;
+            vertical-align: middle;
+            padding: 8px;
+        }
+        .section-header-row {
+            background-color: #8b6f47 !important;
+        }
+        .section-header-cell {
+            background-color: #8b6f47 !important;
+            color: #fff;
+            font-weight: bold;
+            padding: 10px 12px;
+        }
+        .sous-cretaire-cell {
+            text-align: left;
+            background-color: #d3d3d3;
+        }
+        .check-cell {
+            width: 80px;
+            background-color: #d3d3d3;
+        }
+        .check-cell .form-check-input {
+            cursor: pointer;
+            width: 1.2em;
+            height: 1.2em;
+        }
+        .observation-cell {
+            background-color: #d3d3d3;
+        }
+        .observation-cell textarea {
+            background-color: #fff;
         }
         .form-check-input:checked {
             background-color: var(--bs-primary);
             border-color: var(--bs-primary);
-        }
-        .form-check-label {
-            cursor: pointer;
         }
     </style>
 </x-app-layout>
