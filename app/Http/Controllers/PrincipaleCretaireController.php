@@ -70,7 +70,7 @@ class PrincipaleCretaireController extends Controller
             $principaleCretaire = PrincipaleCretaire::create($validated);
 
             return redirect()
-                ->route('principale-cretaires.show', $principaleCretaire)
+                ->route('changements.principale-cretaires.show', $principaleCretaire)
                 ->with('success', __('messages.principale_cretaires_created'));
         } catch (Throwable $th) {
             report($th);
@@ -84,7 +84,7 @@ class PrincipaleCretaireController extends Controller
         try {
             $principaleCretaire->load(['changementType', 'sousCretaires']);
 
-            return view('principale_cretaires.show', compact('principaleCretaire'));
+            return view('changements.principale_cretaires.show', compact('principaleCretaire'));
         } catch (Throwable $th) {
             report($th);
 
@@ -133,7 +133,7 @@ class PrincipaleCretaireController extends Controller
             $formContext = $request->input('form_context');
             if ($formContext === 'edit_principale_cretaire_show_page') {
                 return redirect()
-                    ->route('principale-cretaires.show', $principaleCretaire)
+                    ->route('changements.principale-cretaires.show', $principaleCretaire)
                     ->with('success', 'Principale-cretaire mise à jour.');
             }
 
@@ -145,7 +145,7 @@ class PrincipaleCretaireController extends Controller
             }
 
             return redirect()
-                ->route('principale-cretaires.index')
+                ->route('changements.principale-cretaires.index')
                 ->with('success', 'Principale-cretaire mise à jour.');
         } catch (Throwable $th) {
             report($th);

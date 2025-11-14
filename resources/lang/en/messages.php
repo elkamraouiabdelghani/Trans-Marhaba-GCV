@@ -952,6 +952,8 @@ return [
     'rating' => 'Rating',
     'response' => 'Response',
     'write_answer_here' => 'Write your answer here...',
+    'driver_concern_completed' => 'Concern closed successfully.',
+    'driver_concern_completed_error' => 'An error occurred while closing the concern.',
 ];
 
 

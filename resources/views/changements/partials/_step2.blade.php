@@ -25,7 +25,7 @@
                               id="impact_evaluation" 
                               name="impact_evaluation" 
                               rows="5" 
->{{ old('impact_evaluation', $stepData['impact_evaluation'] ?? '') }}</textarea>
+                        >{{ old('impact_evaluation', $stepData['impact_evaluation'] ?? '') }}</textarea>
                     @error('impact_evaluation')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
@@ -39,8 +39,7 @@
                                class="form-control @error('evaluated_by') is-invalid @enderror" 
                                id="evaluated_by" 
                                name="evaluated_by" 
-                               value="{{ old('evaluated_by', $stepData['evaluated_by'] ?? auth()->user()->name ?? '') }}"
->
+                               value="{{ old('evaluated_by', $stepData['evaluated_by'] ?? auth()->user()->name ?? '') }}">
                         @error('evaluated_by')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
@@ -51,8 +50,7 @@
                                class="form-control @error('evaluation_date') is-invalid @enderror" 
                                id="evaluation_date" 
                                name="evaluation_date" 
-                               value="{{ old('evaluation_date', $stepData['evaluation_date'] ?? date('Y-m-d')) }}"
->
+                               value="{{ old('evaluation_date', $stepData['evaluation_date'] ?? date('Y-m-d')) }}">
                         @error('evaluation_date')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror

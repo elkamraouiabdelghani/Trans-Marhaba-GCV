@@ -939,4 +939,6 @@ return [
     'no_available_positions' => 'Tous les postes sont déjà attribués.',
     'confirm_delete' => 'Êtes-vous sûr de vouloir supprimer cet enregistrement ?',
     'last_update_date' => 'Date de mise à jour',
+    'driver_concern_completed' => 'Préoccupation clôturée avec succès.',
+    'driver_concern_completed_error' => 'Une erreur est survenue lors de la clôture de la préoccupation.',
 ];

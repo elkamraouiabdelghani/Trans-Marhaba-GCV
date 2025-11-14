@@ -17,58 +17,15 @@
             </a>
         </li>
         <li class="mb-2">
-            <a href="{{ route('drivers.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('drivers.*') ? 'active' : '' }}">
-                <i class="bi bi-people me-2 text-gray-600 sidebar-icon"></i>
-                <span class="sidebar-text">{{ __('messages.all_drivers') }}</span>
-            </a>
-        </li>
-        <li class="mb-2">
-            <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2">
-                <i class="bi bi-flag me-2 text-gray-600 sidebar-icon"></i>
-                <span class="sidebar-text">{{ __('messages.violations_by_type') }}</span>
-            </a>
-        </li>
-        <li class="mb-2">
-            <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2">
-                <i class="bi bi-shield-check me-2 text-gray-600 sidebar-icon"></i>
-                <span class="sidebar-text">{{ __('messages.score_points') }}</span>
-            </a>
-        </li>
-        <li class="mb-2">
-            <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2">
-                <i class="bi bi-clock-history me-2 text-gray-600 sidebar-icon"></i>
-                <span class="sidebar-text">{{ __('messages.driving_time_reports') }}</span>
-            </a>
-        </li>
-        <li class="mb-2">
-            <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2">
-                <i class="bi bi-box-arrow-down me-2 text-gray-600 sidebar-icon"></i>
-                <span class="sidebar-text">{{ __('messages.export_center') }}</span>
-            </a>
-        </li>
-        <li class="mb-2">
-            <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2">
-                <i class="bi bi-journal-check me-2 text-gray-600 sidebar-icon"></i>
-                <span class="sidebar-text">{{ __('messages.action_plan') }}</span>
-            </a>
-        </li>
-        <li class="mb-2">
             <a href="{{ route('integrations.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('integrations.*') ? 'active' : '' }}">
                 <i class="bi bi-person-check me-2 text-gray-600 sidebar-icon"></i>
                 <span class="sidebar-text">{{ __('messages.driver_integrations') }}</span>
             </a>
         </li>
         <li class="mb-2">
-            <a href="{{ route('turnovers.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('turnovers.*') ? 'active' : '' }}">
-                <i class="bi bi-arrow-left-right me-2 text-gray-600 sidebar-icon"></i>
-                <span class="sidebar-text">{{ __('messages.turnovers') }}</span>
-            </a>
-        </li>
-        <li class="mb-2">
-            <a href="{{ route('concerns.driver-concerns.index') }}"
-               class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('concerns.driver-concerns.*') ? 'active' : '' }}">
-                <i class="bi bi-exclamation-triangle me-2 text-gray-600 sidebar-icon"></i>
-                <span class="sidebar-text">{{ __('messages.concerns') }}</span>
+            <a href="{{ route('drivers.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('drivers.*') ? 'active' : '' }}">
+                <i class="bi bi-people me-2 text-gray-600 sidebar-icon"></i>
+                <span class="sidebar-text">{{ __('messages.all_drivers') }}</span>
             </a>
         </li>
         <li class="mb-2">
@@ -102,7 +59,6 @@
                 </li>
             </ul>
         </li>
-        {{-- Changements dropdown --}}
         <li class="mb-2">
             <a href="#"
                class="text-dark text-decoration-none d-flex align-items-center p-2 {{ (request()->routeIs('changement-types.*') || request()->routeIs('changements.*')) ? 'active' : '' }}"
@@ -128,6 +84,49 @@
                     </a>
                 </li>
             </ul>
+        </li>
+        <li class="mb-2">
+            <a href="{{ route('turnovers.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('turnovers.*') ? 'active' : '' }}">
+                <i class="bi bi-arrow-left-right me-2 text-gray-600 sidebar-icon"></i>
+                <span class="sidebar-text">{{ __('messages.turnovers') }}</span>
+            </a>
+        </li>
+        <li class="mb-2">
+            <a href="{{ route('concerns.driver-concerns.index') }}"
+               class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('concerns.driver-concerns.*') ? 'active' : '' }}">
+                <i class="bi bi-exclamation-triangle me-2 text-gray-600 sidebar-icon"></i>
+                <span class="sidebar-text">{{ __('messages.concerns') }}</span>
+            </a>
+        </li>
+        <li class="mb-2">
+            <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2">
+                <i class="bi bi-flag me-2 text-gray-600 sidebar-icon"></i>
+                <span class="sidebar-text">{{ __('messages.violations_by_type') }}</span>
+            </a>
+        </li>
+        <li class="mb-2">
+            <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2">
+                <i class="bi bi-shield-check me-2 text-gray-600 sidebar-icon"></i>
+                <span class="sidebar-text">{{ __('messages.score_points') }}</span>
+            </a>
+        </li>
+        <li class="mb-2">
+            <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2">
+                <i class="bi bi-clock-history me-2 text-gray-600 sidebar-icon"></i>
+                <span class="sidebar-text">{{ __('messages.driving_time_reports') }}</span>
+            </a>
+        </li>
+        <li class="mb-2">
+            <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2">
+                <i class="bi bi-box-arrow-down me-2 text-gray-600 sidebar-icon"></i>
+                <span class="sidebar-text">{{ __('messages.export_center') }}</span>
+            </a>
+        </li>
+        <li class="mb-2">
+            <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2">
+                <i class="bi bi-journal-check me-2 text-gray-600 sidebar-icon"></i>
+                <span class="sidebar-text">{{ __('messages.action_plan') }}</span>
+            </a>
         </li>
         <li class="mb-2">
             <a href="{{ route('organigram.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('organigram.*') ? 'active' : '' }}">
@@ -220,51 +219,78 @@
         <ul class="list-unstyled components p-3">
             <li class="mb-2">
                 <a href="{{ route('dashboard') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('dashboard') ? 'active' : '' }}">
-                    <i class="bi bi-speedometer2 me-2 text-gray-600"></i>
-                    {{ __('messages.dashboard') }}
+                    <i class="bi bi-speedometer2 me-2 text-gray-600 sidebar-icon"></i>
+                    <span class="sidebar-text">{{ __('messages.dashboard') }}</span>
                 </a>
             </li>
             <li class="mb-2">
-                <a href="{{ route('drivers.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2">
-                    <i class="bi bi-people me-2 text-gray-600"></i>
-                    {{ __('messages.all_drivers') }}
+                <a href="{{ route('integrations.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('integrations.*') ? 'active' : '' }}">
+                    <i class="bi bi-person-check me-2 text-gray-600 sidebar-icon"></i>
+                    <span class="sidebar-text">{{ __('messages.driver_integrations') }}</span>
                 </a>
             </li>
             <li class="mb-2">
-                <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2">
-                    <i class="bi bi-flag me-2 text-gray-600"></i>
-                    {{ __('messages.violations_by_type') }}
+                <a href="{{ route('drivers.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('drivers.*') ? 'active' : '' }}">
+                    <i class="bi bi-people me-2 text-gray-600 sidebar-icon"></i>
+                    <span class="sidebar-text">{{ __('messages.all_drivers') }}</span>
                 </a>
             </li>
             <li class="mb-2">
-                <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2">
-                    <i class="bi bi-shield-check me-2 text-gray-600"></i>
-                    {{ __('messages.score_points') }}
+                <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ (request()->routeIs('formations.*') || request()->routeIs('formation-processes.*') || request()->routeIs('formation-categories.*')) ? 'active' : '' }}" 
+                   data-bs-toggle="collapse" 
+                   data-bs-target="#formationsSubmenu" 
+                   aria-expanded="{{ (request()->routeIs('formations.*') || request()->routeIs('formation-processes.*') || request()->routeIs('formation-categories.*')) ? 'true' : 'false' }}"
+                   aria-controls="formationsSubmenu">
+                    <i class="bi bi-book me-2 text-gray-600 sidebar-icon"></i>
+                    <span class="sidebar-text">{{ __('messages.formations') }}</span>
+                    <i class="bi bi-chevron-down ms-auto sidebar-icon"></i>
                 </a>
+                <ul class="collapse list-unstyled ms-3 {{ (request()->routeIs('formations.*') || request()->routeIs('formation-processes.*') || request()->routeIs('formation-categories.*')) ? 'show' : '' }}" id="formationsSubmenu">
+                    <li class="mb-1">
+                        <a href="{{ route('formation-categories.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('formation-categories.*') ? 'active' : '' }}">
+                            <i class="bi bi-collection me-2 text-gray-600 sidebar-icon"></i>
+                            <span class="sidebar-text">{{ __('messages.formation_categories_title') }}</span>
+                        </a>
+                    </li>
+                    <li class="mb-1">
+                        <a href="{{ route('formations.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('formations.*') ? 'active' : '' }}">
+                            <i class="bi bi-book me-2 text-gray-600 sidebar-icon"></i>
+                            <span class="sidebar-text">{{ __('messages.formations') }}</span>
+                        </a>
+                    </li>
+                    <li class="mb-1">
+                        <a href="{{ route('formation-processes.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('formation-processes.*') ? 'active' : '' }}">
+                            <i class="bi bi-book-half me-2 text-gray-600 sidebar-icon"></i>
+                            <span class="sidebar-text">{{ __('messages.formation_processes') }}</span>
+                        </a>
+                    </li>
+                </ul>
             </li>
             <li class="mb-2">
-                <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2">
-                    <i class="bi bi-clock-history me-2 text-gray-600"></i>
-                    {{ __('messages.driving_time_reports') }}
+                <a href="#"
+                   class="text-dark text-decoration-none d-flex align-items-center p-2 {{ (request()->routeIs('changement-types.*') || request()->routeIs('changements.*')) ? 'active' : '' }}"
+                   data-bs-toggle="collapse"
+                   data-bs-target="#changementsSubmenu"
+                   aria-expanded="{{ (request()->routeIs('changement-types.*') || request()->routeIs('changements.*')) ? 'true' : 'false' }}"
+                   aria-controls="changementsSubmenu">
+                    <i class="bi bi-arrow-repeat me-2 text-gray-600 sidebar-icon"></i>
+                    <span class="sidebar-text">{{ __('messages.changements_menu') }}</span>
+                    <i class="bi bi-chevron-down ms-auto sidebar-icon"></i>
                 </a>
-            </li>
-            <li class="mb-2">
-                <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2">
-                    <i class="bi bi-box-arrow-down me-2 text-gray-600"></i>
-                    {{ __('messages.export_center') }}
-                </a>
-            </li>
-            <li class="mb-2">
-                <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2">
-                    <i class="bi bi-journal-check me-2 text-gray-600"></i>
-                    {{ __('messages.action_plan') }}
-                </a>
-            </li>
-            <li class="mb-2">
-                <a href="{{ route('integrations.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2">
-                    <i class="bi bi-person-check me-2 text-gray-600"></i>
-                    {{ __('messages.driver_integrations') }}
-                </a>
+                <ul class="collapse list-unstyled ms-3 {{ (request()->routeIs('changement-types.*') || request()->routeIs('changements.*')) ? 'show' : '' }}" id="changementsSubmenu">
+                    <li class="mb-1">
+                        <a href="{{ route('changement-types.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('changement-types.*') ? 'active' : '' }}">
+                            <i class="bi bi-list-check me-2 text-gray-600 sidebar-icon"></i>
+                            <span class="sidebar-text">{{ __('messages.changement_types_menu') }}</span>
+                        </a>
+                    </li>
+                    <li class="mb-1">
+                        <a href="{{ route('changements.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('changements.*') ? 'active' : '' }}">
+                            <i class="bi bi-columns-gap me-2 text-gray-600 sidebar-icon"></i>
+                            <span class="sidebar-text">{{ __('messages.changements_menu') }}</span>
+                        </a>
+                    </li>
+                </ul>
             </li>
             <li class="mb-2">
                 <a href="{{ route('turnovers.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('turnovers.*') ? 'active' : '' }}">
@@ -275,74 +301,47 @@
             <li class="mb-2">
                 <a href="{{ route('concerns.driver-concerns.index') }}"
                    class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('concerns.driver-concerns.*') ? 'active' : '' }}">
-                    <i class="bi bi-exclamation-triangle me-2 text-gray-600"></i>
-                    {{ __('messages.concerns') }}
+                    <i class="bi bi-exclamation-triangle me-2 text-gray-600 sidebar-icon"></i>
+                    <span class="sidebar-text">{{ __('messages.concerns') }}</span>
                 </a>
             </li>
             <li class="mb-2">
-                <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ (request()->routeIs('formations.*') || request()->routeIs('formation-processes.*') || request()->routeIs('formation-categories.*')) ? 'active' : '' }}" 
-                    data-bs-toggle="collapse" 
-                    data-bs-target="#formationsSubmenuMobile" 
-                    aria-expanded="{{ (request()->routeIs('formations.*') || request()->routeIs('formation-processes.*') || request()->routeIs('formation-categories.*')) ? 'true' : 'false' }}"
-                    aria-controls="formationsSubmenuMobile">
-                        <i class="bi bi-book me-2 text-gray-600"></i>
-                        {{ __('messages.formations') }}
-                        <i class="bi bi-chevron-down ms-auto"></i>
-                    </a>
-                    <ul class="collapse list-unstyled ms-3 {{ (request()->routeIs('formations.*') || request()->routeIs('formation-processes.*') || request()->routeIs('formation-categories.*')) ? 'show' : '' }}" id="formationsSubmenuMobile">
-                        <li class="mb-1">
-                            <a href="{{ route('formation-categories.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('formation-categories.*') ? 'active' : '' }}">
-                                <i class="bi bi-collection me-2 text-gray-600"></i>
-                                {{ __('messages.formation_categories_title') }}
-                            </a>
-                        </li>
-                        <li class="mb-1">
-                            <a href="{{ route('formations.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('formations.*') ? 'active' : '' }}">
-                                <i class="bi bi-book me-2 text-gray-600"></i>
-                                {{ __('messages.formations') }}
-                            </a>
-                        </li>
-                        <li class="mb-1">
-                            <a href="{{ route('formation-processes.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('formation-processes.*') ? 'active' : '' }}">
-                                <i class="bi bi-book-half me-2 text-gray-600"></i>
-                                {{ __('messages.formation_processes') }}
-                            </a>
-                        </li>
-                    </ul>
-                </li>
-                <li class="mb-2">
-                    <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ (request()->routeIs('changement-types.*') || request()->routeIs('changements.*')) ? 'active' : '' }}" 
-                        data-bs-toggle="collapse" 
-                        data-bs-target="#changementsSubmenuMobile" 
-                        aria-expanded="{{ (request()->routeIs('changement-types.*') || request()->routeIs('changements.*')) ? 'true' : 'false' }}"
-                        aria-controls="changementsSubmenuMobile">
-                            <i class="bi bi-arrow-repeat me-2 text-gray-600"></i>
-                            {{ __('messages.changements_menu') }}
-                            <i class="bi bi-chevron-down ms-auto"></i>
-                        </a>
-                        <ul class="collapse list-unstyled ms-3 {{ (request()->routeIs('changement-types.*') || request()->routeIs('changements.*')) ? 'show' : '' }}" id="changementsSubmenuMobile">
-                            <li class="mb-1">
-                                <a href="{{ route('changement-types.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('changement-types.*') ? 'active' : '' }}">
-                                    <i class="bi bi-list-check me-2 text-gray-600"></i>
-                                    {{ __('messages.changement_types_menu') }}
-                                </a>
-                            </li>
-                            <li class="mb-1">
-                                <a href="{{ route('changements.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('changements.*') ? 'active' : '' }}">
-                                    <i class="bi bi-columns-gap me-2 text-gray-600"></i>
-                                    {{ __('messages.changements_menu') }}
-                                </a>
-                            </li>
-                        </ul>
-                </li>
-                {{-- organigram route --}}
-                <li class="mb-2">
-                    <a href="{{ route('organigram.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('organigram.*') ? 'active' : '' }}">
-                        <i class="bi bi-people me-2 text-gray-600 sidebar-icon"></i>
-                        <span class="sidebar-text">{{ __('messages.members') }}</span>
-                    </a>
-                </li>
-            </ul>
+                <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2">
+                    <i class="bi bi-flag me-2 text-gray-600 sidebar-icon"></i>
+                    <span class="sidebar-text">{{ __('messages.violations_by_type') }}</span>
+                </a>
+            </li>
+            <li class="mb-2">
+                <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2">
+                    <i class="bi bi-shield-check me-2 text-gray-600 sidebar-icon"></i>
+                    <span class="sidebar-text">{{ __('messages.score_points') }}</span>
+                </a>
+            </li>
+            <li class="mb-2">
+                <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2">
+                    <i class="bi bi-clock-history me-2 text-gray-600 sidebar-icon"></i>
+                    <span class="sidebar-text">{{ __('messages.driving_time_reports') }}</span>
+                </a>
+            </li>
+            <li class="mb-2">
+                <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2">
+                    <i class="bi bi-box-arrow-down me-2 text-gray-600 sidebar-icon"></i>
+                    <span class="sidebar-text">{{ __('messages.export_center') }}</span>
+                </a>
+            </li>
+            <li class="mb-2">
+                <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2">
+                    <i class="bi bi-journal-check me-2 text-gray-600 sidebar-icon"></i>
+                    <span class="sidebar-text">{{ __('messages.action_plan') }}</span>
+                </a>
+            </li>
+            <li class="mb-2">
+                <a href="{{ route('organigram.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('organigram.*') ? 'active' : '' }}">
+                    <i class="bi bi-people me-2 text-gray-600 sidebar-icon"></i>
+                    <span class="sidebar-text">{{ __('messages.members') }}</span>
+                </a>
+            </li>
+        </ul>
 
         {{-- mobile sidebar footer --}}
         <div class="border-top mt-auto" style="position: sticky; bottom: 0; z-index: 2; background-color: #fff; border-top: 1px solid rgba(0,0,0,0.05);">

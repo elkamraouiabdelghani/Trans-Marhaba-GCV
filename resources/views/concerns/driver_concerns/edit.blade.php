@@ -152,7 +152,7 @@
                                         id="completion_date"
                                         name="completion_date"
                                         class="form-control @error('completion_date') is-invalid @enderror"
-                                        value="{{ old('completion_date', optional($concern->completion_date)->format('Y-m-d')) }}"
+                                        value="{{ old('completion_date', optional($concern->completion_date)->format('Y-m-d') ?: '') }}"
                                         @if($concern->status === 'closed') readonly @endif
                                     >
                                     @error('completion_date')
