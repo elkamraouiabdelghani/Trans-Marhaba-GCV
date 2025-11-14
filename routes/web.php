@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\RegisteredUserController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DriversController;
@@ -11,6 +10,10 @@ use App\Http\Controllers\FormationProcessController;
 use App\Http\Controllers\TurnoverController;
 use App\Http\Controllers\DriverConcernController;
 use App\Http\Controllers\OrganigramMemberController;
+use App\Http\Controllers\ChangementTypeController;
+use App\Http\Controllers\PrincipaleCretaireController;
+use App\Http\Controllers\SousCretaireController;
+use App\Http\Controllers\ChangementController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Session;
 
@@ -53,6 +56,25 @@ Route::middleware('auth')->group(function () {
     // Formation Types & Categories
     Route::resource('formations', FormationController::class);
     Route::resource('formation-categories', FormationCategoryController::class)->except(['show']);
+
+    // Changements
+    Route::resource('changement-types', ChangementTypeController::class);
+    Route::resource('principale-cretaires', PrincipaleCretaireController::class);
+    Route::resource('sous-cretaires', SousCretaireController::class);
+    
+    // Changement Process
+    Route::get('/changements', [ChangementController::class, 'index'])->name('changements.index');
+    Route::get('/changements/create', [ChangementController::class, 'create'])->name('changements.create');
+    Route::post('/changements', [ChangementController::class, 'store'])->name('changements.store');
+    Route::get('/changements/{changement}', [ChangementController::class, 'show'])->name('changements.show');
+    Route::get('/changements/{changement}/step/{stepNumber}', [ChangementController::class, 'step'])->name('changements.step');
+    Route::post('/changements/{changement}/step/{stepNumber}', [ChangementController::class, 'saveStep'])->name('changements.save-step');
+    Route::post('/changements/{changement}/step/{stepNumber}/validate', [ChangementController::class, 'validateStep'])->name('changements.validate-step');
+    Route::post('/changements/{changement}/step/{stepNumber}/reject', [ChangementController::class, 'rejectStep'])->name('changements.reject-step');
+    Route::get('/changements/{changement}/checklist', [ChangementController::class, 'checklist'])->name('changements.checklist');
+    Route::post('/changements/{changement}/checklist', [ChangementController::class, 'saveChecklist'])->name('changements.save-checklist');
+    Route::get('/changements/{changement}/checklist/download', [ChangementController::class, 'downloadChecklist'])->name('changements.checklist.download');
+    Route::post('/changements/{changement}/finalize', [ChangementController::class, 'finalize'])->name('changements.finalize');
     
     // Driver Concerns
     Route::resource('driver-concerns', DriverConcernController::class)

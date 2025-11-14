@@ -102,7 +102,33 @@
                 </li>
             </ul>
         </li>
-        {{-- organigram route --}}
+        {{-- Changements dropdown --}}
+        <li class="mb-2">
+            <a href="#"
+               class="text-dark text-decoration-none d-flex align-items-center p-2 {{ (request()->routeIs('changement-types.*') || request()->routeIs('changements.*')) ? 'active' : '' }}"
+               data-bs-toggle="collapse"
+               data-bs-target="#changementsSubmenu"
+               aria-expanded="{{ (request()->routeIs('changement-types.*') || request()->routeIs('changements.*')) ? 'true' : 'false' }}"
+               aria-controls="changementsSubmenu">
+                <i class="bi bi-arrow-repeat me-2 text-gray-600 sidebar-icon"></i>
+                <span class="sidebar-text">{{ __('messages.changements_menu') }}</span>
+                <i class="bi bi-chevron-down ms-auto sidebar-icon"></i>
+            </a>
+            <ul class="collapse list-unstyled ms-3 {{ (request()->routeIs('changement-types.*') || request()->routeIs('changements.*')) ? 'show' : '' }}" id="changementsSubmenu">
+                <li class="mb-1">
+                    <a href="{{ route('changement-types.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('changement-types.*') ? 'active' : '' }}">
+                        <i class="bi bi-list-check me-2 text-gray-600 sidebar-icon"></i>
+                        <span class="sidebar-text">{{ __('messages.changement_types_menu') }}</span>
+                    </a>
+                </li>
+                <li class="mb-1">
+                    <a href="{{ route('changements.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('changements.*') ? 'active' : '' }}">
+                        <i class="bi bi-columns-gap me-2 text-gray-600 sidebar-icon"></i>
+                        <span class="sidebar-text">{{ __('messages.changements_menu') }}</span>
+                    </a>
+                </li>
+            </ul>
+        </li>
         <li class="mb-2">
             <a href="{{ route('organigram.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('organigram.*') ? 'active' : '' }}">
                 <i class="bi bi-people me-2 text-gray-600 sidebar-icon"></i>
@@ -283,6 +309,31 @@
                             </a>
                         </li>
                     </ul>
+                </li>
+                <li class="mb-2">
+                    <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ (request()->routeIs('changement-types.*') || request()->routeIs('changements.*')) ? 'active' : '' }}" 
+                        data-bs-toggle="collapse" 
+                        data-bs-target="#changementsSubmenuMobile" 
+                        aria-expanded="{{ (request()->routeIs('changement-types.*') || request()->routeIs('changements.*')) ? 'true' : 'false' }}"
+                        aria-controls="changementsSubmenuMobile">
+                            <i class="bi bi-arrow-repeat me-2 text-gray-600"></i>
+                            {{ __('messages.changements_menu') }}
+                            <i class="bi bi-chevron-down ms-auto"></i>
+                        </a>
+                        <ul class="collapse list-unstyled ms-3 {{ (request()->routeIs('changement-types.*') || request()->routeIs('changements.*')) ? 'show' : '' }}" id="changementsSubmenuMobile">
+                            <li class="mb-1">
+                                <a href="{{ route('changement-types.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('changement-types.*') ? 'active' : '' }}">
+                                    <i class="bi bi-list-check me-2 text-gray-600"></i>
+                                    {{ __('messages.changement_types_menu') }}
+                                </a>
+                            </li>
+                            <li class="mb-1">
+                                <a href="{{ route('changements.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('changements.*') ? 'active' : '' }}">
+                                    <i class="bi bi-columns-gap me-2 text-gray-600"></i>
+                                    {{ __('messages.changements_menu') }}
+                                </a>
+                            </li>
+                        </ul>
                 </li>
                 {{-- organigram route --}}
                 <li class="mb-2">

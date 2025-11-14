@@ -20,6 +20,8 @@
                     {{ __('messages.concerns') }}
                 @elseif(request()->routeIs('organigram.*'))
                     {{ __('messages.organigram') }}
+                @elseif(request()->routeIs('changement-types.*') || request()->routeIs('changements.*') || request()->routeIs('principale-cretaires.*') || request()->routeIs('sous-cretaires.*'))
+                    {{ __('messages.changements') }}
                 @else
                     {{ __('messages.brand') }}
                 @endif
