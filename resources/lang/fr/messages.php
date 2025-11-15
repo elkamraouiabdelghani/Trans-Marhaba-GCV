@@ -1016,4 +1016,6 @@ return [
     'planifie' => 'Planifié',
     'realise' => 'Réalisé',
     'non_justifie' => 'Non justifié',
+    'all_years' => 'Toutes les années',
+    'integration_process' => 'Processus d\'intégration',
 ];

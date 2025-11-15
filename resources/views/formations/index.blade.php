@@ -71,7 +71,7 @@
             <div class="card-body">
                 <form method="GET" action="{{ route('formations.index') }}" id="filterForm">
                     <div class="row g-3">
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label for="driver" class="form-label small">{{ __('messages.driver') }}</label>
                             <select name="driver" id="driver" class="form-select form-select-sm">
                                 <option value="">{{ __('messages.all_drivers') }}</option>
@@ -82,7 +82,7 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label for="flotte" class="form-label small">{{ __('messages.flotte') }}</label>
                             <select name="flotte" id="flotte" class="form-select form-select-sm">
                                 <option value="">{{ __('messages.all_flottes') }}</option>
@@ -105,7 +105,7 @@
                                 </option>
                             </select>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label for="formation_category" class="form-label small">{{ __('messages.formation_category_name') }}</label>
                             <select name="formation_category" id="formation_category" class="form-select form-select-sm">
                                 <option value="">{{ __('messages.all_formations') }}</option>
@@ -116,7 +116,18 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-1 d-flex align-items-end">
+                        <div class="col-md-2">
+                            <label for="year" class="form-label small">{{ __('messages.year') }}</label>
+                            <select name="year" id="year" class="form-select form-select-sm">
+                                <option value="">{{ __('messages.all_years') }}</option>
+                                @foreach($years ?? [] as $year)
+                                    <option value="{{ $year }}" {{ request('year') == (string)$year ? 'selected' : '' }}>
+                                        {{ $year }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
                             <button type="submit" class="btn btn-primary btn-sm w-100">
                                 <i class="bi bi-search"></i>
                             </button>

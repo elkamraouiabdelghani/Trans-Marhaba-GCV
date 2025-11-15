@@ -66,6 +66,7 @@ class DriversController extends Controller
             'flotte',
             'formations.formation',
             'formations.formationProcess.steps',
+            'integrationCandidate',
         ]);
 
         // Get filter parameters
@@ -887,7 +888,7 @@ class DriversController extends Controller
     /**
      * Show the form for editing the specified driver.
      */
-    public function edit(Driver $driver): View
+    public function edit(Driver $driver)
     {
         try {
             $driver->load(['assignedVehicle', 'flotte']);

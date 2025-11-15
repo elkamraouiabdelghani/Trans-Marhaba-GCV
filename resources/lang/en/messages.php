@@ -1029,6 +1029,8 @@ return [
     'planifie' => 'Planned',
     'realise' => 'Completed',
     'non_justifie' => 'Not Justified',
+    'all_years' => 'All Years',
+    'integration_process' => 'Integration Process',
 ];
 
 

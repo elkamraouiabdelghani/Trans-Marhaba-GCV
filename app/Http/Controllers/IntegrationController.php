@@ -12,7 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 
 class IntegrationController extends Controller
@@ -108,7 +108,7 @@ class IntegrationController extends Controller
                 'step_number' => 1,
                 'step_data' => $validated,
                 'status' => 'validated',
-                'validated_by' => auth()->id(),
+                'validated_by' => Auth::id(),
                 'validated_at' => now(),
             ]);
 
@@ -610,10 +610,10 @@ class IntegrationController extends Controller
                 }
                 
                 if ($result !== 'passed') {
-                    $this->rejectIntegration($integration, __('messages.step3_failed'), auth()->id());
+                    $this->rejectIntegration($integration, __('messages.step3_failed'), Auth::id());
                     $step->rejectStep(
                         __('messages.result_must_be_passed'),
-                        auth()->id()
+                        Auth::id()
                     );
                     return redirect()->route('integrations.step', ['integration' => $integration->id, 'stepNumber' => $stepNumber])
                         ->with('error', __('messages.step3_failed'));
@@ -630,10 +630,10 @@ class IntegrationController extends Controller
                 
                 $result = $step->getStepData('result');
                 if ($result !== 'passed') {
-                    $this->rejectIntegration($integration, __('messages.step4_failed'), auth()->id());
+                    $this->rejectIntegration($integration, __('messages.step4_failed'), Auth::id());
                     $step->rejectStep(
                         __('messages.result_must_be_passed'),
-                        auth()->id()
+                        Auth::id()
                     );
                     return redirect()->route('integrations.step', ['integration' => $integration->id, 'stepNumber' => $stepNumber])
                         ->with('error', __('messages.step4_failed'));
@@ -650,10 +650,10 @@ class IntegrationController extends Controller
                 
                 $result = $step->getStepData('result');
                 if ($result !== 'passed') {
-                    $this->rejectIntegration($integration, __('messages.step5_failed'), auth()->id());
+                    $this->rejectIntegration($integration, __('messages.step5_failed'), Auth::id());
                     $step->rejectStep(
                         __('messages.result_must_be_passed'),
-                        auth()->id()
+                        Auth::id()
                     );
                     return redirect()->route('integrations.step', ['integration' => $integration->id, 'stepNumber' => $stepNumber])
                         ->with('error', __('messages.step5_failed'));
@@ -670,10 +670,10 @@ class IntegrationController extends Controller
                 
                 $result = $step->getStepData('result');
                 if ($result !== 'passed') {
-                    $this->rejectIntegration($integration, __('messages.step6_failed'), auth()->id());
+                    $this->rejectIntegration($integration, __('messages.step6_failed'), Auth::id());
                     $step->rejectStep(
                         __('messages.result_must_be_passed'),
-                        auth()->id()
+                        Auth::id()
                     );
                     return redirect()->route('integrations.step', ['integration' => $integration->id, 'stepNumber' => $stepNumber])
                         ->with('error', __('messages.step6_failed'));
@@ -713,10 +713,10 @@ class IntegrationController extends Controller
                 
                 $result = $step->getStepData('result');
                 if ($result !== 'passed') {
-                    $this->rejectIntegration($integration, __('messages.step8_failed'), auth()->id());
+                    $this->rejectIntegration($integration, __('messages.step8_failed'), Auth::id());
                     $step->rejectStep(
                         __('messages.result_must_be_passed'),
-                        auth()->id()
+                        Auth::id()
                     );
                     return redirect()->route('integrations.step', ['integration' => $integration->id, 'stepNumber' => $stepNumber])
                         ->with('error', __('messages.step8_failed'));
@@ -738,7 +738,7 @@ class IntegrationController extends Controller
             }
 
             // Mark the step as validated
-            $step->validateStep(auth()->id(), $request->input('notes'));
+            $step->validateStep(Auth::id(), $request->input('notes'));
 
             // Refresh integration to get latest step status
             $integration->refresh();
@@ -793,13 +793,13 @@ class IntegrationController extends Controller
 
             $step->rejectStep(
                 $request->input('rejection_reason'),
-                auth()->id(),
+                Auth::id(),
                 $request->input('notes')
             );
 
             // Reject integration if critical step is rejected
             if (in_array($stepNumber, [3, 4, 5, 6, 8])) {
-                $this->rejectIntegration($integration, $request->input('rejection_reason'), auth()->id());
+                $this->rejectIntegration($integration, $request->input('rejection_reason'), Auth::id());
             }
 
             return redirect()->route('integrations.show', $integration->id)
@@ -855,7 +855,7 @@ class IntegrationController extends Controller
             }
 
             // Mark integration as validated (sets validated_by and validated_at)
-            $integration->markAsValidated(auth()->id());
+            $integration->markAsValidated(Auth::id());
             
             // Refresh to get latest data
             $integration->refresh();
@@ -934,7 +934,7 @@ class IntegrationController extends Controller
     /**
      * Handle file uploads for Step 2.
      */
-    private function handleStep2Uploads(Request $request, array $validated): array
+    private function handleStep2Uploads(Request $request, array $validated): array | RedirectResponse
     {
         try {
             // Handle photo upload
@@ -1112,7 +1112,8 @@ class IntegrationController extends Controller
     }
 
     /**
-     * Synchronize driver documents from step data (steps 2 & 3).
+     * Synchronize driver documents from all integration step data.
+     * Collects documents from steps 2, 3, 4, 5, 6, 7 (contracts), 8, 9.
      */
     private function syncDriverDocuments(IntegrationCandidate $integration): void
     {
@@ -1127,7 +1128,8 @@ class IntegrationController extends Controller
 
         $documents = collect($driver->documents ?? []);
 
-        foreach ([2, 3] as $stepNumber) {
+        // Steps that contain documents: 2, 3, 4, 5, 6, 7 (contracts), 8, 9
+        foreach ([2, 3, 4, 5, 6, 7, 8, 9] as $stepNumber) {
             $step = $integration->getStep($stepNumber);
             if (!$step) {
                 continue;
@@ -1138,7 +1140,26 @@ class IntegrationController extends Controller
                 $stepData = [];
             }
 
-            $key = $stepNumber === 2 ? 'documents' : 'documents_files';
+            // Step 3 uses 'documents_files', Step 7 uses 'contract_paths', all others use 'documents'
+            if ($stepNumber === 3) {
+                $key = 'documents_files';
+            } elseif ($stepNumber === 7) {
+                // Handle contracts from step 7
+                if (!empty($stepData['contract_paths']) && is_array($stepData['contract_paths'])) {
+                    $documents = $documents->merge($stepData['contract_paths']);
+                }
+                // Also handle backward compatibility with single contract_path
+                if (!empty($stepData['contract_path'])) {
+                    $documents->push([
+                        'name' => basename($stepData['contract_path']),
+                        'path' => $stepData['contract_path'],
+                    ]);
+                }
+                continue;
+            } else {
+                $key = 'documents';
+            }
+            
             if (!empty($stepData[$key]) && is_array($stepData[$key])) {
                 $documents = $documents->merge($stepData[$key]);
             }

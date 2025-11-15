@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Schema;
@@ -23,7 +24,7 @@ class FormationProcessController extends Controller
     /**
      * Display a listing of all formation processes.
      */
-    public function index(Request $request): View
+    public function index(Request $request)
     {
         try {
             $query = FormationProcess::query()
@@ -87,7 +88,7 @@ class FormationProcessController extends Controller
     /**
      * Show the form for creating a new formation process (Step 1).
      */
-    public function create(Request $request): View
+    public function create(Request $request)
     {
         $drivers = Driver::orderBy('full_name')->get();
         $formations = Formation::active()
@@ -115,7 +116,7 @@ class FormationProcessController extends Controller
     /**
      * Store a newly created formation process (Step 1 data).
      */
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request)
     {
         try {
             $validated = $request->validate([
@@ -153,7 +154,7 @@ class FormationProcessController extends Controller
                 'step_number' => 1,
                 'step_data' => $validated,
                 'status' => 'validated',
-                'validated_by' => auth()->id(),
+                'validated_by' => Auth::id(),
                 'validated_at' => now(),
             ]);
 
@@ -179,7 +180,7 @@ class FormationProcessController extends Controller
     /**
      * Display the specified formation process progress.
      */
-    public function show(FormationProcess $formationProcess): View
+    public function show(FormationProcess $formationProcess)
     {
         try {
             $formationProcess->load(['steps', 'validator', 'driver', 'formation', 'flotte']);
@@ -210,7 +211,7 @@ class FormationProcessController extends Controller
     /**
      * Show the form for a specific step.
      */
-    public function step(FormationProcess $formationProcess, int $stepNumber): View|RedirectResponse
+    public function step(FormationProcess $formationProcess, int $stepNumber)
     {
         try {
             // Validate step number
@@ -295,7 +296,7 @@ class FormationProcessController extends Controller
     /**
      * Save step data.
      */
-    public function saveStep(Request $request, FormationProcess $formationProcess, int $stepNumber): RedirectResponse
+    public function saveStep(Request $request, FormationProcess $formationProcess, int $stepNumber)
     {
         try {
             // Validate step number
@@ -497,7 +498,7 @@ class FormationProcessController extends Controller
                     }
 
                     // Validate the step
-                    $step->validateStep(auth()->id(), $request->input('notes'));
+                    $step->validateStep(Auth::id(), $request->input('notes'));
 
                     // Move to next step if this step is validated and it's the current step
                     if ($stepNumber < 7 && $formationProcess->current_step === $stepNumber) {
@@ -539,7 +540,7 @@ class FormationProcessController extends Controller
     /**
      * Validate a step (admin only).
      */
-    public function validateStep(Request $request, FormationProcess $formationProcess, int $stepNumber): RedirectResponse
+    public function validateStep(Request $request, FormationProcess $formationProcess, int $stepNumber)
     {
         try {
             $step = $formationProcess->getStep($stepNumber);
@@ -627,7 +628,7 @@ class FormationProcessController extends Controller
                 }
             }
 
-            $step->validateStep(auth()->id(), $request->input('notes'));
+            $step->validateStep(Auth::id(), $request->input('notes'));
 
             // Move to next step if this step is validated and it's the current step
             if ($stepNumber < 7 && $formationProcess->current_step === $stepNumber) {
@@ -654,7 +655,7 @@ class FormationProcessController extends Controller
     /**
      * Reject a step (admin only).
      */
-    public function rejectStep(Request $request, FormationProcess $formationProcess, int $stepNumber): RedirectResponse
+    public function rejectStep(Request $request, FormationProcess $formationProcess, int $stepNumber)
     {
         try {
             $step = $formationProcess->getStep($stepNumber);
@@ -669,13 +670,13 @@ class FormationProcessController extends Controller
 
             $step->rejectStep(
                 $request->input('rejection_reason'),
-                auth()->id(),
+                Auth::id(),
                 $request->input('notes')
             );
 
             // Reject formation process if critical step is rejected
             if (in_array($stepNumber, [3, 6])) {
-                $this->rejectFormationProcess($formationProcess, $request->input('rejection_reason'), auth()->id());
+                $this->rejectFormationProcess($formationProcess, $request->input('rejection_reason'), Auth::id());
             }
 
             return redirect()->route('formation-processes.show', $formationProcess->id)
@@ -693,7 +694,7 @@ class FormationProcessController extends Controller
     /**
      * Finalize formation process (Step 8 completion - create/update DriverFormation).
      */
-    public function finalize(FormationProcess $formationProcess): RedirectResponse
+    public function finalize(FormationProcess $formationProcess)
     {
         try {
             // Check if Step 7 is validated (formerly step 8)
@@ -757,7 +758,7 @@ class FormationProcessController extends Controller
             $formationProcess->update([
                 'status' => 'validated',
                 'validated_at' => $finalValidationDate ?? now(),
-                'validated_by' => $step7->validated_by ?? auth()->id(),
+                'validated_by' => $step7->validated_by ?? Auth::id(),
             ]);
             
             // Refresh to get latest data

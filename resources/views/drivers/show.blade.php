@@ -4,30 +4,39 @@
     </x-slot>
 
     <div class="container-fluid py-4">
-        <!-- Breadcrumb -->
-        <nav aria-label="breadcrumb" class="mb-4">
-            <div class="d-flex justify-content-between align-items-center">
-                <ol class="breadcrumb mb-0">
-                    <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">{{ __('messages.dashboard') }}</a></li>
-                    <li class="breadcrumb-item"><a href="{{ route('drivers.index') }}">{{ __('messages.drivers') }}</a></li>
-                    <li class="breadcrumb-item active">{{ $driver->full_name ?? __('messages.driver_number') . $driver->id }}</li>
-                </ol>
-                
-                <div class="d-flex gap-2">
-                    <a href="{{ route('drivers.index') }}" class="btn btn-outline-secondary btn-sm">
-                        <i class="bi bi-arrow-left me-1"></i>
-                        {{ __('messages.back') }}
-                    </a>
-                    <a href="{{ route('drivers.edit', $driver) }}" class="btn btn-warning btn-sm">
-                        <i class="bi bi-pencil me-1"></i>
-                        {{ __('messages.edit_driver') ?? __('messages.edit') }}
-                    </a>
-                </div>
-            </div>
-        </nav>
 
         <!-- Driver Information Box -->
         <div class="card border-0 shadow-sm mb-4">
+            <nav aria-label="breadcrumb" class="p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">{{ __('messages.dashboard') }}</a></li>
+                        <li class="breadcrumb-item"><a href="{{ route('drivers.index') }}">{{ __('messages.drivers') }}</a></li>
+                        <li class="breadcrumb-item active">{{ $driver->full_name ?? __('messages.driver_number') . $driver->id }}</li>
+                    </ol>
+                    
+                    <div class="d-flex gap-2">
+                        <a href="{{ route('drivers.index') }}" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-arrow-left me-1"></i>
+                            {{ __('messages.back') }}
+                        </a>
+                        {{-- add a button to can access ti the integration process of the driver --}}
+                        @if($driver->integrationCandidate)
+                            <a href="{{ route('integrations.show', $driver->integrationCandidate) }}" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-person-check me-1"></i>
+                                {{ __('messages.integration_process') }}
+                            </a>
+                        @endif
+                        <a href="{{ route('drivers.edit', $driver) }}" class="btn btn-warning btn-sm">
+                            <i class="bi bi-pencil me-1"></i>
+                            {{ __('messages.edit_driver') ?? __('messages.edit') }}
+                        </a>
+                    </div>
+                </div>
+            </nav>
+
+            <hr class="my-2">
+
             <div class="card-body p-4">
                 <div class="row align-items-center">
                     <div class="col-md-2 text-center mb-3 mb-md-0">
@@ -462,15 +471,6 @@
                                                     <i class="bi bi-download"></i>
                                                 </a>
                                             @endif
-                                            {{-- @if($currentProcess && $currentProcess->isValidated())
-                                                <button type="button"
-                                                        class="btn btn-outline-success btn-sm btn-generate-report"
-                                                        data-process-id="{{ $currentProcess->id }}"
-                                                        data-report-url="{{ route('formation-processes.download-report', $currentProcess) }}"
-                                                        title="{{ __('messages.download_report') }}">
-                                                    <i class="bi bi-download"></i>
-                                                </button>
-                                            @endif --}}
                                             @if($currentProcess)
                                                 <a href="{{ route('formation-processes.show', $currentProcess) }}" class="btn btn-outline-primary btn-sm" title="{{ __('messages.view') }}">
                                                     <i class="bi bi-eye"></i>

@@ -32,6 +32,24 @@ class FormationController extends Controller
             $selectedFlotte = $request->input('flotte');
             $selectedStatus = $request->input('status');
             $selectedFormationCategory = $request->input('formation_category');
+            $selectedYear = $request->input('year');
+
+            // Get available years from DriverFormation records
+            $doneYears = \App\Models\DriverFormation::whereNotNull('done_at')
+                ->selectRaw('YEAR(done_at) as year')
+                ->distinct()
+                ->pluck('year');
+            
+            $plannedYears = \App\Models\DriverFormation::whereNotNull('planned_at')
+                ->selectRaw('YEAR(planned_at) as year')
+                ->distinct()
+                ->pluck('year');
+            
+            $years = $doneYears->merge($plannedYears)
+                ->unique()
+                ->filter()
+                ->sortDesc()
+                ->values();
 
             // Auto-select flotte if driver is selected and has a flotte
             if ($selectedDriver && !$selectedFlotte) {
@@ -42,7 +60,7 @@ class FormationController extends Controller
             }
 
             // Determine if filters are applied
-            $hasFilters = $selectedDriver || $selectedFlotte || $selectedStatus || $selectedFormationCategory;
+            $hasFilters = $selectedDriver || $selectedFlotte || $selectedStatus || $selectedFormationCategory || $selectedYear;
             
             // Rule: If only status is selected, show nothing
             $onlyStatus = $selectedStatus && !$selectedDriver && !$selectedFlotte && !$selectedFormationCategory;
@@ -64,10 +82,24 @@ class FormationController extends Controller
                 if ($selectedDriver) {
                     // Show all formations (no additional filtering needed)
                     // But if status is also selected, we need to filter by DriverFormation records
-                    if ($selectedStatus) {
-                        $formationsQuery->whereHas('driverFormations', function ($q) use ($selectedDriver, $selectedStatus) {
-                            $q->where('driver_id', $selectedDriver)
-                              ->where('status', $selectedStatus === 'realized' ? 'done' : 'planned');
+                    if ($selectedStatus || $selectedYear) {
+                        $formationsQuery->whereHas('driverFormations', function ($q) use ($selectedDriver, $selectedStatus, $selectedYear) {
+                            $q->where('driver_id', $selectedDriver);
+                            if ($selectedStatus) {
+                                $q->where('status', $selectedStatus === 'realized' ? 'done' : 'planned');
+                            }
+                            if ($selectedYear) {
+                                if ($selectedStatus === 'realized') {
+                                    $q->whereYear('done_at', $selectedYear);
+                                } elseif ($selectedStatus === 'planned') {
+                                    $q->whereYear('planned_at', $selectedYear);
+                                } else {
+                                    $q->where(function ($yearQuery) use ($selectedYear) {
+                                        $yearQuery->whereYear('done_at', $selectedYear)
+                                                  ->orWhereYear('planned_at', $selectedYear);
+                                    });
+                                }
+                            }
                         });
                     }
                 } elseif ($selectedFlotte) {
@@ -75,22 +107,50 @@ class FormationController extends Controller
                     // Use direct flotte_id relationship
                     $formationsQuery->where('flotte_id', $selectedFlotte);
                     
-                    // If status is also selected, filter by DriverFormation records
-                    if ($selectedStatus) {
-                        $formationsQuery->whereHas('driverFormations', function ($q) use ($selectedStatus) {
-                            $q->where('status', $selectedStatus === 'realized' ? 'done' : 'planned')
-                              ->whereHas('driver', function ($driverQuery) {
-                                  $driverQuery->where('is_integrated', 1);
-                              });
+                    // If status or year is also selected, filter by DriverFormation records
+                    if ($selectedStatus || $selectedYear) {
+                        $formationsQuery->whereHas('driverFormations', function ($q) use ($selectedStatus, $selectedYear) {
+                            if ($selectedStatus) {
+                                $q->where('status', $selectedStatus === 'realized' ? 'done' : 'planned');
+                            }
+                            if ($selectedYear) {
+                                if ($selectedStatus === 'realized') {
+                                    $q->whereYear('done_at', $selectedYear);
+                                } elseif ($selectedStatus === 'planned') {
+                                    $q->whereYear('planned_at', $selectedYear);
+                                } else {
+                                    $q->where(function ($yearQuery) use ($selectedYear) {
+                                        $yearQuery->whereYear('done_at', $selectedYear)
+                                                  ->orWhereYear('planned_at', $selectedYear);
+                                    });
+                                }
+                            }
+                            $q->whereHas('driver', function ($driverQuery) {
+                                $driverQuery->where('is_integrated', 1);
+                            });
                         });
                     }
-                } elseif ($selectedStatus) {
-                    // Status with other filters (but not driver/flotte) - filter by status
-                    $formationsQuery->whereHas('driverFormations', function ($q) use ($selectedStatus) {
-                        $q->where('status', $selectedStatus === 'realized' ? 'done' : 'planned')
-                          ->whereHas('driver', function ($driverQuery) {
-                              $driverQuery->where('is_integrated', 1);
-                          });
+                } elseif ($selectedStatus || $selectedYear) {
+                    // Status or year with other filters (but not driver/flotte) - filter by status/year
+                    $formationsQuery->whereHas('driverFormations', function ($q) use ($selectedStatus, $selectedYear) {
+                        if ($selectedStatus) {
+                            $q->where('status', $selectedStatus === 'realized' ? 'done' : 'planned');
+                        }
+                        if ($selectedYear) {
+                            if ($selectedStatus === 'realized') {
+                                $q->whereYear('done_at', $selectedYear);
+                            } elseif ($selectedStatus === 'planned') {
+                                $q->whereYear('planned_at', $selectedYear);
+                            } else {
+                                $q->where(function ($yearQuery) use ($selectedYear) {
+                                    $yearQuery->whereYear('done_at', $selectedYear)
+                                              ->orWhereYear('planned_at', $selectedYear);
+                                });
+                            }
+                        }
+                        $q->whereHas('driver', function ($driverQuery) {
+                            $driverQuery->where('is_integrated', 1);
+                        });
                     });
                 }
             }
@@ -117,6 +177,19 @@ class FormationController extends Controller
 
                 if ($selectedStatus) {
                     $query->where('status', $selectedStatus === 'realized' ? 'done' : 'planned');
+                }
+
+                if ($selectedYear) {
+                    if ($selectedStatus === 'realized') {
+                        $query->whereYear('done_at', $selectedYear);
+                    } elseif ($selectedStatus === 'planned') {
+                        $query->whereYear('planned_at', $selectedYear);
+                    } else {
+                        $query->where(function ($yearQuery) use ($selectedYear) {
+                            $yearQuery->whereYear('done_at', $selectedYear)
+                                      ->orWhereYear('planned_at', $selectedYear);
+                        });
+                    }
                 }
 
                 if ($selectedFormationCategory) {
@@ -189,6 +262,8 @@ class FormationController extends Controller
                 'selectedFlotte',
                 'selectedStatus',
                 'selectedFormationCategory',
+                'selectedYear',
+                'years',
                 'graphData',
                 'hasFilters',
                 'totalFormations',
