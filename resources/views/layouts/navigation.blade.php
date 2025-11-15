@@ -91,6 +91,12 @@
                 <span class="sidebar-text">{{ __('messages.turnovers') }}</span>
             </a>
         </li>
+        <li class="mb-1">
+            <a href="{{ route('coaching-cabines.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('coaching-cabines.index') || request()->routeIs('coaching-cabines.create') || request()->routeIs('coaching-cabines.edit') || request()->routeIs('coaching-cabines.show') ? 'active' : '' }}">
+                <i class="bi bi-clipboard-check me-2 text-gray-600 sidebar-icon"></i>
+                <span class="sidebar-text">{{ __('messages.coaching_sessions') }}</span>
+            </a>
+        </li>
         <li class="mb-2">
             <a href="{{ route('concerns.driver-concerns.index') }}"
                class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('concerns.driver-concerns.*') ? 'active' : '' }}">
@@ -191,6 +197,8 @@
                         {{ __('messages.concerns') }}
                     @elseif(request()->routeIs('turnovers.*') || request()->routeIs('turnovers.index') || request()->routeIs('turnovers.create') || request()->routeIs('turnovers.edit') || request()->routeIs('turnovers.show'))
                         {{ __('messages.turnovers') }}
+                    @elseif(request()->routeIs('coaching-cabines.*'))
+                        {{ __('messages.coaching_cabines') }}
                     @else
                         GCV
                     @endif
@@ -296,6 +304,12 @@
                 <a href="{{ route('turnovers.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('turnovers.*') ? 'active' : '' }}">
                     <i class="bi bi-arrow-left-right me-2 text-gray-600 sidebar-icon"></i>
                     <span class="sidebar-text">{{ __('messages.turnovers') }}</span>
+                </a>
+            </li>
+            <li class="mb-1">
+                <a href="{{ route('coaching-cabines.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('coaching-cabines.index') || request()->routeIs('coaching-cabines.create') || request()->routeIs('coaching-cabines.edit') || request()->routeIs('coaching-cabines.show') ? 'active' : '' }}">
+                    <i class="bi bi-clipboard-check me-2 text-gray-600 sidebar-icon"></i>
+                    <span class="sidebar-text">{{ __('messages.coaching_sessions') }}</span>
                 </a>
             </li>
             <li class="mb-2">
@@ -419,6 +433,23 @@
 
     #formationsSubmenu a.active,
     #formationsSubmenuMobile a.active {
+        background-color: #e9ecef;
+        border-radius: 5px;
+    }
+
+    /* Coaching Cabines dropdown styles */
+    #coachingCabinesSubmenu,
+    #coachingCabinesSubmenuMobile {
+        transition: all 0.3s ease;
+    }
+
+    #coachingCabinesSubmenu a,
+    #coachingCabinesSubmenuMobile a {
+        font-size: 0.9rem;
+    }
+
+    #coachingCabinesSubmenu a.active,
+    #coachingCabinesSubmenuMobile a.active {
         background-color: #e9ecef;
         border-radius: 5px;
     }
@@ -675,6 +706,30 @@
         // Handle formations dropdown chevron rotation
         const formationsDropdowns = document.querySelectorAll('[data-bs-target="#formationsSubmenu"], [data-bs-target="#formationsSubmenuMobile"]');
         formationsDropdowns.forEach(dropdown => {
+            const targetId = dropdown.getAttribute('data-bs-target');
+            const target = document.querySelector(targetId);
+            
+            if (target) {
+                // Bootstrap collapse event listeners
+                target.addEventListener('show.bs.collapse', function() {
+                    const chevron = dropdown.querySelector('.bi-chevron-down');
+                    if (chevron) {
+                        chevron.style.transform = 'rotate(180deg)';
+                    }
+                });
+                
+                target.addEventListener('hide.bs.collapse', function() {
+                    const chevron = dropdown.querySelector('.bi-chevron-down');
+                    if (chevron) {
+                        chevron.style.transform = 'rotate(0deg)';
+                    }
+                });
+            }
+        });
+
+        // Handle coaching cabines dropdown chevron rotation
+        const coachingCabinesDropdowns = document.querySelectorAll('[data-bs-target="#coachingCabinesSubmenu"], [data-bs-target="#coachingCabinesSubmenuMobile"]');
+        coachingCabinesDropdowns.forEach(dropdown => {
             const targetId = dropdown.getAttribute('data-bs-target');
             const target = document.querySelector(targetId);
             

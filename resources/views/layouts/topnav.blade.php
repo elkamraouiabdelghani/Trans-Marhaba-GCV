@@ -22,6 +22,8 @@
                     {{ __('messages.organigram') }}
                 @elseif(request()->routeIs('changement-types.*') || request()->routeIs('changements.*') || request()->routeIs('principale-cretaires.*') || request()->routeIs('sous-cretaires.*'))
                     {{ __('messages.changements') }}
+                @elseif(request()->routeIs('coaching-cabines.*'))
+                    {{ __('messages.coaching_cabines') }}
                 @else
                     {{ __('messages.brand') }}
                 @endif

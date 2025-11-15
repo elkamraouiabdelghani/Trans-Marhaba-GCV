@@ -53,4 +53,12 @@ class Flotte extends Model
     {
         return $this->hasMany(Formation::class);
     }
+
+    /**
+     * Get all coaching sessions for the flotte.
+     */
+    public function coachingSessions()
+    {
+        return $this->hasMany(CoachingSession::class);
+    }
 }

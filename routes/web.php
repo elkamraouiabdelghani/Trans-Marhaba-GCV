@@ -14,6 +14,7 @@ use App\Http\Controllers\ChangementTypeController;
 use App\Http\Controllers\PrincipaleCretaireController;
 use App\Http\Controllers\SousCretaireController;
 use App\Http\Controllers\ChangementController;
+use App\Http\Controllers\CoachingCabineController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Session;
 
@@ -124,6 +125,13 @@ Route::middleware('auth')->group(function () {
     Route::post('/formation-processes/{formationProcess}/step/{stepNumber}/validate', [FormationProcessController::class, 'validateStep'])->name('formation-processes.validate-step');
     Route::post('/formation-processes/{formationProcess}/step/{stepNumber}/reject', [FormationProcessController::class, 'rejectStep'])->name('formation-processes.reject-step');
     Route::post('/formation-processes/{formationProcess}/finalize', [FormationProcessController::class, 'finalize'])->name('formation-processes.finalize');
+    
+    // Coaching Cabines
+    Route::get('/coaching-cabines/planning/{year?}', [CoachingCabineController::class, 'planning'])->name('coaching-cabines.planning');
+    Route::get('/coaching-cabines/planning/{year}/pdf', [CoachingCabineController::class, 'planningPdf'])->name('coaching-cabines.planning.pdf');
+    Route::get('/coaching-cabines/{coachingCabine}/pdf', [CoachingCabineController::class, 'pdf'])->name('coaching-cabines.pdf');
+    Route::put('/coaching-cabines/{coachingCabine}/complete', [CoachingCabineController::class, 'complete'])->name('coaching-cabines.complete');
+    Route::resource('coaching-cabines', CoachingCabineController::class);
     
 });
 

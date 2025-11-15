@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Models\IntegrationCandidate;
 
 class Driver extends Model
@@ -124,6 +125,24 @@ class Driver extends Model
     public function turnovers()
     {
         return $this->hasMany(Turnover::class);
+    }
+
+    /**
+     * Get all coaching sessions for this driver
+     */
+    public function coachingSessions(): HasMany
+    {
+        return $this->hasMany(CoachingSession::class);
+    }
+
+    /**
+     * Get coaching sessions for a specific year
+     */
+    public function getCoachingSessionsForYear($year)
+    {
+        return $this->coachingSessions()
+            ->whereYear('date', $year)
+            ->get();
     }
 
     // Scopes
