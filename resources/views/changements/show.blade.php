@@ -273,6 +273,27 @@
         </div>
     </div>
 
+    <!-- Validation Progress Modal -->
+    <div class="modal fade" id="validationProgressModal" tabindex="-1" aria-labelledby="validationProgressModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="validationProgressModalLabel">
+                        <i class="bi bi-hourglass-split me-2"></i>
+                        {{ __('messages.validating') ?? 'Validating' }}
+                    </h5>
+                </div>
+                <div class="modal-body text-center py-4" id="validationProgressBody">
+                    <div class="spinner-border text-success mb-3" role="status" style="width: 3rem; height: 3rem;">
+                        <span class="visually-hidden">{{ __('messages.loading') ?? 'Loading...' }}</span>
+                    </div>
+                    <h5 class="mb-2">{{ __('messages.validating_step') ?? 'Validating Step' }}</h5>
+                    <p class="text-muted mb-0">{{ __('messages.please_wait') ?? 'Please wait while we validate the step...' }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Rejection Modal -->
     <div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -312,6 +333,10 @@
         </div>
     </div>
 
+    <!-- Bootstrap JS Bundle (includes Popper.js) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js" 
+        crossorigin="anonymous"></script>
+
     <script>
         // Initialize and show toasts on page load
         document.addEventListener('DOMContentLoaded', function() {
@@ -323,62 +348,83 @@
                 }
             });
 
-            // Handle step form submissions with submit_action
-            const stepForms = document.querySelectorAll('form[data-validate-form]');
-            stepForms.forEach(function(form) {
-                // Create or get submit_action hidden input
-                let submitActionInput = form.querySelector('input[name="submit_action"]');
-                if (!submitActionInput) {
-                    submitActionInput = document.createElement('input');
-                    submitActionInput.type = 'hidden';
-                    submitActionInput.name = 'submit_action';
-                    submitActionInput.value = '';
-                    form.appendChild(submitActionInput);
-                }
-
-                // Track which button was clicked and set submit_action
-                const submitButtons = form.querySelectorAll('button[type="submit"]');
-                submitButtons.forEach(function(button) {
-                    button.addEventListener('click', function(e) {
-                        const submitAction = this.getAttribute('data-submit-action');
-                        if (submitAction) {
-                            submitActionInput.value = submitAction;
-                        } else {
-                            submitActionInput.value = '';
+            // Handle form submission with data-submit-action
+            const forms = document.querySelectorAll('form');
+            forms.forEach(function(form) {
+                form.addEventListener('submit', function(e) {
+                    const submitBtn = form.querySelector('button[type="submit"][data-submit-action]');
+                    if (submitBtn) {
+                        const action = submitBtn.getAttribute('data-submit-action');
+                        if (action) {
+                            // Add hidden input for submit_action
+                            let hiddenInput = form.querySelector('input[name="submit_action"]');
+                            if (!hiddenInput) {
+                                hiddenInput = document.createElement('input');
+                                hiddenInput.type = 'hidden';
+                                hiddenInput.name = 'submit_action';
+                                form.appendChild(hiddenInput);
+                            }
+                            hiddenInput.value = action;
+                            
+                            // Check if this is a validation action
+                            if (action === 'validate') {
+                                e.preventDefault(); // Prevent immediate submission
+                                
+                                // Get the step number from the form action or current URL
+                                const formAction = form.getAttribute('action');
+                                const stepMatch = formAction ? formAction.match(/stepNumber[=\/](\d+)/) : null;
+                                const stepNumber = stepMatch ? stepMatch[1] : '?';
+                                
+                                // Update modal content
+                                const modalBody = document.getElementById('validationProgressBody');
+                                if (modalBody) {
+                                    modalBody.innerHTML = `
+                                        <div class="text-center">
+                                            <div class="spinner-border text-success mb-3" role="status" style="width: 3rem; height: 3rem;">
+                                                <span class="visually-hidden">{{ __('messages.loading') ?? 'Loading...' }}</span>
+                                            </div>
+                                            <h5 class="mb-2">{{ __('messages.validating_step') ?? 'Validating Step' }} ${stepNumber}</h5>
+                                            <p class="text-muted mb-0">{{ __('messages.please_wait') ?? 'Please wait while we validate the step...' }}</p>
+                                        </div>
+                                    `;
+                                }
+                                
+                                // Show validation progress modal
+                                if (typeof bootstrap !== 'undefined') {
+                                    const validationModal = new bootstrap.Modal(document.getElementById('validationProgressModal'));
+                                    validationModal.show();
+                                }
+                                
+                                // Submit the form after a short delay to show the modal
+                                setTimeout(function() {
+                                    form.submit();
+                                }, 300);
+                                
+                                return false;
+                            }
+                            
+                            // Show loading state for other actions
+                            submitBtn.disabled = true;
+                            const originalHtml = submitBtn.innerHTML;
+                            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>{{ __('messages.processing') }}...';
+                            
+                            // Re-enable button after a delay in case of error
+                            setTimeout(function() {
+                                submitBtn.disabled = false;
+                                submitBtn.innerHTML = originalHtml;
+                            }, 10000);
                         }
-                    });
+                    } else {
+                        // Regular form submission
+                        const submitBtn = form.querySelector('button[type="submit"]');
+                        if (submitBtn) {
+                            submitBtn.disabled = true;
+                            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>{{ __('messages.saving') }}...';
+                        }
+                    }
                 });
             });
 
-            // Handle validation modal
-            const validateModal = document.getElementById('validateModal');
-            if (validateModal) {
-                const confirmBtn = document.getElementById('confirmValidateBtn');
-                if (confirmBtn) {
-                    confirmBtn.addEventListener('click', function() {
-                        const form = document.querySelector('form[data-validate-form]');
-                        if (form) {
-                            const notes = document.getElementById('validationNotes').value;
-                            if (notes) {
-                                const notesInput = document.createElement('input');
-                                notesInput.type = 'hidden';
-                                notesInput.name = 'notes';
-                                notesInput.value = notes;
-                                form.appendChild(notesInput);
-                            }
-                            
-                            // Add submit_action for validation
-                            const submitActionInput = document.createElement('input');
-                            submitActionInput.type = 'hidden';
-                            submitActionInput.name = 'submit_action';
-                            submitActionInput.value = 'validate';
-                            form.appendChild(submitActionInput);
-                            
-                            form.submit();
-                        }
-                    });
-                }
-            }
 
             // Handle rejection modal
             const rejectModal = document.getElementById('rejectModal');
@@ -395,6 +441,10 @@
         });
 
         function rejectStep(stepNumber) {
+            if (typeof bootstrap === 'undefined') {
+                console.error('Bootstrap is not loaded');
+                return;
+            }
             const modal = new bootstrap.Modal(document.getElementById('rejectModal'));
             const form = document.getElementById('rejectForm');
             if (form) {

@@ -329,6 +329,27 @@
         </div>
     </div>
 
+    <!-- Validation Progress Modal -->
+    <div class="modal fade" id="validationProgressModal" tabindex="-1" aria-labelledby="validationProgressModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="validationProgressModalLabel">
+                        <i class="bi bi-hourglass-split me-2"></i>
+                        {{ __('messages.validating') ?? 'Validating' }}
+                    </h5>
+                </div>
+                <div class="modal-body text-center py-4" id="validationProgressBody">
+                    <div class="spinner-border text-success mb-3" role="status" style="width: 3rem; height: 3rem;">
+                        <span class="visually-hidden">{{ __('messages.loading') ?? 'Loading...' }}</span>
+                    </div>
+                    <h5 class="mb-2">{{ __('messages.validating_step') ?? 'Validating Step' }}</h5>
+                    <p class="text-muted mb-0">{{ __('messages.please_wait') ?? 'Please wait while we validate the step...' }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Initialize toasts
@@ -392,7 +413,42 @@
                             }
                             hiddenInput.value = action;
                             
-                            // Show loading state
+                            // Check if this is a validation action
+                            if (action === 'validate') {
+                                e.preventDefault(); // Prevent immediate submission
+                                
+                                // Show validation progress modal
+                                const validationModal = new bootstrap.Modal(document.getElementById('validationProgressModal'));
+                                validationModal.show();
+                                
+                                // Get the step number from the form action or current URL
+                                const formAction = form.getAttribute('action');
+                                const stepMatch = formAction ? formAction.match(/stepNumber[=\/](\d+)/) : null;
+                                const stepNumber = stepMatch ? stepMatch[1] : '?';
+                                
+                                // Update modal content
+                                const modalBody = document.getElementById('validationProgressBody');
+                                if (modalBody) {
+                                    modalBody.innerHTML = `
+                                        <div class="text-center">
+                                            <div class="spinner-border text-success mb-3" role="status" style="width: 3rem; height: 3rem;">
+                                                <span class="visually-hidden">{{ __('messages.loading') ?? 'Loading...' }}</span>
+                                            </div>
+                                            <h5 class="mb-2">{{ __('messages.validating_step') ?? 'Validating Step' }} ${stepNumber}</h5>
+                                            <p class="text-muted mb-0">{{ __('messages.please_wait') ?? 'Please wait while we validate the step...' }}</p>
+                                        </div>
+                                    `;
+                                }
+                                
+                                // Submit the form after a short delay to show the modal
+                                setTimeout(function() {
+                                    form.submit();
+                                }, 300);
+                                
+                                return false;
+                            }
+                            
+                            // Show loading state for other actions
                             submitBtn.disabled = true;
                             const originalHtml = submitBtn.innerHTML;
                             submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>{{ __('messages.processing') }}...';

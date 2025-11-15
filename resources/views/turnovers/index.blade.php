@@ -216,6 +216,7 @@
                                     </td>
                                     <td class="py-3 px-4 text-end">
                                         @php
+                                            $hasExitInterview = $turnover->interview_completed && $turnover->turnover_pdf_path;
                                             $canFillInterview = !empty($turnover->interview_notes) && !empty($turnover->interviewed_by);
                                         @endphp
                                         <div class="d-flex gap-2 justify-content-end group flex-wrap" role="group">
@@ -224,18 +225,26 @@
                                                 title="{{ __('messages.edit') ?? 'Modifier' }}">
                                                 <i class="bi bi-eye"></i>
                                             </a>
-                                            @if($turnover->interview_completed && $turnover->turnover_pdf_path)
+                                            @if($hasExitInterview)
                                                 <a href="{{ route('turnovers.interview.download', $turnover) }}"
                                                    class="btn btn-sm btn-outline-primary"
                                                    title="{{ __('messages.download_pdf') }}">
                                                     <i class="bi bi-download"></i>
                                                 </a>
-                                            @elseif($canFillInterview)
-                                                <a href="{{ route('turnovers.interview', $turnover) }}"
-                                                   class="btn btn-sm btn-outline-info"
-                                                   title="{{ __('messages.complete_exit_interview') }}">
-                                                    <i class="bi bi-clipboard-plus"></i>
-                                                </a>
+                                            @else
+                                                @if($canFillInterview)
+                                                    <a href="{{ route('turnovers.interview', $turnover) }}"
+                                                       class="btn btn-sm btn-outline-info"
+                                                       title="{{ __('messages.start_exit_interview') ?? 'Commencer l\'entretien de sortie' }}">
+                                                        <i class="bi bi-clipboard-plus"></i>
+                                                    </a>
+                                                @else
+                                                    <a href="{{ route('turnovers.edit', $turnover) }}"
+                                                       class="btn btn-sm btn-outline-info"
+                                                       title="{{ __('messages.start_exit_interview') ?? 'Commencer l\'entretien de sortie' }}">
+                                                        <i class="bi bi-clipboard-plus"></i>
+                                                    </a>
+                                                @endif
                                             @endif
                                             @if(!$turnover->isConfirmed())
                                                 <button type="button" 

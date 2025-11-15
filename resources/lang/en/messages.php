@@ -500,6 +500,10 @@ return [
     'error_updating_driver' => 'Error updating driver',
     'validate' => 'Validate',
     'validate_and_next' => 'Validate & Continue',
+    'validating' => 'Validating',
+    'validating_step' => 'Validating Step',
+    'please_wait' => 'Please wait while we validate the step...',
+    'loading' => 'Loading...',
     'finalize' => 'Finalize',
     'confirm_finalize' => 'Are you sure you want to finalize this integration? This action will create the driver/user.',
     'finalize_warning_message' => 'This action will finalize the integration process and create the driver/user account. All steps must be validated before finalization. This action cannot be undone.',
@@ -1034,6 +1038,7 @@ return [
     'non_justifie' => 'Not Justified',
     'all_years' => 'All Years',
     'integration_process' => 'Integration Process',
+    'rh_signature' => 'RH Signature',
 ];
 
 

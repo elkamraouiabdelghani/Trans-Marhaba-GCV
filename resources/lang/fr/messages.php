@@ -571,6 +571,10 @@ return [
     'error_updating_driver' => 'Erreur lors de la mise à jour du conducteur',
     'validate' => 'Valider',
     'validate_and_next' => 'Valider et continuer',
+    'validating' => 'Validation en cours',
+    'validating_step' => 'Validation de l\'étape',
+    'please_wait' => 'Veuillez patienter pendant la validation...',
+    'loading' => 'Chargement...',
     'finalize' => 'Finaliser',
     'confirm_finalize' => 'Êtes-vous sûr de vouloir finaliser cette intégration ? Cette action créera le conducteur/utilisateur.',
     'finalize_warning_message' => 'Cette action finalisera le processus d\'intégration et créera le compte conducteur/utilisateur. Toutes les étapes doivent être validées avant la finalisation. Cette action ne peut pas être annulée.',
@@ -1021,4 +1025,5 @@ return [
     'non_justifie' => 'Non justifié',
     'all_years' => 'Toutes les années',
     'integration_process' => 'Processus d\'intégration',
+    'rh_signature' => 'Signature RH',
 ];
