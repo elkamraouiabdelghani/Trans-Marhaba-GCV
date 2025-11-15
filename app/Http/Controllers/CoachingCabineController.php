@@ -125,7 +125,7 @@ class CoachingCabineController extends Controller
             'flotte_id' => ['nullable', 'exists:flottes,id'],
             'date' => ['required', 'date'],
             'date_fin' => ['required', 'date', 'after_or_equal:date'],
-            'type' => ['required', 'in:initial,suivi,correctif'],
+            'type' => ['required', 'in:initial,suivi,correctif,route_analysing,obc_suite,other'],
             'route_taken' => ['nullable', 'string', 'max:255'],
             'moniteur' => ['nullable', 'string', 'max:255'],
             'assessment' => ['nullable', 'string'],
@@ -141,6 +141,11 @@ class CoachingCabineController extends Controller
             $driver = Driver::find($validated['driver_id']);
             if ($driver && !$driver->flotte_id && isset($validated['flotte_id']) && $validated['flotte_id']) {
                 $driver->update(['flotte_id' => $validated['flotte_id']]);
+            }
+
+            // Set default validity_days based on type
+            if (!isset($validated['validity_days']) || $validated['validity_days'] == 3) {
+                $validated['validity_days'] = $validated['type'] === 'initial' ? 15 : 5;
             }
 
             CoachingSession::create($validated);
@@ -195,7 +200,7 @@ class CoachingCabineController extends Controller
             'flotte_id' => ['nullable', 'exists:flottes,id'],
             'date' => ['required', 'date'],
             'date_fin' => ['required', 'date', 'after_or_equal:date'],
-            'type' => ['required', 'in:initial,suivi,correctif'],
+            'type' => ['required', 'in:initial,suivi,correctif,route_analysing,obc_suite,other'],
             'route_taken' => ['nullable', 'string', 'max:255'],
             'moniteur' => ['nullable', 'string', 'max:255'],
             'assessment' => ['nullable', 'string'],
@@ -219,6 +224,15 @@ class CoachingCabineController extends Controller
                 ? \Carbon\Carbon::parse($validated['next_planning_session'])->format('Y-m-d') 
                 : null;
 
+            // Set default validity_days based on type if not provided
+            if (!isset($validated['validity_days']) || $validated['validity_days'] == $coachingCabine->validity_days) {
+                if ($validated['type'] === 'initial' && $coachingCabine->validity_days != 15) {
+                    $validated['validity_days'] = 15;
+                } elseif ($validated['type'] !== 'initial' && $coachingCabine->validity_days == 15) {
+                    $validated['validity_days'] = 5;
+                }
+            }
+
             $coachingCabine->update($validated);
 
             // Handle next_planning_session changes
@@ -236,7 +250,8 @@ class CoachingCabineController extends Controller
 
                     if ($existingPlannedSession) {
                         // Update the existing planned session to the new date
-                        $dateFin = $nextPlanningDate->copy()->addDays(3);
+                        $validityDays = $existingPlannedSession->validity_days ?? 5;
+                        $dateFin = $nextPlanningDate->copy()->addDays($validityDays);
                         $existingPlannedSession->update([
                             'date' => $nextPlanningDate->format('Y-m-d'),
                             'date_fin' => $dateFin->format('Y-m-d'),
@@ -284,11 +299,21 @@ class CoachingCabineController extends Controller
     {
         try {
             $year = $year ?? $request->input('year', date('Y'));
+            $flotteId = $request->input('flotte_id');
 
-            // Get all drivers
-            $drivers = Driver::with(['coachingSessions' => function ($query) use ($year) {
+            // Get all flottes for the filter dropdown
+            $flottes = Flotte::orderBy('name')->get();
+
+            // Get drivers, filtered by flotte if provided
+            $driversQuery = Driver::with(['coachingSessions' => function ($query) use ($year) {
                 $query->whereYear('date', $year);
-            }])->orderBy('full_name')->get();
+            }]);
+
+            if ($flotteId) {
+                $driversQuery->where('flotte_id', $flotteId);
+            }
+
+            $drivers = $driversQuery->orderBy('full_name')->get();
 
             // Calculate P/R/NJ for each driver per month
             $planningData = [];
@@ -311,7 +336,9 @@ class CoachingCabineController extends Controller
                                $session->date->month == $month;
                     });
 
-                    $planned = $sessions->where('status', 'planned')->count();
+                    // Planned: includes all sessions that were planned (planned, in_progress, or completed)
+                    // This way completed sessions appear in both planned and completed columns
+                    $planned = $sessions->whereIn('status', ['planned', 'in_progress', 'completed'])->count();
                     $completed = $sessions->where('status', 'completed')->count();
                     $cancelled = $sessions->where('status', 'cancelled')->count();
 
@@ -350,9 +377,20 @@ class CoachingCabineController extends Controller
             ];
 
             // Calculate completed percentage for the year
-            $totalSessions = CoachingSession::whereYear('date', $year)->count();
-            $completedSessions = CoachingSession::whereYear('date', $year)->where('status', 'completed')->count();
-            $completedPercentage = $totalSessions > 0 ? round(($completedSessions / $totalSessions) * 100, 2) : 0;
+            // Total planned sessions (including completed ones) - filtered by flotte if provided
+            $sessionsQuery = CoachingSession::whereYear('date', $year);
+            if ($flotteId) {
+                $sessionsQuery->whereHas('driver', function ($query) use ($flotteId) {
+                    $query->where('flotte_id', $flotteId);
+                });
+            }
+            
+            $totalPlannedSessions = (clone $sessionsQuery)
+                ->whereIn('status', ['planned', 'in_progress', 'completed'])
+                ->count();
+            $completedSessions = (clone $sessionsQuery)->where('status', 'completed')->count();
+            $completedPercentage = $totalPlannedSessions > 0 ? round(($completedSessions / $totalPlannedSessions) * 100, 2) : 0;
+            $totalSessions = (clone $sessionsQuery)->count();
 
             return view('coaching_cabines.planning', compact(
                 'planningData',
@@ -362,7 +400,9 @@ class CoachingCabineController extends Controller
                 'year',
                 'totalSessions',
                 'completedSessions',
-                'completedPercentage'
+                'completedPercentage',
+                'flottes',
+                'flotteId'
             ));
         } catch (Throwable $th) {
             report($th);
@@ -373,15 +413,22 @@ class CoachingCabineController extends Controller
     /**
      * Export planning as PDF.
      */
-    public function planningPdf(?int $year = null)
+    public function planningPdf(Request $request, ?int $year = null)
     {
         try {
-            $year = $year ?? date('Y');
+            $year = $year ?? $request->input('year', date('Y'));
+            $flotteId = $request->input('flotte_id');
 
-            // Get all drivers
-            $drivers = Driver::with(['coachingSessions' => function ($query) use ($year) {
+            // Get drivers, filtered by flotte if provided
+            $driversQuery = Driver::with(['coachingSessions' => function ($query) use ($year) {
                 $query->whereYear('date', $year);
-            }])->orderBy('full_name')->get();
+            }]);
+
+            if ($flotteId) {
+                $driversQuery->where('flotte_id', $flotteId);
+            }
+
+            $drivers = $driversQuery->orderBy('full_name')->get();
 
             // Calculate P/R/NJ for each driver per month
             $planningData = [];
@@ -404,7 +451,9 @@ class CoachingCabineController extends Controller
                                $session->date->month == $month;
                     });
 
-                    $planned = $sessions->where('status', 'planned')->count();
+                    // Planned: includes all sessions that were planned (planned, in_progress, or completed)
+                    // This way completed sessions appear in both planned and completed columns
+                    $planned = $sessions->whereIn('status', ['planned', 'in_progress', 'completed'])->count();
                     $completed = $sessions->where('status', 'completed')->count();
                     $cancelled = $sessions->where('status', 'cancelled')->count();
 
@@ -412,6 +461,7 @@ class CoachingCabineController extends Controller
                         'planned' => $planned,
                         'completed' => $completed,
                         'cancelled' => $cancelled,
+                        'sessions' => $sessions,
                     ];
                 }
 
@@ -442,9 +492,30 @@ class CoachingCabineController extends Controller
             ];
 
             // Calculate completed percentage for the year
-            $totalSessions = CoachingSession::whereYear('date', $year)->count();
-            $completedSessions = CoachingSession::whereYear('date', $year)->where('status', 'completed')->count();
-            $completedPercentage = $totalSessions > 0 ? round(($completedSessions / $totalSessions) * 100, 2) : 0;
+            // Total planned sessions (including completed ones) - filtered by flotte if provided
+            $sessionsQuery = CoachingSession::whereYear('date', $year);
+            if ($flotteId) {
+                $sessionsQuery->whereHas('driver', function ($query) use ($flotteId) {
+                    $query->where('flotte_id', $flotteId);
+                });
+            }
+            
+            $totalPlannedSessions = (clone $sessionsQuery)
+                ->whereIn('status', ['planned', 'in_progress', 'completed'])
+                ->count();
+            $completedSessions = (clone $sessionsQuery)->where('status', 'completed')->count();
+            $completedPercentage = $totalPlannedSessions > 0 ? round(($completedSessions / $totalPlannedSessions) * 100, 2) : 0;
+            $totalSessions = (clone $sessionsQuery)->count();
+
+            // Get type information for legend
+            $typeTitles = \App\Models\CoachingSession::getTypeTitles();
+            $typeColors = \App\Models\CoachingSession::getTypeColors();
+
+            // Get flotte information if selected
+            $selectedFlotte = null;
+            if ($flotteId) {
+                $selectedFlotte = Flotte::find($flotteId);
+            }
 
             $pdf = Pdf::loadView('coaching_cabines.planning_pdf', compact(
                 'planningData',
@@ -454,7 +525,10 @@ class CoachingCabineController extends Controller
                 'year',
                 'totalSessions',
                 'completedSessions',
-                'completedPercentage'
+                'completedPercentage',
+                'typeTitles',
+                'typeColors',
+                'selectedFlotte'
             ))
                 ->setPaper('a4', 'landscape')
                 ->setOption('isHtml5ParserEnabled', true)
@@ -536,7 +610,8 @@ class CoachingCabineController extends Controller
 
                     if ($existingPlannedSession) {
                         // Update the existing planned session to the new date
-                        $dateFin = $nextPlanningDate->copy()->addDays(3);
+                        $validityDays = $existingPlannedSession->validity_days ?? 5;
+                        $dateFin = $nextPlanningDate->copy()->addDays($validityDays);
                         $existingPlannedSession->update([
                             'date' => $nextPlanningDate->format('Y-m-d'),
                             'date_fin' => $dateFin->format('Y-m-d'),
@@ -572,8 +647,9 @@ class CoachingCabineController extends Controller
             ->first();
 
         if (!$existingSession) {
-            // Calculate date_fin (3 days after the start date)
-            $dateFin = $nextPlanningDate->copy()->addDays(3);
+            // Calculate date_fin based on validity_days (5 days for suivi type)
+            $validityDays = 5; // Default for suivi type
+            $dateFin = $nextPlanningDate->copy()->addDays($validityDays);
 
             // Get flotte_id from current session or driver
             $flotteId = $validated['flotte_id'] ?? $coachingCabine->flotte_id ?? $driver->flotte_id;
@@ -587,7 +663,7 @@ class CoachingCabineController extends Controller
                 'moniteur' => $validated['moniteur'],
                 'type' => 'suivi',
                 'status' => 'planned',
-                'validity_days' => 3,
+                'validity_days' => $validityDays,
             ]);
         }
     }
@@ -604,8 +680,9 @@ class CoachingCabineController extends Controller
             ->first();
 
         if (!$existingSession) {
-            // Calculate date_fin (3 days after the start date)
-            $dateFin = $nextPlanningDate->copy()->addDays(3);
+            // Calculate date_fin based on validity_days (5 days for suivi type)
+            $validityDays = 5; // Default for suivi type
+            $dateFin = $nextPlanningDate->copy()->addDays($validityDays);
 
             // Get flotte_id from current session or driver
             $driver = $coachingCabine->driver;
@@ -620,7 +697,7 @@ class CoachingCabineController extends Controller
                 'moniteur' => $coachingCabine->moniteur,
                 'type' => 'suivi',
                 'status' => 'planned',
-                'validity_days' => 3,
+                'validity_days' => $validityDays,
             ]);
         }
     }

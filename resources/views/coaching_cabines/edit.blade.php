@@ -96,9 +96,11 @@
                         <div class="col-md-6">
                             <label for="type" class="form-label fw-semibold">{{ __('messages.type') ?? 'Type' }} <span class="text-danger">*</span></label>
                             <select name="type" id="type" class="form-select @error('type') is-invalid @enderror" required disabled>
-                                <option value="initial" {{ old('type', $coachingCabine->type) == 'initial' ? 'selected' : '' }}>{{ __('messages.type_initial') }}</option>
-                                <option value="suivi" {{ old('type', $coachingCabine->type) == 'suivi' ? 'selected' : '' }}>{{ __('messages.type_suivi') }}</option>
-                                <option value="correctif" {{ old('type', $coachingCabine->type) == 'correctif' ? 'selected' : '' }}>{{ __('messages.type_correctif') }}</option>
+                                @foreach(\App\Models\CoachingSession::getTypes() as $type)
+                                    <option value="{{ $type }}" {{ old('type', $coachingCabine->type) == $type ? 'selected' : '' }}>
+                                        {{ \App\Models\CoachingSession::getTypeTitles()[$type] }}
+                                    </option>
+                                @endforeach
                             </select>
                             <input type="hidden" name="type" value="{{ old('type', $coachingCabine->type) }}">
                             @error('type')

@@ -169,12 +169,81 @@
             display: inline-block;
             margin-right: 15px;
         }
+
+        .type-legend {
+            margin-top: 12px;
+            margin-bottom: 12px;
+            padding: 10px;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            font-size: 7.5pt;
+        }
+
+        .type-legend-title {
+            font-weight: bold;
+            margin-bottom: 6px;
+            color: #2c3e50;
+            font-size: 8pt;
+        }
+
+        .type-legend-item {
+            display: inline-block;
+            margin-right: 12px;
+            margin-bottom: 4px;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 7pt;
+        }
+
+        /* Type color mappings */
+        .bg-type-initial {
+            background-color: #0dcaf0 !important; /* info */
+            color: #000;
+        }
+
+        .bg-type-suivi {
+            background-color: #0d6efd !important; /* primary */
+            color: #fff;
+        }
+
+        .bg-type-correctif {
+            background-color: #dc3545 !important; /* danger */
+            color: #fff;
+        }
+
+        .bg-type-route_analysing {
+            background-color: #198754 !important; /* success */
+            color: #fff;
+        }
+
+        .bg-type-obc_suite {
+            background-color: #ffc107 !important; /* warning */
+            color: #000;
+        }
+
+        .bg-type-other {
+            background-color: #6c757d !important; /* secondary */
+            color: #fff;
+        }
+
+        .number-cell {
+            font-weight: bold;
+            padding: 4px 6px;
+            border-radius: 3px;
+        }
     </style>
 </head>
 <body>
     <div class="header">
         <h1>{{ __('messages.coaching_cabines_planning_title') ?? 'Planning Annuel des Sessions de Coaching' }}</h1>
-        <div class="subtitle">{{ __('messages.year') ?? 'Année' }}: {{ $year }} - {{ __('messages.generated_on') ?? 'Généré le' }}: {{ date('d/m/Y à H:i') }}</div>
+        <div class="subtitle">
+            {{ __('messages.year') ?? 'Année' }}: {{ $year }}
+            @if($selectedFlotte)
+                - {{ __('messages.flotte') ?? 'Flotte' }}: {{ $selectedFlotte->name }}
+            @endif
+            - {{ __('messages.generated_on') ?? 'Généré le' }}: {{ date('d/m/Y à H:i') }}
+        </div>
     </div>
 
     <div class="stats-row">
@@ -194,6 +263,30 @@
             <span class="stat-label">{{ __('messages.completed_percentage') ?? 'Pourcentage de réalisation' }}:</span>
             <span class="stat-value">{{ number_format($completedPercentage, 1) }}%</span>
         </span>
+    </div>
+
+    <div class="type-legend">
+        <div class="type-legend-title">{{ __('messages.coaching_session_types') ?? 'Types de Sessions de Coaching' }}:</div>
+        @php
+            $colorMap = [
+                'info' => '#0dcaf0',
+                'primary' => '#0d6efd',
+                'danger' => '#dc3545',
+                'success' => '#198754',
+                'warning' => '#ffc107',
+                'secondary' => '#6c757d',
+            ];
+        @endphp
+        @foreach($typeTitles as $type => $title)
+            @php
+                $colorName = $typeColors[$type] ?? 'secondary';
+                $hexColor = $colorMap[$colorName] ?? '#6c757d';
+                $textColor = in_array($colorName, ['warning', 'info']) ? '#000' : '#fff';
+            @endphp
+            <span class="type-legend-item" style="background-color: {{ $hexColor }}; color: {{ $textColor }};">
+                {{ $title }}
+            </span>
+        @endforeach
     </div>
 
     <table>
@@ -230,10 +323,47 @@
                             $planned = $monthData['planned'];
                             $completed = $monthData['completed'];
                             $cancelled = $monthData['cancelled'];
+                            $sessions = $monthData['sessions'] ?? collect();
+                            
+                            // Color mapping
+                            $colorMap = [
+                                'info' => '#0dcaf0',
+                                'primary' => '#0d6efd',
+                                'danger' => '#dc3545',
+                                'success' => '#198754',
+                                'warning' => '#ffc107',
+                                'secondary' => '#6c757d',
+                            ];
+                            
+                            // Group sessions by type for planned column
+                            $plannedSessions = $sessions->whereIn('status', ['planned', 'in_progress', 'completed']);
+                            $plannedTypeCounts = $plannedSessions->groupBy('type')->map->count();
+                            $dominantPlannedType = $plannedTypeCounts->count() > 0 
+                                ? $plannedTypeCounts->sortDesc()->keys()->first() 
+                                : null;
+                            $plannedTypeColor = $dominantPlannedType ? ($typeColors[$dominantPlannedType] ?? 'secondary') : null;
+                            $plannedBgColor = $plannedTypeColor ? ($colorMap[$plannedTypeColor] ?? '#6c757d') : 'transparent';
+                            $plannedTextColor = $plannedTypeColor && in_array($plannedTypeColor, ['warning', 'info']) ? '#000' : '#fff';
+                            
+                            // Group sessions by type for completed column
+                            $completedSessions = $sessions->where('status', 'completed');
+                            $completedTypeCounts = $completedSessions->groupBy('type')->map->count();
+                            $dominantCompletedType = $completedTypeCounts->count() > 0 
+                                ? $completedTypeCounts->sortDesc()->keys()->first() 
+                                : null;
+                            $completedTypeColor = $dominantCompletedType ? ($typeColors[$dominantCompletedType] ?? 'secondary') : null;
+                            $completedBgColor = $completedTypeColor ? ($colorMap[$completedTypeColor] ?? '#6c757d') : 'transparent';
+                            $completedTextColor = $completedTypeColor && in_array($completedTypeColor, ['warning', 'info']) ? '#000' : '#fff';
                         @endphp
-                        <td>{{ $planned > 0 ? $planned : '-' }}</td>
-                        <td>{{ $completed > 0 ? $completed : '-' }}</td>
-                        <td>{{ $cancelled > 0 ? $cancelled : '-' }}</td>
+                        <td style="background-color: {{ $planned > 0 ? $plannedBgColor : 'transparent' }}; color: {{ $planned > 0 && $plannedTypeColor ? $plannedTextColor : '#333' }}; font-weight: {{ $planned > 0 ? 'bold' : 'normal' }};">
+                            {{ $planned > 0 ? $planned : '-' }}
+                        </td>
+                        <td style="background-color: {{ $completed > 0 ? $completedBgColor : 'transparent' }}; color: {{ $completed > 0 && $completedTypeColor ? $completedTextColor : '#333' }}; font-weight: {{ $completed > 0 ? 'bold' : 'normal' }};">
+                            {{ $completed > 0 ? $completed : '-' }}
+                        </td>
+                        <td style="background-color: {{ $cancelled > 0 ? '#e74c3c' : 'transparent' }}; color: {{ $cancelled > 0 ? '#fff' : '#333' }}; font-weight: {{ $cancelled > 0 ? 'bold' : 'normal' }};">
+                            {{ $cancelled > 0 ? $cancelled : '-' }}
+                        </td>
                     @endforeach
                     <td class="total-cell">{{ $totalSessions }}</td>
                 </tr>
@@ -264,9 +394,10 @@
                 <td class="percentage-cell">{{ __('messages.completed_percentage') ?? 'Pourcentage de réalisation' }}</td>
                 @foreach($monthNames as $monthNum => $monthName)
                     @php
-                        $monthTotal = $monthTotals[$monthNum]['planned'] + $monthTotals[$monthNum]['completed'] + $monthTotals[$monthNum]['cancelled'];
+                        // Use planned count (which includes completed) as the base for percentage
+                        $monthPlanned = $monthTotals[$monthNum]['planned'];
                         $monthCompleted = $monthTotals[$monthNum]['completed'];
-                        $monthPercentage = $monthTotal > 0 ? round(($monthCompleted / $monthTotal) * 100, 1) : 0;
+                        $monthPercentage = $monthPlanned > 0 ? round(($monthCompleted / $monthPlanned) * 100, 1) : 0;
                     @endphp
                     <td colspan="3" class="percentage-cell">
                         {{ number_format($monthPercentage, 1) }}%

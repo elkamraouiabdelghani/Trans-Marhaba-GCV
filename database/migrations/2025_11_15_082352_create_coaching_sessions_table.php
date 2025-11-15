@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignId('flotte_id')->nullable()->constrained('flottes')->onDelete('set null');
             $table->date('date')->nullable();
             $table->date('date_fin')->nullable();
-            $table->enum('type', ['initial', 'suivi', 'correctif'])->default('initial');
+            $table->enum('type', ['initial', 'suivi', 'correctif', 'route_analysing', 'obc_suite', 'other'])->default('initial');
             $table->string('route_taken')->nullable();
             $table->string('moniteur')->nullable();
             $table->text('assessment')->nullable();

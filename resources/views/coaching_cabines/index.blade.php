@@ -216,20 +216,8 @@
                                         @endif
                                     </td>
                                     <td>
-                                        @php
-                                            $typeLabels = [
-                                                'initial' => __('messages.type_initial'),
-                                                'suivi' => __('messages.type_suivi'),
-                                                'correctif' => __('messages.type_correctif')
-                                            ];
-                                            $typeColors = [
-                                                'initial' => 'primary',
-                                                'suivi' => 'info',
-                                                'correctif' => 'warning'
-                                            ];
-                                        @endphp
-                                        <span class="badge bg-{{ $typeColors[$session->type] ?? 'secondary' }}-opacity-10 text-{{ $typeColors[$session->type] ?? 'secondary' }}">
-                                            {{ $typeLabels[$session->type] ?? $session->type }}
+                                        <span class="badge bg-{{ $session->getTypeColor() }}-opacity-10 text-{{ $session->getTypeColor() }}">
+                                            {{ $session->getTypeTitle() }}
                                         </span>
                                     </td>
                                     <td>

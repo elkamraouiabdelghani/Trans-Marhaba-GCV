@@ -187,20 +187,8 @@
             <div class="info-row">
                 <div class="info-label">{{ __('messages.type') ?? 'Type' }}:</div>
                 <div class="info-value">
-                    @php
-                        $typeLabels = [
-                            'initial' => __('messages.type_initial') ?? 'Initial',
-                            'suivi' => __('messages.type_suivi') ?? 'Suivi',
-                            'correctif' => __('messages.type_correctif') ?? 'Correctif'
-                        ];
-                        $typeColors = [
-                            'initial' => 'primary',
-                            'suivi' => 'info',
-                            'correctif' => 'warning'
-                        ];
-                    @endphp
-                    <span class="badge badge-{{ $typeColors[$coachingCabine->type] ?? 'secondary' }}">
-                        {{ $typeLabels[$coachingCabine->type] ?? $coachingCabine->type }}
+                    <span class="badge badge-{{ $coachingCabine->getTypeColor() }}">
+                        {{ $coachingCabine->getTypeTitle() }}
                     </span>
                 </div>
             </div>

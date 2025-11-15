@@ -10,14 +10,22 @@
                 <p class="text-muted mb-0">{{ __('messages.coaching_cabines_planning_subtitle') }}</p>
             </div>
             <div class="d-flex gap-2">
-                <form method="GET" action="{{ route('coaching-cabines.planning') }}" class="d-flex gap-2">
+                <form method="GET" action="{{ route('coaching-cabines.planning') }}" class="d-flex gap-2" id="planningFilterForm">
                     <select name="year" id="year" class="form-select form-select-sm" onchange="this.form.submit()">
                         @for($y = date('Y') - 2; $y <= date('Y') + 2; $y++)
                             <option value="{{ $y }}" {{ $year == $y ? 'selected' : '' }}>{{ $y }}</option>
                         @endfor
                     </select>
+                    <select name="flotte_id" id="flotte_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                        <option value="">{{ __('messages.all_flottes') ?? 'Toutes les flottes' }}</option>
+                        @foreach($flottes as $flotte)
+                            <option value="{{ $flotte->id }}" {{ (isset($flotteId) && $flotteId == $flotte->id) ? 'selected' : '' }}>
+                                {{ $flotte->name }}
+                            </option>
+                        @endforeach
+                    </select>
                 </form>
-                <a href="{{ route('coaching-cabines.planning.pdf', $year) }}" class="btn btn-danger btn-sm" target="_blank">
+                <a href="{{ route('coaching-cabines.planning.pdf', $year) }}{{ $flotteId ? '?flotte_id=' . $flotteId : '' }}" class="btn btn-danger btn-sm" target="_blank">
                     <i class="bi bi-file-pdf me-1"></i> {{ __('messages.export_pdf') ?? 'Exporter en PDF' }}
                 </a>
                 <a href="{{ route('coaching-cabines.index') }}" class="btn btn-outline-secondary btn-sm">
@@ -96,7 +104,7 @@
                                         <td class="text-center bg-{{ $monthNum % 2 == 0 ? 'light' : 'white' }}">
                                             @if($planned > 0)
                                                 <span class="badge bg-primary bg-opacity-10 text-primary" style="cursor: pointer;" 
-                                                      onclick="showSessions({{ $sessions->where('status', 'planned')->pluck('id')->toJson() }}, 'planned')">
+                                                      onclick="showSessions({{ $sessions->whereIn('status', ['planned', 'in_progress', 'completed'])->pluck('id')->toJson() }}, 'planned')">
                                                     {{ $planned }}
                                                 </span>
                                             @else
@@ -171,18 +179,19 @@
                                 </td>
                                 @foreach($monthNames as $monthNum => $monthName)
                                     @php
-                                        $monthTotal = $monthTotals[$monthNum]['planned'] + $monthTotals[$monthNum]['completed'] + $monthTotals[$monthNum]['cancelled'];
+                                        // Use planned count (which includes completed) as the base for percentage
+                                        $monthPlanned = $monthTotals[$monthNum]['planned'];
                                         $monthCompleted = $monthTotals[$monthNum]['completed'];
-                                        $monthPercentage = $monthTotal > 0 ? round(($monthCompleted / $monthTotal) * 100, 1) : 0;
+                                        $monthPercentage = $monthPlanned > 0 ? round(($monthCompleted / $monthPlanned) * 100, 1) : 0;
                                     @endphp
                                     <td colspan="3" class="text-center fw-bold">
                                         <span class="badge bg-warning text-dark">{{ number_format($monthPercentage, 1) }}%</span>
-                                        <small class="text-muted d-block">{{ $monthCompleted }} / {{ $monthTotal }}</small>
+                                        <small class="text-muted d-block">{{ $monthCompleted }} / {{ $monthPlanned }}</small>
                                     </td>
                                 @endforeach
                                 <td class="text-center fw-bold">
                                     <span class="badge bg-warning text-dark">{{ number_format($completedPercentage, 1) }}%</span>
-                                    <small class="text-muted d-block">{{ number_format($completedSessions) }} / {{ number_format($totalSessions) }}</small>
+                                    <small class="text-muted d-block">{{ number_format($completedSessions) }} / {{ number_format($grandTotal['planned']) }}</small>
                                 </td>
                             </tr>
                         </tfoot>

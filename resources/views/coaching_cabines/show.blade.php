@@ -65,20 +65,8 @@
                             <div class="col-6 col-md-4">
                                 <label class="form-label text-muted small">{{ __('messages.type') ?? 'Type' }}</label>
                                 <div>
-                                    @php
-                                        $typeLabels = [
-                                            'initial' => __('messages.type_initial'),
-                                            'suivi' => __('messages.type_suivi'),
-                                            'correctif' => __('messages.type_correctif')
-                                        ];
-                                        $typeColors = [
-                                            'initial' => 'primary',
-                                            'suivi' => 'info',
-                                            'correctif' => 'warning'
-                                        ];
-                                    @endphp
-                                    <span class="badge bg-{{ $typeColors[$coachingCabine->type] ?? 'secondary' }}-opacity-10 text-{{ $typeColors[$coachingCabine->type] ?? 'secondary' }}">
-                                        {{ $typeLabels[$coachingCabine->type] ?? $coachingCabine->type }}
+                                    <span class="badge bg-{{ $coachingCabine->getTypeColor() }}-opacity-10 text-{{ $coachingCabine->getTypeColor() }}">
+                                        {{ $coachingCabine->getTypeTitle() }}
                                     </span>
                                 </div>
                             </div>

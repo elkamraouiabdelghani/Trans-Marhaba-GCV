@@ -93,9 +93,11 @@
                         <div class="col-md-6">
                             <label for="type" class="form-label fw-semibold">{{ __('messages.type') ?? 'Type' }} <span class="text-danger">*</span></label>
                             <select name="type" id="type" class="form-select @error('type') is-invalid @enderror" required>
-                                <option value="initial" {{ old('type', 'initial') == 'initial' ? 'selected' : '' }}>{{ __('messages.type_initial') }}</option>
-                                <option value="suivi" {{ old('type') == 'suivi' ? 'selected' : '' }}>{{ __('messages.type_suivi') }}</option>
-                                <option value="correctif" {{ old('type') == 'correctif' ? 'selected' : '' }}>{{ __('messages.type_correctif') }}</option>
+                                @foreach(\App\Models\CoachingSession::getTypes() as $type)
+                                    <option value="{{ $type }}" {{ old('type', 'initial') == $type ? 'selected' : '' }}>
+                                        {{ \App\Models\CoachingSession::getTypeTitles()[$type] }}
+                                    </option>
+                                @endforeach
                             </select>
                             @error('type')
                                 <div class="invalid-feedback">{{ $message }}</div>
@@ -125,7 +127,8 @@
 
                         <div class="col-md-6">
                             <label for="validity_days" class="form-label fw-semibold">{{ __('messages.validity_days') }} <span class="text-danger">*</span></label>
-                            <input type="number" name="validity_days" id="validity_days" class="form-control @error('validity_days') is-invalid @enderror" value="{{ old('validity_days', 3) }}" min="1" required>
+                            <input type="number" name="validity_days" id="validity_days" class="form-control @error('validity_days') is-invalid @enderror" value="{{ old('validity_days', 5) }}" min="1" required>
+                            <small class="text-muted">{{ __('messages.validity_days_hint') ?? 'Par défaut: 15 jours pour type Initial, 5 jours pour les autres' }}</small>
                             @error('validity_days')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -192,14 +195,33 @@
     document.addEventListener('DOMContentLoaded', function() {
         const dateInput = document.getElementById('date');
         const dateFinInput = document.getElementById('date_fin');
+        const typeInput = document.getElementById('type');
+        const validityDaysInput = document.getElementById('validity_days');
 
-        // Auto-calculate date_fin when date changes
-        dateInput.addEventListener('change', function() {
-            if (this.value) {
-                const date = new Date(this.value);
-                date.setDate(date.getDate() + 3);
+        // Auto-calculate date_fin when date or validity_days changes
+        function updateDateFin() {
+            if (dateInput.value && validityDaysInput.value) {
+                const date = new Date(dateInput.value);
+                const validityDays = parseInt(validityDaysInput.value) || 5;
+                date.setDate(date.getDate() + validityDays);
                 const dateFin = date.toISOString().split('T')[0];
                 dateFinInput.value = dateFin;
+            }
+        }
+
+        dateInput.addEventListener('change', updateDateFin);
+        validityDaysInput.addEventListener('change', updateDateFin);
+
+        // Auto-update validity_days based on type
+        typeInput.addEventListener('change', function() {
+            const currentValidityDays = parseInt(validityDaysInput.value) || 5;
+            // Only auto-update if it's the default value (5) or if switching to/from initial
+            if (currentValidityDays === 5 || currentValidityDays === 15) {
+                if (this.value === 'initial') {
+                    validityDaysInput.value = 15;
+                } else {
+                    validityDaysInput.value = 5;
+                }
             }
         });
     });
