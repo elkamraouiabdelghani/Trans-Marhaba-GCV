@@ -15,6 +15,7 @@ use App\Http\Controllers\PrincipaleCretaireController;
 use App\Http\Controllers\SousCretaireController;
 use App\Http\Controllers\ChangementController;
 use App\Http\Controllers\CoachingCabineController;
+use App\Http\Controllers\TbtFormationController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Session;
 
@@ -125,6 +126,11 @@ Route::middleware('auth')->group(function () {
     Route::post('/formation-processes/{formationProcess}/step/{stepNumber}/validate', [FormationProcessController::class, 'validateStep'])->name('formation-processes.validate-step');
     Route::post('/formation-processes/{formationProcess}/step/{stepNumber}/reject', [FormationProcessController::class, 'rejectStep'])->name('formation-processes.reject-step');
     Route::post('/formation-processes/{formationProcess}/finalize', [FormationProcessController::class, 'finalize'])->name('formation-processes.finalize');
+    
+    // TBT Formations
+    Route::get('/tbt-formations/planning', [TbtFormationController::class, 'planning'])->name('tbt-formations.planning');
+    Route::get('/tbt-formations/planning/pdf', [TbtFormationController::class, 'planningPdf'])->name('tbt-formations.planning.pdf');
+    Route::resource('tbt-formations', TbtFormationController::class)->except(['show']);
     
     // Coaching Cabines
     Route::get('/coaching-cabines/planning/{year?}', [CoachingCabineController::class, 'planning'])->name('coaching-cabines.planning');

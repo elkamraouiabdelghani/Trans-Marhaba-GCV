@@ -52,6 +52,12 @@
                     </a>
                 </li>
                 <li class="mb-1">
+                    <a href="{{ route('tbt-formations.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('tbt-formations.*') ? 'active' : '' }}">
+                        <i class="bi bi-book-half me-2 text-gray-600 sidebar-icon"></i>
+                        <span class="sidebar-text">{{ __('messages.tbt_formations') }}</span>
+                    </a>
+                </li>
+                <li class="mb-1">
                     <a href="{{ route('formation-processes.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('formation-processes.*') ? 'active' : '' }}">
                         <i class="bi bi-book-half me-2 text-gray-600 sidebar-icon"></i>
                         <span class="sidebar-text">{{ __('messages.formation_processes') }}</span>
@@ -264,6 +270,12 @@
                         <a href="{{ route('formations.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('formations.*') ? 'active' : '' }}">
                             <i class="bi bi-book me-2 text-gray-600 sidebar-icon"></i>
                             <span class="sidebar-text">{{ __('messages.formations') }}</span>
+                        </a>
+                    </li>
+                    <li class="mb-1">
+                        <a href="{{ route('tbt-formations.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('tbt-formations.*') ? 'active' : '' }}">
+                            <i class="bi bi-book-half me-2 text-gray-600 sidebar-icon"></i>
+                            <span class="sidebar-text">{{ __('messages.tbt_formations') }}</span>
                         </a>
                     </li>
                     <li class="mb-1">
