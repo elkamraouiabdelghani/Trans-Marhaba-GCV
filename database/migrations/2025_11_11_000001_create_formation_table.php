@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('formation_category_id')->nullable()->constrained('formation_categories')->nullOnDelete();
             $table->foreignId('flotte_id')->nullable()->constrained('flottes')->nullOnDelete();
+            $table->enum('delivery_type', ['interne', 'externe'])->default('interne');
             $table->string('name')->unique();
             $table->string('code')->unique();
             $table->year('planned_year')->nullable();

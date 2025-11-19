@@ -22,10 +22,10 @@ class FormationController extends Controller
             $categories = FormationCategory::orderBy('name')->get();
 
             // Get filter options
-            $integratedDrivers = \App\Models\Driver::where('is_integrated', 1)
+            $integratedDrivers = Driver::where('is_integrated', 1)
                 ->orderBy('full_name')
                 ->get();
-            $flottes = \App\Models\Flotte::orderBy('name')->get();
+            $flottes = Flotte::orderBy('name')->get();
 
             // Get filter values from request
             $selectedDriver = $request->input('driver');
@@ -35,17 +35,23 @@ class FormationController extends Controller
             $selectedYear = $request->input('year');
 
             // Get available years from DriverFormation records
-            $doneYears = \App\Models\DriverFormation::whereNotNull('done_at')
+            $doneYears = DriverFormation::whereNotNull('done_at')
                 ->selectRaw('YEAR(done_at) as year')
                 ->distinct()
                 ->pluck('year');
             
-            $plannedYears = \App\Models\DriverFormation::whereNotNull('planned_at')
+            $plannedYears = DriverFormation::whereNotNull('planned_at')
                 ->selectRaw('YEAR(planned_at) as year')
+                ->distinct()
+                ->pluck('year');
+
+            $formationYears = Formation::whereNotNull('planned_year')
+                ->select('planned_year as year')
                 ->distinct()
                 ->pluck('year');
             
             $years = $doneYears->merge($plannedYears)
+                ->merge($formationYears)
                 ->unique()
                 ->filter()
                 ->sortDesc()
@@ -63,7 +69,8 @@ class FormationController extends Controller
             $hasFilters = $selectedDriver || $selectedFlotte || $selectedStatus || $selectedFormationCategory || $selectedYear;
             
             // Rule: If only status is selected, show nothing
-            $onlyStatus = $selectedStatus && !$selectedDriver && !$selectedFlotte && !$selectedFormationCategory;
+            $onlyStatus = $selectedStatus && !$selectedDriver && !$selectedFlotte && !$selectedFormationCategory && !$selectedYear;
+            $filterByPlannedYear = $selectedYear && !$selectedDriver && (!$selectedStatus || $selectedStatus === 'planned');
 
             // Build base query for formations
             $formationsQuery = Formation::with(['category', 'flotte']);
@@ -72,6 +79,10 @@ class FormationController extends Controller
                 // Show nothing if only status is selected
                 $formationsQuery->whereRaw('1 = 0'); // Force empty result
             } else {
+                if ($filterByPlannedYear) {
+                    $formationsQuery->where('planned_year', $selectedYear);
+                }
+
                 // Filter by formation category (type)
                 if ($selectedFormationCategory) {
                     $formationsQuery->where('formation_category_id', $selectedFormationCategory);
@@ -108,7 +119,7 @@ class FormationController extends Controller
                     $formationsQuery->where('flotte_id', $selectedFlotte);
                     
                     // If status or year is also selected, filter by DriverFormation records
-                    if ($selectedStatus || $selectedYear) {
+                    if (($selectedStatus || $selectedYear) && !$filterByPlannedYear) {
                         $formationsQuery->whereHas('driverFormations', function ($q) use ($selectedStatus, $selectedYear) {
                             if ($selectedStatus) {
                                 $q->where('status', $selectedStatus === 'realized' ? 'done' : 'planned');
@@ -130,7 +141,11 @@ class FormationController extends Controller
                             });
                         });
                     }
-                } elseif ($selectedStatus || $selectedYear) {
+                }
+
+                $shouldFilterByDriverFormations = ($selectedStatus || $selectedYear) && !$filterByPlannedYear;
+
+                if ($shouldFilterByDriverFormations) {
                     // Status or year with other filters (but not driver/flotte) - filter by status/year
                     $formationsQuery->whereHas('driverFormations', function ($q) use ($selectedStatus, $selectedYear) {
                         if ($selectedStatus) {
@@ -159,7 +174,7 @@ class FormationController extends Controller
 
             // Build graph data (always show when filters are applied, even with 0 counts)
             $graphData = null;
-            if ($hasFilters && !$onlyStatus) {
+            if ($hasFilters && !$onlyStatus && !$filterByPlannedYear) {
                 // Get all formations that should be displayed (for graph labels)
                 $allFormationsForGraph = $formations->pluck('id')->toArray();
                 
@@ -313,6 +328,7 @@ class FormationController extends Controller
             'description' => 'nullable|string',
             'formation_category_id' => 'nullable|exists:formation_categories,id',
             'flotte_id' => 'nullable|exists:flottes,id',
+            'delivery_type' => 'required|in:interne,externe',
             'is_active' => 'sometimes|boolean',
             'obligatoire' => 'sometimes|boolean',
             'reference_value' => 'nullable|integer|min:1',
@@ -366,6 +382,7 @@ class FormationController extends Controller
             'description' => 'nullable|string',
             'formation_category_id' => 'nullable|exists:formation_categories,id',
             'flotte_id' => 'nullable|exists:flottes,id',
+            'delivery_type' => 'required|in:interne,externe',
             'is_active' => 'sometimes|boolean',
             'obligatoire' => 'sometimes|boolean',
             'reference_value' => 'nullable|integer|min:1',

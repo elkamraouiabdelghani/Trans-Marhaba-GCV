@@ -230,6 +230,7 @@
                                 <th>{{ __('messages.planned_year') }}</th>
                                 <th>{{ __('messages.formation_category_name') }}</th>
                                 <th>{{ __('messages.flotte') }}</th>
+                                <th>{{ __('messages.formation_delivery_type') }}</th>
                                 <th>{{ __('messages.formation_status') }}</th>
                                 <th>{{ __('messages.obligatoire') }}</th>
                                 <th class="text-end pe-3">{{ __('messages.formation_actions') }}</th>
@@ -275,6 +276,17 @@
                                         @endif
                                     </td>
                                     <td>
+                                        @if($formation->delivery_type === 'externe')
+                                            <span class="badge bg-warning bg-opacity-25 text-warning">
+                                                {{ __('messages.formation_delivery_external') }}
+                                            </span>
+                                        @else
+                                            <span class="badge bg-primary bg-opacity-25 text-primary">
+                                                {{ __('messages.formation_delivery_internal') }}
+                                            </span>
+                                        @endif
+                                    </td>
+                                    <td>
                                         @if($formation->is_active)
                                             <span class="badge bg-success bg-opacity-25 text-success">{{ __('messages.formation_active') }}</span>
                                         @else
@@ -300,7 +312,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="9" class="text-center py-5 text-muted">
+                                    <td colspan="10" class="text-center py-5 text-muted">
                                         <i class="bi bi-inbox fs-1 d-block mb-2"></i>
                                         {{ __('messages.no_formations_found') }}
                                     </td>

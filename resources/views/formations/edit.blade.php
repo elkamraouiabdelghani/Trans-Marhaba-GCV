@@ -140,6 +140,30 @@
                                 @enderror
                             </div>
 
+                            <div class="mb-3">
+                                <label for="delivery_type" class="form-label">
+                                    {{ __('messages.formation_delivery_type') }}
+                                    <span class="text-danger">*</span>
+                                </label>
+                                <select class="form-select @error('delivery_type') is-invalid @enderror"
+                                        id="delivery_type"
+                                        name="delivery_type"
+                                        required>
+                                    <option value="interne" {{ old('delivery_type', $formation->delivery_type) === 'interne' ? 'selected' : '' }}>
+                                        {{ __('messages.formation_delivery_internal') }}
+                                    </option>
+                                    <option value="externe" {{ old('delivery_type', $formation->delivery_type) === 'externe' ? 'selected' : '' }}>
+                                        {{ __('messages.formation_delivery_external') }}
+                                    </option>
+                                </select>
+                                @error('delivery_type')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                                <small class="form-text text-muted">
+                                    {{ __('messages.formation_delivery_type_hint') }}
+                                </small>
+                            </div>
+
                             <div class="mb-3 form-check">
                                 <input type="checkbox" 
                                        class="form-check-input" 

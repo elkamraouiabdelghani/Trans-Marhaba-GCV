@@ -19,6 +19,7 @@ class Formation extends Model
         'description',
         'is_active',
         'obligatoire',
+        'delivery_type',
         'reference_value',
         'reference_unit',
         'warning_alert_percent',
