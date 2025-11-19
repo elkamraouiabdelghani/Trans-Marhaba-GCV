@@ -49,6 +49,8 @@
                 <form action="{{ route('drivers.update', $driver) }}" method="POST" enctype="multipart/form-data" id="driverEditForm">
                     @csrf
                     @method('PATCH')
+                    <div id="removedDocumentsContainer"></div>
+                    <div id="existingDocumentsContainer"></div>
 
                     @if ($errors->any())
                         <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
@@ -395,56 +397,68 @@
                         {{ __('messages.driver_documents') }}
                     </h6>
                     <div class="mb-4">
-                        <div class="mb-3">
-                            <label for="documents" class="form-label">{{ __('messages.upload_documents') }}</label>
-                            <input type="file"
-                                   class="form-control @error('documents') is-invalid @enderror @error('documents.*') is-invalid @enderror"
-                                   id="documents"
-                                   name="documents[]"
-                                   multiple>
-                            @error('documents')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                            @error('documents.*')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                            <small class="form-text text-muted">{{ __('messages.multiple_files_allowed') }}</small>
-                        </div>
-
-                        @if(!empty($driver->documents) && is_array($driver->documents))
+                        @php
+                            $documents = is_array($driver->documents) ? $driver->documents : [];
+                        @endphp
+                        @if(!empty($documents))
                             <div class="mb-3">
-                                <label class="form-label">{{ __('messages.uploaded_documents') }}</label>
-                                <div class="list-group">
-                                    @foreach($driver->documents as $index => $doc)
-                                        <div class="list-group-item">
-                                            <div class="d-flex align-items-center justify-content-between">
-                                                <div class="flex-grow-1 text-truncate">
-                                                    <i class="bi bi-file-earmark me-2 text-primary"></i>
-                                                    <span title="{{ $doc['name'] ?? basename($doc['path'] ?? '') }}">
-                                                        {{ $doc['name'] ?? basename($doc['path'] ?? '') }}
-                                                    </span>
-                                                </div>
-                                                <div class="d-flex gap-1">
-                                                    @if(isset($doc['path']))
-                                                        <a href="{{ Storage::disk('uploads')->url($doc['path']) }}" 
-                                                           target="_blank" 
-                                                           class="btn btn-sm btn-outline-primary"
-                                                           title="{{ __('messages.view') }}">
-                                                            <i class="bi bi-eye"></i>
-                                                        </a>
-                                                        <a href="{{ Storage::disk('uploads')->url($doc['path']) }}" 
-                                                           download
-                                                           class="btn btn-sm btn-outline-success"
-                                                           title="{{ __('messages.download') }}">
-                                                            <i class="bi bi-download"></i>
-                                                        </a>
+                                <label class="form-label fw-semibold">{{ __('messages.uploaded_documents') }} ({{ count($documents) }})</label>
+                                <div class="row g-3" id="existingDocuments">
+                                    @foreach($documents as $index => $doc)
+                                        @php
+                                            $path = is_array($doc) ? ($doc['path'] ?? $doc['file_path'] ?? '') : $doc;
+                                            $name = is_array($doc) ? ($doc['name'] ?? basename($path)) : basename($path);
+                                            $extension = $path ? strtolower(pathinfo($path, PATHINFO_EXTENSION)) : '';
+                                            $isImage = in_array($extension, ['png','jpg','jpeg','gif','bmp','webp']);
+                                            $isUrl = $path && filter_var($path, FILTER_VALIDATE_URL);
+                                            $previewUrl = $path
+                                                ? ($isUrl ? $path : Storage::disk('uploads')->url($path))
+                                                : null;
+                                            $token = $path ? rtrim(strtr(base64_encode($path), '+/', '-_'), '=') : null;
+                                            $viewUrl = $token ? route('drivers.documents.show', ['driver' => $driver->id, 'document' => $token]) : null;
+                                            $downloadUrl = $token ? route('drivers.documents.show', ['driver' => $driver->id, 'document' => $token, 'download' => 1]) : null;
+                                            $normalizedDoc = [
+                                                'name' => $name,
+                                                'original_name' => $doc['original_name'] ?? $name,
+                                                'path' => $path,
+                                                'uploaded_at' => $doc['uploaded_at'] ?? null,
+                                                'extension' => $extension,
+                                            ];
+                                        @endphp
+                                        <div class="col-lg-3 col-md-4 col-sm-6 col-12 existing-document" id="document-{{ $index }}" data-document='@json($normalizedDoc)'>
+                                            <div class="document-card h-100">
+                                                <div class="document-image-container">
+                                                    @if($isImage && $previewUrl)
+                                                        <img src="{{ $previewUrl }}" alt="{{ $name }}" class="document-image">
+                                                    @else
+                                                        <div class="document-placeholder">
+                                                            <i class="bi bi-file-earmark-text display-4 text-muted"></i>
+                                                        </div>
                                                     @endif
-                                                    <button type="button" 
-                                                            class="btn btn-sm btn-outline-danger"
-                                                            onclick="deleteDocument({{ $index }})"
-                                                            title="{{ __('messages.delete') }}">
-                                                        <i class="bi bi-trash"></i>
-                                                    </button>
+                                                    <div class="document-overlay">
+                                                        <div class="document-actions">
+                                                            @if($viewUrl)
+                                                                <a href="{{ $viewUrl }}" target="_blank" class="btn btn-sm btn-light me-1" title="{{ __('messages.view') }}">
+                                                                    <i class="bi bi-eye"></i>
+                                                                </a>
+                                                            @endif
+                                                            @if($downloadUrl)
+                                                                <a href="{{ $downloadUrl }}" class="btn btn-sm btn-light me-1" title="{{ __('messages.download') }}">
+                                                                    <i class="bi bi-download"></i>
+                                                                </a>
+                                                            @endif
+                                                            <button type="button" class="btn btn-sm btn-danger" data-action="remove-document" title="{{ __('messages.delete') }}">
+                                                                <i class="bi bi-trash"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="document-info">
+                                                    <h6 class="document-name" title="{{ $name }}">{{ $name }}</h6>
+                                                    <small class="text-muted d-block">{{ __('messages.uploaded') }}:
+                                                        {{ $doc['uploaded_at'] ? \Carbon\Carbon::parse($doc['uploaded_at'])->format('d/m/Y H:i') : __('messages.unknown_date') }}
+                                                    </small>
+                                                    <small class="text-muted text-uppercase">{{ $extension ?: '—' }}</small>
                                                 </div>
                                             </div>
                                         </div>
@@ -452,6 +466,51 @@
                                 </div>
                             </div>
                         @endif
+
+                        <label class="form-label fw-semibold">{{ __('messages.upload_documents') }}</label>
+                        <div class="file-upload-area @error('documents') is-invalid @enderror"
+                             id="fileUploadArea"
+                             ondrop="handleDrop(event)"
+                             ondragover="handleDragOver(event)"
+                             ondragleave="handleDragLeave(event)"
+                             onclick="document.getElementById('documents').click()">
+
+                            <input type="file"
+                                   class="d-none @error('documents') is-invalid @enderror @error('documents.*') is-invalid @enderror"
+                                   id="documents"
+                                   name="documents[]"
+                                   multiple
+                                   onchange="handleFileSelect(this)">
+
+                            <div class="file-upload-content text-center">
+                                <div class="file-upload-icon mb-3">
+                                    <i class="bi bi-cloud-upload display-5 text-dark"></i>
+                                </div>
+                                <h6 class="text-dark mb-2">{{ __('messages.drag_drop') ?? 'Drag & drop files here' }}</h6>
+                                <p class="text-muted mb-3">{{ __('messages.or_click_to_browse') ?? 'or click to browse' }}</p>
+                                <div class="file-types">
+                                    <span class="badge bg-light text-dark">{{ __('messages.multiple_files_allowed') }}</span>
+                                </div>
+                            </div>
+
+                            <div class="file-upload-drag-over" style="display: none;">
+                                <div class="drag-over-content text-center text-white">
+                                    <i class="bi bi-cloud-upload display-5 mb-2"></i>
+                                    <p class="mb-0">{{ __('messages.drop_to_upload') ?? 'Drop to upload' }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        @error('documents')
+                            <div class="invalid-feedback d-block">{{ $message }}</div>
+                        @enderror
+                        @error('documents.*')
+                            <div class="invalid-feedback d-block">{{ $message }}</div>
+                        @enderror
+
+                        <div id="filePreview" class="mt-3" style="display: none;">
+                            <h6 class="text-dark fw-semibold mb-2">{{ __('messages.selected_files') ?? 'Selected files' }}</h6>
+                            <div class="row g-2" id="previewContainer"></div>
+                        </div>
                     </div>
 
                     <!-- Notes -->
@@ -486,38 +545,247 @@
         </div>
     </div>
 
-    <!-- Hidden forms for document deletion -->
-    @if(!empty($driver->documents) && is_array($driver->documents))
-        @foreach($driver->documents as $index => $doc)
-            <form id="deleteDocumentForm{{ $index }}" 
-                  action="{{ route('drivers.delete-document', ['driver' => $driver->id, 'index' => $index]) }}" 
-                  method="POST" 
-                  style="display: none;">
-                @csrf
-                @method('DELETE')
-            </form>
-        @endforeach
-    @endif
-
     @push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const form = document.getElementById('driverEditForm');
             const submitBtn = document.getElementById('submitBtn');
-            
+
             if (form && submitBtn) {
                 form.addEventListener('submit', function(e) {
                     submitBtn.disabled = true;
                     submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> {{ __('messages.saving') ?? "Saving..." }}';
+                    ensureExistingDocumentsIncluded();
                 });
             }
+
+            document.addEventListener('click', function(event) {
+                const target = event.target.closest('[data-action="remove-document"]');
+                if (!target) return;
+
+                const documentCard = target.closest('.existing-document');
+                if (!documentCard) return;
+
+                const docData = documentCard.getAttribute('data-document');
+                const documentInfo = docData ? JSON.parse(docData) : null;
+                if (!documentInfo) return;
+
+                removeExistingDocument(documentCard, documentInfo);
+            });
         });
 
-        function deleteDocument(index) {
-            if (confirm('{{ __('messages.confirm_delete_document') }}')) {
-                document.getElementById('deleteDocumentForm' + index).submit();
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const uploadArea = document.getElementById('fileUploadArea');
+            uploadArea.classList.add('drag-over');
+            uploadArea.querySelector('.file-upload-drag-over').style.display = 'flex';
+            uploadArea.querySelector('.file-upload-content').style.display = 'none';
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const uploadArea = document.getElementById('fileUploadArea');
+            uploadArea.classList.remove('drag-over');
+            uploadArea.querySelector('.file-upload-drag-over').style.display = 'none';
+            uploadArea.querySelector('.file-upload-content').style.display = 'block';
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const files = e.dataTransfer.files;
+            const fileInput = document.getElementById('documents');
+            fileInput.files = files;
+            handleFileSelect(fileInput);
+            handleDragLeave(e);
+        }
+
+        function handleFileSelect(input) {
+            const files = Array.from(input.files || []);
+            const previewContainer = document.getElementById('previewContainer');
+            const previewWrapper = document.getElementById('filePreview');
+
+            if (!previewContainer || !previewWrapper) return;
+
+            previewContainer.innerHTML = '';
+
+            if (!files.length) {
+                previewWrapper.style.display = 'none';
+                return;
+            }
+
+            previewWrapper.style.display = 'block';
+
+            files.forEach((file, index) => {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const col = document.createElement('div');
+                    col.className = 'col-md-3 col-sm-4 col-6';
+                    col.innerHTML = `
+                        <div class="document-card new-document h-100">
+                            <div class="document-image-container">
+                                ${file.type.startsWith('image/')
+                                    ? `<img src="${event.target.result}" alt="${file.name}" class="document-image">`
+                                    : `<div class="document-placeholder"><i class="bi bi-file-earmark-text display-4 text-muted"></i></div>`
+                                }
+                                <div class="document-overlay">
+                                    <div class="document-actions">
+                                        <button type="button" class="btn btn-sm btn-danger" onclick="removeSelectedFile(${index})" title="{{ __('messages.delete') }}">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="document-info">
+                                <h6 class="document-name" title="${file.name}">${file.name}</h6>
+                                <small class="text-muted">${(file.size / 1024).toFixed(1)} KB</small>
+                            </div>
+                        </div>
+                    `;
+                    previewContainer.appendChild(col);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function removeSelectedFile(index) {
+            const fileInput = document.getElementById('documents');
+            if (!fileInput || !fileInput.files.length) return;
+
+            const dt = new DataTransfer();
+            Array.from(fileInput.files).forEach((file, fileIndex) => {
+                if (fileIndex !== index) {
+                    dt.items.add(file);
+                }
+            });
+            fileInput.files = dt.files;
+
+            if (!dt.files.length) {
+                document.getElementById('filePreview').style.display = 'none';
+            } else {
+                handleFileSelect(fileInput);
             }
         }
+
+        function removeExistingDocument(element, documentInfo) {
+            addToRemovedDocuments(documentInfo);
+            element.style.transition = 'all 0.3s ease';
+            element.style.transform = 'scale(0.95)';
+            element.style.opacity = '0';
+            setTimeout(() => element.remove(), 200);
+        }
+
+        function addToRemovedDocuments(documentInfo) {
+            const container = document.getElementById('removedDocumentsContainer');
+            if (!container) return;
+
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'removed_documents[]';
+            hiddenInput.value = JSON.stringify(documentInfo);
+            container.appendChild(hiddenInput);
+        }
+
+        function ensureExistingDocumentsIncluded() {
+            const container = document.getElementById('existingDocumentsContainer');
+            if (!container) return;
+
+            container.innerHTML = '';
+
+            document.querySelectorAll('.existing-document').forEach((element) => {
+                const docData = element.getAttribute('data-document');
+                if (!docData) return;
+
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'existing_documents[]';
+                input.value = docData;
+                container.appendChild(input);
+            });
+        }
+
     </script>
+
+    <style>
+        .document-card {
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            background: #fff;
+        }
+        .document-card:hover {
+            box-shadow: 0 6px 12px rgba(0,0,0,0.08);
+            transform: translateY(-3px);
+        }
+        .document-image-container {
+            position: relative;
+            height: 140px;
+            background: #f8f9fa;
+        }
+        .document-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .document-placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+        }
+        .document-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            opacity: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.3s ease;
+        }
+        .document-card:hover .document-overlay,
+        .new-document .document-overlay {
+            opacity: 1;
+        }
+        .document-actions {
+            display: flex;
+        }
+        .document-info {
+            padding: 10px;
+        }
+        .document-name {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .file-upload-area {
+            border: 2px dashed #d1d5db;
+            border-radius: 8px;
+            padding: 40px 20px;
+            position: relative;
+            cursor: pointer;
+            background: #f8f9fa;
+            transition: all 0.3s ease;
+        }
+        .file-upload-area.drag-over {
+            border-color: #0d6efd;
+            background: #eef4ff;
+        }
+        .file-upload-drag-over {
+            position: absolute;
+            inset: 0;
+            border-radius: 8px;
+            background: rgba(13, 110, 253, 0.85);
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
     @endpush
 </x-app-layout>

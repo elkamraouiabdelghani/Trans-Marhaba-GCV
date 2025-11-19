@@ -720,6 +720,10 @@ return [
     // Driver Documents
     'driver_documents' => 'Driver Documents',
     'upload_documents' => 'Upload Documents',
+    'drag_drop' => 'Drag & drop files here',
+    'or_click_to_browse' => 'or click to browse',
+    'drop_to_upload' => 'Drop to upload',
+    'selected_files' => 'Selected files',
     'uploaded_documents' => 'Uploaded Documents',
     'no_documents_uploaded' => 'No documents uploaded yet.',
     'documents_uploaded_successfully' => 'Documents uploaded successfully.',

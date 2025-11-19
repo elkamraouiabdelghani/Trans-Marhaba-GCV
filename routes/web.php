@@ -49,6 +49,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/drivers/{driver}', [DriversController::class, 'update'])->name('drivers.update');
     Route::post('/drivers/{driver}/documents', [DriversController::class, 'uploadDocuments'])->name('drivers.upload-documents');
     Route::delete('/drivers/{driver}/documents/{index}', [DriversController::class, 'deleteDocument'])->name('drivers.delete-document');
+    Route::get('/drivers/{driver}/documents/{document}', [DriversController::class, 'showDocument'])->name('drivers.documents.show');
     Route::post('/drivers/{driver}/formations/quick-store', [DriversController::class, 'storeQuickFormation'])->name('drivers.formations.quick-store');
     Route::get('/driver-formations/{driverFormation}/certificate', [DriversController::class, 'downloadFormationCertificate'])->name('drivers.formations.download-certificate');
     Route::post('/drivers/{driver}/activities', [DriversController::class, 'storeActivity'])->name('drivers.activities.store');

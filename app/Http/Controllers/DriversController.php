@@ -24,7 +24,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class DriversController extends Controller
 {
-    public function index(): View
+    public function index()
     {
         $drivers = Driver::query()
             ->with(['assignedVehicle', 'flotte'])
@@ -728,6 +728,7 @@ class DriversController extends Controller
     ): array {
         $violations = [];
         $baseId = (int) $date->format('Ymd'); // Use date as base for unique IDs
+        $violationId = $baseId * 100;
 
         // Check driving hours limit
         if ($drivingHours > $maxDrivingHours) {
@@ -892,13 +893,16 @@ class DriversController extends Controller
     {
         try {
             $driver->load(['assignedVehicle', 'flotte']);
-            
-            // Get vehicles for dropdown
-            $vehicles = Vehicle::all();
-            
-            // Get flottes for dropdown
-            $flottes = Flotte::all();
-            
+
+            $vehicles = $this->getAvailableVehicles();
+            if ($driver->assigned_vehicle_id && !$vehicles->contains('id', $driver->assigned_vehicle_id)) {
+                if ($currentVehicle = Vehicle::find($driver->assigned_vehicle_id)) {
+                    $vehicles->prepend($currentVehicle);
+                }
+            }
+
+            $flottes = Flotte::orderBy('name')->get();
+
             return view('drivers.edit', compact('driver', 'vehicles', 'flottes'));
         } catch (\Throwable $e) {
             Log::error('Failed to edit driver', [
@@ -941,7 +945,10 @@ class DriversController extends Controller
 
             $fileName = basename($path);
 
-            return Storage::disk($disk)->download($path, $fileName);
+            /** @var \Illuminate\Filesystem\FilesystemAdapter $storage */
+            $storage = Storage::disk($disk);
+
+            return $storage->download($path, $fileName);
         } catch (\Throwable $e) {
             Log::error('Failed to download driver formation certificate', [
                 'driver_formation_id' => $driverFormation->id,
@@ -959,32 +966,45 @@ class DriversController extends Controller
     {
         try {
             $validated = $request->validated();
+            unset($validated['documents']);
 
-            // Handle document uploads
-            if ($request->hasFile('documents')) {
-                $existingDocuments = $driver->documents ?? [];
-                if (!is_array($existingDocuments)) {
-                    $existingDocuments = [];
+            $originalVehicleId = $driver->assigned_vehicle_id;
+            $newVehicleId = $validated['assigned_vehicle_id'] ?? null;
+            $newVehicleId = $newVehicleId ?: null;
+            $validated['assigned_vehicle_id'] = $newVehicleId;
+
+            $vehicleAssignmentChanged = $originalVehicleId !== $newVehicleId;
+
+            if ($vehicleAssignmentChanged) {
+                if ($newVehicleId && $this->isVehicleAssigned($newVehicleId, $driver->id)) {
+                    return back()
+                        ->with('error', __('messages.vehicle_already_assigned'))
+                        ->withInput();
                 }
 
-                $uploadedDocuments = [];
-                foreach ($request->file('documents') as $file) {
-                    $path = $file->store('drivers/documents', 'uploads');
-                    $uploadedDocuments[] = [
-                        'name' => $file->getClientOriginalName(),
-                        'path' => $path,
-                        'uploaded_at' => now()->toDateTimeString(),
-                    ];
-                }
-
-                // Merge with existing documents
-                $validated['documents'] = array_merge($existingDocuments, $uploadedDocuments);
-            } else {
-                // Preserve existing documents if no new files uploaded
-                $validated['documents'] = $driver->documents ?? [];
+                $validated['status'] = $newVehicleId ? 'active' : 'inactive';
             }
 
+            $documentsPayload = $this->prepareDocumentUpdatePayload($request, $driver);
+            $validated['documents'] = $documentsPayload['final'];
+
             $driver->update($validated);
+
+            if ($vehicleAssignmentChanged) {
+                if ($originalVehicleId) {
+                    $this->releaseVehicle($originalVehicleId);
+                }
+
+                if ($newVehicleId) {
+                    $this->markVehicleAssigned($newVehicleId, $driver);
+                }
+            } elseif ($driver->assigned_vehicle_id) {
+                $this->syncVehicleFlotte($driver->assigned_vehicle_id, $driver->flotte_id);
+            }
+
+            if (!empty($documentsPayload['removed'])) {
+                $this->removeDocumentFiles($documentsPayload['removed']);
+            }
             
             Log::info('Driver updated', [
                 'driver_id' => $driver->id,
@@ -1011,34 +1031,18 @@ class DriversController extends Controller
     public function uploadDocuments(Request $request, Driver $driver): RedirectResponse
     {
         try {
-            $validated = $request->validate([
+            $request->validate([
                 'documents' => 'required|array',
                 'documents.*' => 'file|max:10240', // 10MB max per file
             ]);
 
-            $existingDocuments = $driver->documents ?? [];
-            if (!is_array($existingDocuments)) {
-                $existingDocuments = [];
-            }
-
-            $uploadedDocuments = [];
-            foreach ($request->file('documents') as $file) {
-                $path = $file->store('drivers/documents', 'uploads');
-                $uploadedDocuments[] = [
-                    'name' => $file->getClientOriginalName(),
-                    'path' => $path,
-                    'uploaded_at' => now()->toDateTimeString(),
-                ];
-            }
-
-            // Merge with existing documents
-            $allDocuments = array_merge($existingDocuments, $uploadedDocuments);
-            
-            $driver->update(['documents' => $allDocuments]);
+            $files = $request->file('documents', []);
+            $documents = $this->storeUploadedDocuments($files, $driver);
+            $driver->update(['documents' => $documents]);
 
             Log::info('Driver documents uploaded', [
                 'driver_id' => $driver->id,
-                'files_count' => count($uploadedDocuments),
+                'files_count' => is_array($files) ? count($files) : 0,
             ]);
 
             return back()->with('success', __('messages.documents_uploaded_successfully'));
@@ -1052,6 +1056,308 @@ class DriversController extends Controller
                 ->withInput()
                 ->with('error', __('messages.error_uploading_documents'));
         }
+    }
+
+    /**
+     * Get vehicles that are not currently assigned to a driver.
+     */
+    private function getAvailableVehicles()
+    {
+        return Vehicle::whereDoesntHave('driver')
+            ->orderBy('license_plate')
+            ->get();
+    }
+
+    /**
+     * Check whether a vehicle is already assigned to a driver.
+     */
+    private function isVehicleAssigned(int $vehicleId, ?int $ignoreDriverId = null): bool
+    {
+        $query = Driver::where('assigned_vehicle_id', $vehicleId);
+
+        if ($ignoreDriverId) {
+            $query->where('id', '!=', $ignoreDriverId);
+        }
+
+        return $query->exists();
+    }
+
+    /**
+     * Mark vehicle as assigned to the provided driver.
+     */
+    private function markVehicleAssigned(int $vehicleId, Driver $driver): void
+    {
+        $vehicle = Vehicle::find($vehicleId);
+        if (!$vehicle) {
+            return;
+        }
+
+        $vehicle->status = 'active';
+        $vehicle->flotte_id = $driver->flotte_id;
+        $vehicle->save();
+    }
+
+    /**
+     * Release vehicle assignment and mark it inactive.
+     */
+    private function releaseVehicle(int $vehicleId): void
+    {
+        $vehicle = Vehicle::find($vehicleId);
+        if (!$vehicle) {
+            return;
+        }
+
+        $vehicle->status = 'inactive';
+        $vehicle->flotte_id = null;
+        $vehicle->save();
+    }
+
+    /**
+     * Synchronize the vehicle flotte with the driver's flotte.
+     */
+    private function syncVehicleFlotte(int $vehicleId, ?int $flotteId): void
+    {
+        $vehicle = Vehicle::find($vehicleId);
+        if (!$vehicle) {
+            return;
+        }
+
+        $vehicle->flotte_id = $flotteId;
+        $vehicle->save();
+    }
+
+    /**
+     * Store uploaded documents and merge them with existing ones.
+     */
+    private function storeUploadedDocuments(?array $files, Driver $driver, ?array $baseDocuments = null): array
+    {
+        $documents = $baseDocuments ?? ($driver->documents ?? []);
+        if (!is_array($documents)) {
+            $documents = [];
+        }
+
+        if (empty($files)) {
+            return $documents;
+        }
+
+        foreach ($files as $file) {
+            if (!$file) {
+                continue;
+            }
+
+            $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+            $extension = strtolower($file->getClientOriginalExtension());
+            $slug = Str::slug($originalName) ?: 'document';
+            $timestamp = now()->format('YmdHis');
+            $filename = "{$slug}_{$timestamp}." . $extension;
+            $path = $file->storeAs(
+                "drivers/documents/{$driver->id}",
+                $filename,
+                'uploads'
+            );
+
+            $documents[] = [
+                'name' => $file->getClientOriginalName(),
+                'original_name' => $file->getClientOriginalName(),
+                'path' => $path,
+                'uploaded_at' => now()->toDateTimeString(),
+            ];
+        }
+
+        return $documents;
+    }
+
+    /**
+     * Prepare document payload for driver update.
+     */
+    private function prepareDocumentUpdatePayload(Request $request, Driver $driver): array
+    {
+        $currentDocuments = $driver->documents ?? [];
+        if (!is_array($currentDocuments)) {
+            $currentDocuments = [];
+        }
+
+        $existingDocuments = $this->decodeDocumentsInput($request->input('existing_documents', []));
+        if (empty($existingDocuments)) {
+            $existingDocuments = $currentDocuments;
+        }
+
+        $removedDocuments = $this->decodeDocumentsInput($request->input('removed_documents', []));
+        if (!empty($removedDocuments)) {
+            $removedPaths = collect($removedDocuments)
+                ->pluck('path')
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+
+            if (!empty($removedPaths)) {
+                $existingDocuments = array_values(array_filter($existingDocuments, function ($document) use ($removedPaths) {
+                    $path = $document['path'] ?? null;
+                    return $path ? !in_array($path, $removedPaths, true) : true;
+                }));
+            }
+        }
+
+        $files = $request->file('documents', []);
+        $finalDocuments = $this->storeUploadedDocuments($files, $driver, $existingDocuments);
+
+        return [
+            'final' => $finalDocuments,
+            'removed' => $removedDocuments,
+        ];
+    }
+
+    /**
+     * Decode incoming document payloads (JSON strings or arrays).
+     */
+    private function decodeDocumentsInput($input): array
+    {
+        $items = is_array($input) ? $input : [];
+        $documents = [];
+
+        foreach ($items as $value) {
+            $document = null;
+
+            if (is_array($value)) {
+                $document = $value;
+            } elseif (is_string($value) && $value !== '') {
+                $decoded = json_decode($value, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    $document = $decoded;
+                } else {
+                    $document = ['path' => $value];
+                }
+            }
+
+            if ($document) {
+                $normalized = $this->normalizeDocumentStructure($document);
+                if ($normalized) {
+                    $documents[] = $normalized;
+                }
+            }
+        }
+
+        return $documents;
+    }
+
+    /**
+     * Normalize a single document structure.
+     */
+    private function normalizeDocumentStructure(array $document): ?array
+    {
+        $path = $document['path'] ?? $document['file_path'] ?? null;
+        if (!$path) {
+            return null;
+        }
+
+        return [
+            'name' => $document['name'] ?? basename($path),
+            'path' => $path,
+            'uploaded_at' => $document['uploaded_at'] ?? now()->toDateTimeString(),
+        ];
+    }
+
+    /**
+     * Delete physical files for removed documents.
+     */
+    private function removeDocumentFiles(array $documents): void
+    {
+        foreach ($documents as $document) {
+            $path = $document['path'] ?? null;
+            if (!$path) {
+                continue;
+            }
+
+            try {
+                if (Storage::disk('uploads')->exists($path)) {
+                    Storage::disk('uploads')->delete($path);
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Failed to delete driver document file', [
+                    'path' => $path,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Stream or download a driver document through the application.
+     */
+    public function showDocument(Request $request, Driver $driver, string $document)
+    {
+        try {
+            $documentData = $this->findDriverDocumentByToken($driver, $document);
+            if (!$documentData) {
+                abort(404);
+            }
+
+            $path = $documentData['path'];
+            /** @var \Illuminate\Filesystem\FilesystemAdapter $disk */
+            $disk = Storage::disk('uploads');
+
+            if (!$disk->exists($path)) {
+                abort(404);
+            }
+
+            $filename = $documentData['name'] ?? basename($path);
+
+            if ($request->boolean('download')) {
+                return $disk->download($path, $filename);
+            }
+
+            return $disk->response($path);
+        } catch (\Throwable $e) {
+            Log::error('Failed to serve driver document', [
+                'driver_id' => $driver->id,
+                'document' => $document,
+                'error' => $e->getMessage(),
+            ]);
+
+            return redirect()
+                ->back()
+                ->with('error', __('messages.error_downloading_file') ?? 'Unable to open the document.');
+        }
+    }
+
+    private function findDriverDocumentByToken(Driver $driver, string $token): ?array
+    {
+        $path = $this->decodeDocumentToken($token);
+        if (!$path) {
+            return null;
+        }
+
+        $documents = $driver->documents ?? [];
+        if (!is_array($documents)) {
+            return null;
+        }
+
+        foreach ($documents as $document) {
+            if (($document['path'] ?? null) === $path) {
+                return $document;
+            }
+        }
+
+        return null;
+    }
+
+    private function encodeDocumentToken(string $path): string
+    {
+        return rtrim(strtr(base64_encode($path), '+/', '-_'), '=');
+    }
+
+    private function decodeDocumentToken(string $token): ?string
+    {
+        $token = strtr($token, '-_', '+/');
+        $padding = strlen($token) % 4;
+        if ($padding) {
+            $token .= str_repeat('=', 4 - $padding);
+        }
+
+        $decoded = base64_decode($token, true);
+
+        return is_string($decoded) ? $decoded : null;
     }
 
     /**

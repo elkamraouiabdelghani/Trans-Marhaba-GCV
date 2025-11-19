@@ -203,10 +203,16 @@
                         {{ __('messages.concerns') }}
                     @elseif(request()->routeIs('turnovers.*') || request()->routeIs('turnovers.index') || request()->routeIs('turnovers.create') || request()->routeIs('turnovers.edit') || request()->routeIs('turnovers.show'))
                         {{ __('messages.turnovers') }}
-                    @elseif(request()->routeIs('coaching-cabines.*'))
+                    @elseif(request()->routeIs('coaching-cabines.*') || request()->routeIs('coaching-cabines.index') || request()->routeIs('coaching-cabines.create') || request()->routeIs('coaching-cabines.edit') || request()->routeIs('coaching-cabines.show'))
                         {{ __('messages.coaching_cabines') }}
-                    @else
-                        GCV
+                    @elseif(request()->routeIs('organigram.*') || request()->routeIs('organigram.index'))
+                        {{ __('messages.members') }}
+                    @elseif(request()->routeIs('changement-types.*') || request()->routeIs('changements.*') || request()->routeIs('changement-types.index') || request()->routeIs('changement-types.create') || request()->routeIs('changement-types.edit') || request()->routeIs('changement-types.show') || request()->routeIs('changements.index') || request()->routeIs('changements.create') || request()->routeIs('changements.edit') || request()->routeIs('changements.show'))
+                        {{ __('messages.changements') }}
+                    @elseif(request()->routeIs('tbt-formations.*') || request()->routeIs('tbt-formations.index') || request()->routeIs('tbt-formations.create') || request()->routeIs('tbt-formations.edit') || request()->routeIs('tbt-formations.show') || request()->routeIs('formation-processes.*') || request()->routeIs('formation-processes.index') || request()->routeIs('formation-processes.create') || request()->routeIs('formation-processes.edit') || request()->routeIs('formation-processes.show') || request()->routeIs('formation-categories.*') || request()->routeIs('formation-categories.index') || request()->routeIs('formation-categories.create') || request()->routeIs('formation-categories.edit') || request()->routeIs('formation-categories.show'))
+                        {{ __('messages.tbt_formations') }}
+                    @elseif(request()->routeIs('reports.*') || request()->routeIs('reports.index') || request()->routeIs('reports.create') || request()->routeIs('reports.edit') || request()->routeIs('reports.show'))
+                        {{ __('messages.reports') }}
                     @endif
                 </span>
             </div>

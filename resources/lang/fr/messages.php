@@ -720,6 +720,15 @@ return [
     'formation_process_not_validated' => 'Le processus de formation n\'est pas encore validé.',
     'error_generating_formation_report' => 'Impossible de générer ou de récupérer le rapport de formation.',
     
+    // Driver Documents
+    'driver_documents' => 'Documents du conducteur',
+    'upload_documents' => 'Télécharger des documents',
+    'uploaded_documents' => 'Documents existants',
+    'drag_drop' => 'Glissez-déposez vos fichiers ici',
+    'or_click_to_browse' => 'ou cliquez pour parcourir',
+    'drop_to_upload' => 'Relâchez pour téléverser',
+    'selected_files' => 'Fichiers sélectionnés',
+
     // Driver Activity Timeline
     'add_activity' => 'Ajouter une Activité',
     'start_time' => 'Heure de Début',
