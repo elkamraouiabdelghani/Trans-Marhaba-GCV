@@ -17,8 +17,12 @@ return new class extends Migration
             $table->foreignId('flotte_id')->nullable()->constrained('flottes')->nullOnDelete();
             $table->enum('delivery_type', ['interne', 'externe'])->default('interne');
             $table->string('name')->unique();
-            $table->string('code')->unique();
-            $table->year('planned_year')->nullable();
+            $table->string('participant')->nullable();
+            $table->string('theme')->nullable();
+            $table->date('realizing_date')->nullable();
+            $table->unsignedSmallInteger('duree')->nullable();
+            $table->enum('status', ['planned', 'realized'])->default('planned');
+            $table->string('organisme')->nullable();
             $table->text('description')->nullable();
             $table->boolean('is_active')->default(true);
             $table->boolean('obligatoire')->default(false);

@@ -14,8 +14,12 @@ class Formation extends Model
         'formation_category_id',
         'flotte_id',
         'name',
-        'code',
-        'planned_year',
+        'participant',
+        'theme',
+        'duree',
+        'realizing_date',
+        'status',
+        'organisme',
         'description',
         'is_active',
         'obligatoire',
@@ -36,6 +40,8 @@ class Formation extends Model
         'warning_alert_days' => 'integer',
         'critical_alert_percent' => 'integer',
         'critical_alert_days' => 'integer',
+        'duree' => 'integer',
+        'realizing_date' => 'date',
     ];
 
     public function scopeActive($query)

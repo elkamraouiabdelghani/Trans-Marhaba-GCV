@@ -7,41 +7,60 @@
 
         {{-- Stats Cards Section --}}
         <div class="row">
-            <div class="col-md-4 mb-4">
+            <div class="col-md-3 mb-4">
                 <div class="card border-0 shadow-sm h-100">
                     <div class="card-body">
                         <div class="d-flex align-items-center">
                             <div class="flex-shrink-0">
                                 <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
-                                    <i class="bi bi-book text-primary" style="font-size: 1.5rem;"></i>
+                                    <i class="bi bi-collection text-primary" style="font-size: 1.5rem;"></i>
                                 </div>
                             </div>
                             <div class="flex-grow-1 ms-3">
-                                <h6 class="text-muted mb-1 small">{{ __('messages.total_formations') }}</h6>
-                                <h3 class="mb-0 fw-bold text-dark">{{ $totalFormations ?? 0 }}</h3>
+                                <h6 class="text-muted mb-1 small">
+                                    {{ __('messages.total_formations') }} ({{ $yearlyStats['year'] ?? now()->year }})
+                                </h6>
+                                <h3 class="mb-0 fw-bold text-dark">{{ $yearlyStats['total'] ?? 0 }}</h3>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-4 mb-4">
+            <div class="col-md-3 mb-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0">
+                                <div class="bg-warning bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                                    <i class="bi bi-calendar-week text-warning" style="font-size: 1.5rem;"></i>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h6 class="text-muted mb-1 small">{{ __('messages.planned_formations') }}</h6>
+                                <h3 class="mb-0 fw-bold text-dark">{{ $yearlyStats['planned'] ?? 0 }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-4">
                 <div class="card border-0 shadow-sm h-100">
                     <div class="card-body">
                         <div class="d-flex align-items-center">
                             <div class="flex-shrink-0">
                                 <div class="bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
-                                    <i class="bi bi-people text-success" style="font-size: 1.5rem;"></i>
+                                    <i class="bi bi-check2-circle text-success" style="font-size: 1.5rem;"></i>
                                 </div>
                             </div>
                             <div class="flex-grow-1 ms-3">
-                                <h6 class="text-muted mb-1 small">{{ __('messages.total_integrated_drivers') }}</h6>
-                                <h3 class="mb-0 fw-bold text-dark">{{ $totalIntegratedDrivers ?? 0 }}</h3>
+                                <h6 class="text-muted mb-1 small">{{ __('messages.realized_formations') }}</h6>
+                                <h3 class="mb-0 fw-bold text-dark">{{ $yearlyStats['realized'] ?? 0 }}</h3>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-4 mb-4">
+            <div class="col-md-3 mb-4">
                 <div class="card border-0 shadow-sm h-100">
                     <div class="card-body">
                         <div class="d-flex align-items-center">
@@ -51,8 +70,8 @@
                                 </div>
                             </div>
                             <div class="flex-grow-1 ms-3">
-                                <h6 class="text-muted mb-1 small">{{ __('messages.percentage_realized_formations') }}</h6>
-                                <h3 class="mb-0 fw-bold text-dark">{{ $percentageRealized ?? 0 }}%</h3>
+                                <h6 class="text-muted mb-1 small">{{ __('messages.realized_percentage') }}</h6>
+                                <h3 class="mb-0 fw-bold text-dark">{{ $yearlyStats['percentage'] ?? 0 }}%</h3>
                             </div>
                         </div>
                     </div>
@@ -63,10 +82,16 @@
         {{-- filter bar section --}}
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-white border-0 py-3">
-                <h6 class="mb-0 text-dark fw-bold">
-                    <i class="bi bi-funnel me-2 text-primary"></i>
-                    {{ __('messages.filters_suivi_formations') }}
-                </h6>
+                <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 text-dark fw-bold">
+                        <i class="bi bi-funnel me-2 text-primary"></i>
+                        {{ __('messages.filters_suivi_formations') }}
+                    </h6>
+                    <a href="{{ route('formations.planning') }}" class="btn btn-sm btn-dark" title="{{ __('messages.planning') }}">
+                        <i class="bi bi-calendar-date me-1"></i>
+                        {{ __('messages.planning') }}
+                    </a>
+                </div>
             </div>
             <div class="card-body">
                 <form method="GET" action="{{ route('formations.index') }}" id="filterForm">
@@ -118,10 +143,13 @@
                         </div>
                         <div class="col-md-2">
                             <label for="year" class="form-label small">{{ __('messages.year') }}</label>
+                            @php
+                                $yearValue = request('year', $selectedYear ?? now()->year);
+                            @endphp
                             <select name="year" id="year" class="form-select form-select-sm">
                                 <option value="">{{ __('messages.all_years') }}</option>
                                 @foreach($years ?? [] as $year)
-                                    <option value="{{ $year }}" {{ request('year') == (string)$year ? 'selected' : '' }}>
+                                    <option value="{{ $year }}" {{ (string)$yearValue === (string)$year ? 'selected' : '' }}>
                                         {{ $year }}
                                     </option>
                                 @endforeach
@@ -179,7 +207,7 @@
                                 <span class="input-group-text">
                                     <i class="bi bi-search"></i>
                                 </span>
-                                <input type="text" class="form-control" id="ftSearch" placeholder="{{ __('messages.search_by_name_or_code') }}" onkeyup="filterFormations()">
+                                <input type="text" class="form-control" id="ftSearch" placeholder="{{ __('messages.search_by_name') }}" onkeyup="filterFormations()">
                             </div>
                         </div>
                         <a href="{{ route('formations.create') }}" class="btn btn-dark btn-sm">
@@ -225,12 +253,12 @@
                         <thead class="table-light">
                             <tr>
                                 <th class="ps-3">{{ __('messages.formation_name') }}</th>
-                                <th>{{ __('messages.formation_code') }}</th>
-                                <th>{{ __('messages.formation_description') }}</th>
-                                <th>{{ __('messages.planned_year') }}</th>
                                 <th>{{ __('messages.formation_category_name') }}</th>
                                 <th>{{ __('messages.flotte') }}</th>
                                 <th>{{ __('messages.formation_delivery_type') }}</th>
+                                <th>{{ __('messages.formation_progress_status') }}</th>
+                                <th>{{ __('messages.formation_realizing_date') }}</th>
+                                <th>{{ __('messages.formation_duration') }}</th>
                                 <th>{{ __('messages.formation_status') }}</th>
                                 <th>{{ __('messages.obligatoire') }}</th>
                                 <th class="text-end pe-3">{{ __('messages.formation_actions') }}</th>
@@ -241,23 +269,6 @@
                                 <tr>
                                     <td class="ps-3">
                                         <strong>{{ $formation->name }}</strong>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-secondary">{{ $formation->code }}</span>
-                                    </td>
-                                    <td>
-                                        <span class="text-muted">
-                                            {{ \Illuminate\Support\Str::limit($formation->description ?? __('messages.no_description'), 50) }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        @if($formation->planned_year)
-                                            <span class="badge bg-secondary bg-opacity-25 text-secondary">
-                                                {{ $formation->planned_year }}
-                                            </span>
-                                        @else
-                                            <span class="text-muted">---</span>
-                                        @endif
                                     </td>
                                     <td>
                                         <span class="badge bg-light text-dark">
@@ -287,6 +298,25 @@
                                         @endif
                                     </td>
                                     <td>
+                                        @if($formation->status === 'realized')
+                                            <span class="badge bg-success bg-opacity-25 text-success">{{ __('messages.realized') }}</span>
+                                        @else
+                                            <span class="badge bg-warning bg-opacity-25 text-warning">{{ __('messages.planned') }}</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        {{ optional($formation->realizing_date)->format('d-m-Y') ?? '---' }}
+                                    </td>
+                                    <td>
+                                        @if(!is_null($formation->duree))
+                                            <span class="badge bg-primary bg-opacity-10 text-primary">
+                                                {{ $formation->duree }} {{ __('messages.days_short') }}
+                                            </span>
+                                        @else
+                                            <span class="text-muted">---</span>
+                                        @endif
+                                    </td>
+                                    <td>
                                         @if($formation->is_active)
                                             <span class="badge bg-success bg-opacity-25 text-success">{{ __('messages.formation_active') }}</span>
                                         @else
@@ -302,8 +332,19 @@
                                     </td>
                                     <td class="text-end pe-3">
                                         <div class="btn-group" role="group">
+                                            @if($formation->status !== 'realized')
+                                                <button type="button" 
+                                                        class="btn btn-sm btn-outline-success" 
+                                                        title="{{ __('messages.mark_as_realized') }}"
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#confirmRealizedModal"
+                                                        data-formation-id="{{ $formation->id }}"
+                                                        data-formation-name="{{ $formation->name }}">
+                                                    <i class="bi bi-check-circle"></i>
+                                                </button>
+                                            @endif
                                             <a href="{{ route('formations.edit', $formation) }}" 
-                                               class="btn btn-sm btn-outline-primary" 
+                                               class="btn btn-sm btn-outline-warning" 
                                                title="{{ __('messages.edit') }}">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
@@ -312,7 +353,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="10" class="text-center py-5 text-muted">
+                                    <td colspan="13" class="text-center py-5 text-muted">
                                         <i class="bi bi-inbox fs-1 d-block mb-2"></i>
                                         {{ __('messages.no_formations_found') }}
                                     </td>
@@ -324,23 +365,26 @@
             </div>
         </div>
 
-        <!-- Delete Confirmation Modal -->
-        <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
+        <!-- Mark as Realized Confirmation Modal -->
+        <div class="modal fade" id="confirmRealizedModal" tabindex="-1" aria-labelledby="confirmRealizedModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
-                    <div class="modal-header bg-danger text-white">
-                        <h5 class="modal-title text-white" id="confirmDeleteModalLabel">{{ __('messages.confirm_delete') }}</h5>
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title text-white" id="confirmRealizedModalLabel">{{ __('messages.confirm_mark_realized') }}</h5>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        {{ __('messages.confirm_delete_message') }}
+                        <p id="confirmRealizedMessage">{!! __('messages.confirm_mark_realized_message') !!}</p>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('messages.cancel') }}</button>
-                        <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
-                            <i class="bi bi-trash me-1"></i>
-                            {{ __('messages.delete') }}
-                        </button>
+                        <form id="markRealizedForm" method="POST" style="display: inline;">
+                            @csrf
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-circle me-1"></i>
+                                {{ __('messages.confirm') }}
+                            </button>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -620,8 +664,7 @@
                     const cells = rows[i].getElementsByTagName('td');
                     if (!cells.length) continue;
                     const name = (cells[0].innerText || '').toLowerCase();
-                    const code = (cells[1].innerText || '').toLowerCase();
-                    const match = name.includes(filter) || code.includes(filter);
+                    const match = name.includes(filter);
                     rows[i].style.display = match ? '' : 'none';
                     if (match) visible++;
                 }
@@ -631,24 +674,25 @@
                     count.textContent = visible + ' ' + resultsText;
                 }
             }
-            // Delete confirmation behaviour
+            // Mark as Realized confirmation behaviour
             (function() {
-                const modal = document.getElementById('confirmDeleteModal');
-                const confirmBtn = document.getElementById('confirmDeleteBtn');
-                let targetFormId = null;
+                const realizedModal = document.getElementById('confirmRealizedModal');
+                const realizedForm = document.getElementById('markRealizedForm');
+                const realizedMessage = document.getElementById('confirmRealizedMessage');
+                const realizedMessageTemplate = @json(__('messages.confirm_mark_realized_message'));
 
-                if (modal) {
-                    modal.addEventListener('show.bs.modal', function (event) {
+                if (realizedModal && realizedForm) {
+                    realizedModal.addEventListener('show.bs.modal', function (event) {
                         const triggerButton = event.relatedTarget;
-                        targetFormId = triggerButton ? triggerButton.getAttribute('data-form-id') : null;
-                    });
-                }
+                        const formationId = triggerButton ? triggerButton.getAttribute('data-formation-id') : null;
+                        const formationName = triggerButton ? triggerButton.getAttribute('data-formation-name') : null;
 
-                if (confirmBtn) {
-                    confirmBtn.addEventListener('click', function () {
-                        if (!targetFormId) return;
-                        const form = document.getElementById(targetFormId);
-                        if (form) form.submit();
+                        if (formationId) {
+                            realizedForm.action = `/formations/${formationId}/mark-realized`;
+                            if (realizedMessage && formationName) {
+                                realizedMessage.textContent = realizedMessageTemplate.replace(':name', formationName);
+                            }
+                        }
                     });
                 }
             })();

@@ -34,7 +34,7 @@
 
     <div class="container-fluid py-4 mt-4">
         <div class="row justify-content-center">
-            <div class="col-lg-8">
+            <div class="col-lg-10">
                 <div class="card border-0 shadow-sm">
                     <div class="card-header bg-white border-0 py-3">
                         <div class="d-flex justify-content-between align-items-center">
@@ -53,46 +53,164 @@
                             @csrf
                             @method('PUT')
 
-                            <div class="mb-3">
-                                <label for="name" class="form-label">{{ __('messages.formation_name') }} <span class="text-danger">*</span></label>
-                                <input type="text" 
-                                       class="form-control @error('name') is-invalid @enderror" 
-                                       id="name" 
-                                       name="name" 
-                                       value="{{ old('name', $formation->name) }}" 
-                                       required>
-                                @error('name')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="name" class="form-label">{{ __('messages.formation_name') }} </label>
+                                    <input type="text" 
+                                        class="form-control @error('name') is-invalid @enderror" 
+                                        id="name" 
+                                        name="name" 
+                                        value="{{ old('name', $formation->name) }}" 
+                                        required>
+                                    @error('name')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="theme" class="form-label">{{ __('messages.formation_theme') }}</label>
+                                    <input type="text"
+                                        class="form-control @error('theme') is-invalid @enderror"
+                                        id="theme"
+                                        name="theme"
+                                        value="{{ old('theme', $formation->theme) }}">
+                                    @error('theme')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="formation_category_id" class="form-label">{{ __('messages.formation_category_name') }}</label>
+                                    <select class="form-select @error('formation_category_id') is-invalid @enderror"
+                                            id="formation_category_id"
+                                            name="formation_category_id">
+                                        <option value="">{{ __('messages.select_option') }}</option>
+                                        @foreach(($categories ?? collect()) as $category)
+                                            <option value="{{ $category->id }}" {{ (int) old('formation_category_id', $formation->formation_category_id) === $category->id ? 'selected' : '' }}>
+                                                {{ $category->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @error('formation_category_id')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="delivery_type" class="form-label">
+                                        {{ __('messages.formation_delivery_type') }}
+                                    </label>
+                                    <select class="form-select @error('delivery_type') is-invalid @enderror"
+                                            id="delivery_type"
+                                            name="delivery_type"
+                                            required>
+                                        <option value="interne" {{ old('delivery_type', $formation->delivery_type) === 'interne' ? 'selected' : '' }}>
+                                            {{ __('messages.formation_delivery_internal') }}
+                                        </option>
+                                        <option value="externe" {{ old('delivery_type', $formation->delivery_type) === 'externe' ? 'selected' : '' }}>
+                                            {{ __('messages.formation_delivery_external') }}
+                                        </option>
+                                    </select>
+                                    @error('delivery_type')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                    <small class="form-text text-muted">
+                                        {{ __('messages.formation_delivery_type_hint') }}
+                                    </small>
+                                </div>
+    
+                                <div class="col-md-6 mb-3">
+                                    <label for="flotte_id" class="form-label">{{ __('messages.flotte') }}</label>
+                                    <select class="form-select @error('flotte_id') is-invalid @enderror"
+                                            id="flotte_id"
+                                            name="flotte_id">
+                                        <option value="">{{ __('messages.select_option') }}</option>
+                                        @foreach(($flottes ?? collect()) as $flotte)
+                                            <option value="{{ $flotte->id }}" {{ (int) old('flotte_id', $formation->flotte_id) === $flotte->id ? 'selected' : '' }}>
+                                                {{ $flotte->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @error('flotte_id')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="realizing_date" class="form-label">{{ __('messages.formation_realizing_date') }}</label>
+                                    <input type="date"
+                                           class="form-control @error('realizing_date') is-invalid @enderror"
+                                           id="realizing_date"
+                                           name="realizing_date"
+                                           value="{{ old('realizing_date', optional($formation->realizing_date)->format('Y-m-d')) }}">
+                                    @error('realizing_date')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="duree" class="form-label">{{ __('messages.formation_duration') }}</label>
+                                    <input type="number"
+                                           class="form-control @error('duree') is-invalid @enderror"
+                                           id="duree"
+                                           name="duree"
+                                           min="0"
+                                           value="{{ old('duree', $formation->duree) }}">
+                                    @error('duree')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                    <small class="form-text text-muted">
+                                        {{ __('messages.formation_duration_hint') }}
+                                    </small>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label d-block">{{ __('messages.formation_progress_status') }}</label>
+                                    @php
+                                        $currentStatus = old('status', $formation->status ?? 'planned');
+                                        $badgeClass = $currentStatus === 'realized'
+                                            ? 'bg-success text-dark'
+                                            : 'bg-warning text-dark';
+                                        $statusLabel = $currentStatus === 'realized'
+                                            ? __('messages.realized')
+                                            : __('messages.planned');
+                                    @endphp
+                                    <input type="hidden"
+                                           name="status"
+                                           value="{{ $currentStatus }}">
+                                    <span class="badge rounded px-4 py-2 bg-opacity-25 {{ $badgeClass }}">
+                                        {{ $statusLabel }}
+                                    </span>
+                                    @error('status')
+                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                    @enderror
+                                </div>
                             </div>
 
-                            <div class="mb-3">
-                                <label for="code" class="form-label">{{ __('messages.formation_code') }} <span class="text-danger">*</span></label>
-                                <input type="text" 
-                                       class="form-control @error('code') is-invalid @enderror" 
-                                       id="code" 
-                                       name="code" 
-                                       value="{{ old('code', $formation->code) }}" 
-                                       required>
-                                @error('code')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                                <small class="form-text text-muted">{{ __('messages.code_example') }}</small>
-                            </div>
 
-                            <div class="mb-3">
-                                <label for="planned_year" class="form-label">{{ __('messages.planned_year') }}</label>
-                                <input type="number" 
-                                       class="form-control @error('planned_year') is-invalid @enderror" 
-                                       id="planned_year" 
-                                       name="planned_year" 
-                                       value="{{ old('planned_year', $formation->planned_year ?? date('Y')) }}" 
-                                       min="1900" 
-                                       max="2100">
-                                @error('planned_year')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                                <small class="form-text text-muted">{{ __('messages.planned_year_hint') }}</small>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="participant" class="form-label">{{ __('messages.formation_participant') }}</label>
+                                    <textarea
+                                        class="form-control @error('participant') is-invalid @enderror"
+                                        id="participant"
+                                        name="participant"
+                                        rows="3">{{ old('participant', $formation->participant) }}</textarea>
+                                    @error('participant')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="organisme" class="form-label">{{ __('messages.formation_organisme') }}</label>
+                                    <textarea
+                                        class="form-control @error('organisme') is-invalid @enderror"
+                                        id="organisme"
+                                        name="organisme"
+                                        rows="3">{{ old('organisme', $formation->organisme) }}</textarea>
+                                    @error('organisme')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
                             </div>
 
                             <div class="mb-3">
@@ -104,64 +222,6 @@
                                 @error('description')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="formation_category_id" class="form-label">{{ __('messages.formation_category_name') }}</label>
-                                <select class="form-select @error('formation_category_id') is-invalid @enderror"
-                                        id="formation_category_id"
-                                        name="formation_category_id">
-                                    <option value="">{{ __('messages.select_option') }}</option>
-                                    @foreach(($categories ?? collect()) as $category)
-                                        <option value="{{ $category->id }}" {{ (int) old('formation_category_id', $formation->formation_category_id) === $category->id ? 'selected' : '' }}>
-                                            {{ $category->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                @error('formation_category_id')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="flotte_id" class="form-label">{{ __('messages.flotte') }}</label>
-                                <select class="form-select @error('flotte_id') is-invalid @enderror"
-                                        id="flotte_id"
-                                        name="flotte_id">
-                                    <option value="">{{ __('messages.select_option') }}</option>
-                                    @foreach(($flottes ?? collect()) as $flotte)
-                                        <option value="{{ $flotte->id }}" {{ (int) old('flotte_id', $formation->flotte_id) === $flotte->id ? 'selected' : '' }}>
-                                            {{ $flotte->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                @error('flotte_id')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="delivery_type" class="form-label">
-                                    {{ __('messages.formation_delivery_type') }}
-                                    <span class="text-danger">*</span>
-                                </label>
-                                <select class="form-select @error('delivery_type') is-invalid @enderror"
-                                        id="delivery_type"
-                                        name="delivery_type"
-                                        required>
-                                    <option value="interne" {{ old('delivery_type', $formation->delivery_type) === 'interne' ? 'selected' : '' }}>
-                                        {{ __('messages.formation_delivery_internal') }}
-                                    </option>
-                                    <option value="externe" {{ old('delivery_type', $formation->delivery_type) === 'externe' ? 'selected' : '' }}>
-                                        {{ __('messages.formation_delivery_external') }}
-                                    </option>
-                                </select>
-                                @error('delivery_type')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                                <small class="form-text text-muted">
-                                    {{ __('messages.formation_delivery_type_hint') }}
-                                </small>
                             </div>
 
                             <div class="mb-3 form-check">
@@ -186,7 +246,6 @@
                                     {{ __('messages.obligatoire') }}
                                 </label>
                             </div>
-
                             <hr class="my-3">
 
                             <div class="row">
@@ -296,7 +355,6 @@
                             </div>
 
                             <hr class="mb-3">
-
                             <div class="d-flex gap-2 justify-content-center align-items-center">
                                 <button type="submit" class="btn btn-dark px-4">
                                     <i class="bi bi-check-circle me-1"></i>
@@ -310,4 +368,3 @@
         </div>
     </div>
 </x-app-layout>
-

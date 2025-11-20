@@ -57,7 +57,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/drivers/{driver}/activities/export-csv', [DriversController::class, 'exportTimelineCSV'])->name('drivers.activities.export-csv');
 
     // Formation Types & Categories
+    Route::get('/formations/planning', [FormationController::class, 'planning'])->name('formations.planning');
+    Route::get('/formations/planning/pdf', [FormationController::class, 'planningPdf'])->name('formations.planning.pdf');
     Route::resource('formations', FormationController::class);
+    Route::post('/formations/{formation}/mark-realized', [FormationController::class, 'markAsRealized'])->name('formations.mark-realized');
     Route::resource('formation-categories', FormationCategoryController::class)->except(['show']);
 
     // Changements
