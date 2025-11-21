@@ -78,6 +78,75 @@
                                     @enderror
                                 </div>
 
+                                <!-- Subject Type -->
+                                <div class="col-md-6">
+                                    <label for="subject_type" class="form-label">
+                                        {{ __('messages.subject_type') }}
+                                    </label>
+                                    <select class="form-select @error('subject_type') is-invalid @enderror" 
+                                            id="subject_type" 
+                                            name="subject_type">
+                                        <option value="">{{ __('messages.select_option') }}</option>
+                                        <option value="driver" {{ old('subject_type') === 'driver' ? 'selected' : '' }}>
+                                            {{ __('messages.driver') }}
+                                        </option>
+                                        <option value="administrative" {{ old('subject_type') === 'administrative' ? 'selected' : '' }}>
+                                            {{ __('messages.administrative_user') }}
+                                        </option>
+                                    </select>
+                                    @error('subject_type')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                    <small class="form-text text-muted">{{ __('messages.subject_type_help') }}</small>
+                                </div>
+
+                                <!-- Hidden input for subject_id -->
+                                <input type="hidden" name="subject_id" id="subject_id" value="{{ old('subject_id') }}">
+
+                                <!-- Subject Selection (Driver) -->
+                                <div class="col-md-6" id="driver_select_container" style="display: none;">
+                                    <label for="subject_id_driver" class="form-label">
+                                        {{ __('messages.select_driver') }}
+                                    </label>
+                                    <select class="form-select @error('subject_id') is-invalid @enderror" 
+                                            id="subject_id_driver">
+                                        <option value="">{{ __('messages.select_option') }}</option>
+                                        @foreach($drivers as $driver)
+                                            <option value="{{ $driver->id }}" {{ old('subject_id') == $driver->id && old('subject_type') === 'driver' ? 'selected' : '' }}>
+                                                {{ $driver->full_name }} 
+                                                @if($driver->license_number)
+                                                    ({{ $driver->license_number }})
+                                                @endif
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @error('subject_id')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+
+                                <!-- Subject Selection (Administrative User) -->
+                                <div class="col-md-6" id="administrative_select_container" style="display: none;">
+                                    <label for="subject_id_administrative" class="form-label">
+                                        {{ __('messages.select_administrative_user') }}
+                                    </label>
+                                    <select class="form-select @error('subject_id') is-invalid @enderror" 
+                                            id="subject_id_administrative">
+                                        <option value="">{{ __('messages.select_option') }}</option>
+                                        @foreach($users as $user)
+                                            <option value="{{ $user->id }}" {{ old('subject_id') == $user->id && old('subject_type') === 'administrative' ? 'selected' : '' }}>
+                                                {{ $user->name }} 
+                                                @if($user->email)
+                                                    ({{ $user->email }})
+                                                @endif
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @error('subject_id')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+
                                 <!-- Date Changement -->
                                 <div class="col-md-6">
                                     <label for="date_changement" class="form-label">
@@ -199,6 +268,73 @@
                         window.location.href = '{{ route("changement-types.index") }}';
                     }
                 });
+            }
+
+            // Handle subject type selection
+            const subjectTypeSelect = document.getElementById('subject_type');
+            const driverSelectContainer = document.getElementById('driver_select_container');
+            const administrativeSelectContainer = document.getElementById('administrative_select_container');
+            const driverSelect = document.getElementById('subject_id_driver');
+            const administrativeSelect = document.getElementById('subject_id_administrative');
+            const subjectIdHidden = document.getElementById('subject_id');
+
+            function updateSubjectSelectors() {
+                const selectedType = subjectTypeSelect.value;
+                
+                // Hide both containers first
+                driverSelectContainer.style.display = 'none';
+                administrativeSelectContainer.style.display = 'none';
+                
+                // Clear both selects and hidden input
+                if (driverSelect) driverSelect.value = '';
+                if (administrativeSelect) administrativeSelect.value = '';
+                if (subjectIdHidden) subjectIdHidden.value = '';
+                
+                // Show appropriate container based on selection
+                if (selectedType === 'driver') {
+                    driverSelectContainer.style.display = 'block';
+                    if (driverSelect) driverSelect.required = true;
+                    if (administrativeSelect) administrativeSelect.required = false;
+                } else if (selectedType === 'administrative') {
+                    administrativeSelectContainer.style.display = 'block';
+                    if (administrativeSelect) administrativeSelect.required = true;
+                    if (driverSelect) driverSelect.required = false;
+                } else {
+                    if (driverSelect) driverSelect.required = false;
+                    if (administrativeSelect) administrativeSelect.required = false;
+                }
+            }
+
+            // Update hidden input when driver is selected
+            if (driverSelect) {
+                driverSelect.addEventListener('change', function() {
+                    if (subjectIdHidden) {
+                        subjectIdHidden.value = this.value;
+                    }
+                });
+            }
+
+            // Update hidden input when administrative user is selected
+            if (administrativeSelect) {
+                administrativeSelect.addEventListener('change', function() {
+                    if (subjectIdHidden) {
+                        subjectIdHidden.value = this.value;
+                    }
+                });
+            }
+
+            if (subjectTypeSelect) {
+                subjectTypeSelect.addEventListener('change', updateSubjectSelectors);
+                // Initialize on page load
+                updateSubjectSelectors();
+                
+                // Set initial value if old input exists
+                const oldSubjectType = subjectTypeSelect.value;
+                if (oldSubjectType === 'driver' && driverSelect && driverSelect.value) {
+                    if (subjectIdHidden) subjectIdHidden.value = driverSelect.value;
+                } else if (oldSubjectType === 'administrative' && administrativeSelect && administrativeSelect.value) {
+                    if (subjectIdHidden) subjectIdHidden.value = administrativeSelect.value;
+                }
             }
         });
     </script>

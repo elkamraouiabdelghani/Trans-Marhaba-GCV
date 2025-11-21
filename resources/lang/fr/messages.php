@@ -168,6 +168,7 @@ return [
     'changements_step_not_found' => 'Étape non trouvée.',
     'changements_step_must_validate_previous' => 'Vous devez valider les étapes précédentes.',
     'changements_save_step_success' => 'Étape enregistrée avec succès.',
+    'changements_update_step_success' => 'Étape mise à jour avec succès.',
     'changements_save_step_error' => 'Erreur lors de l\'enregistrement de l\'étape.',
     'changements_save_step_cannot_modify' => 'Vous ne pouvez pas modifier cette étape.',
     'changements_save_step_already_finalized' => 'Ce changement est déjà finalisé.',
@@ -1159,4 +1160,14 @@ return [
     'tbt_planning_no_formation' => 'Aucune formation planifiée',
     'tbt_planning_add_week' => 'Ajouter',
     'tbt_planning_week' => 'S',
+    
+    // Changement Subject
+    'subject_type' => 'Type de sujet',
+    'subject_type_help' => 'Sélectionnez si ce changement concerne un conducteur ou un membre administratif',
+    'select_driver' => 'Sélectionner un conducteur',
+    'select_administrative_user' => 'Sélectionner un membre administratif',
+    'administrative_user' => 'Membre administratif',
+    'subject' => 'Sujet',
+    'not_specified' => 'Non spécifié',
+    'subject_information' => 'Informations du sujet',
 ];

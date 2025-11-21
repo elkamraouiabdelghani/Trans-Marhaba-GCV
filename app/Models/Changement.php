@@ -6,7 +6,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use App\Models\User;
+use App\Models\Driver;
 
 class Changement extends Model
 {
@@ -14,6 +16,8 @@ class Changement extends Model
 
     protected $fillable = [
         'changement_type_id',
+        'subject_type',
+        'subject_id',
         'date_changement',
         'description_changement',
         'responsable_changement',
@@ -42,6 +46,14 @@ class Changement extends Model
     public function changementType(): BelongsTo
     {
         return $this->belongsTo(ChangementType::class);
+    }
+
+    /**
+     * Get the subject (Driver or User) that this changement is for
+     */
+    public function subject(): MorphTo
+    {
+        return $this->morphTo();
     }
 
     /**
@@ -202,5 +214,51 @@ class Changement extends Model
             'current_step' => min($this->current_step + 1, 6),
             'status' => 'in_progress',
         ]);
+    }
+
+    /**
+     * Get the subject (Driver or User) instance
+     */
+    public function getSubject()
+    {
+        return $this->subject;
+    }
+
+    /**
+     * Check if changement is for a driver
+     */
+    public function isForDriver(): bool
+    {
+        return $this->subject_type === Driver::class;
+    }
+
+    /**
+     * Check if changement is for an administrative user
+     */
+    public function isForAdministrative(): bool
+    {
+        return $this->subject_type === User::class;
+    }
+
+    /**
+     * Get the name of the subject
+     */
+    public function getSubjectName(): ?string
+    {
+        $subject = $this->getSubject();
+        
+        if (!$subject) {
+            return null;
+        }
+
+        if ($this->isForDriver()) {
+            return $subject->full_name ?? null;
+        }
+
+        if ($this->isForAdministrative()) {
+            return $subject->name ?? null;
+        }
+
+        return null;
     }
 }

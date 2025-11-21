@@ -14,6 +14,8 @@ return new class extends Migration
         Schema::create('changements', function (Blueprint $table) {
             $table->id();
             $table->foreignId('changement_type_id')->constrained('changement_types')->onDelete('restrict');
+            $table->string('subject_type')->nullable();
+            $table->unsignedBigInteger('subject_id')->nullable();
             $table->date('date_changement');
             $table->text('description_changement');
             $table->enum('responsable_changement', ['RH', 'DGA', 'QHSE']);

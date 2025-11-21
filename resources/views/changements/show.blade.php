@@ -50,6 +50,14 @@
                             {{ $changement->changementType->name ?? __('messages.not_available') }} - 
                             {{ $changement->date_changement->format('d/m/Y') }} - 
                             {{ $changement->responsable_changement }}
+                            @if($changement->subject)
+                                - 
+                                @if($changement->isForDriver())
+                                    <i class="bi bi-person-badge text-info"></i> {{ __('messages.driver') }}: {{ $changement->getSubjectName() }}
+                                @elseif($changement->isForAdministrative())
+                                    <i class="bi bi-person-gear text-warning"></i> {{ __('messages.administrative_user') }}: {{ $changement->getSubjectName() }}
+                                @endif
+                            @endif
                         </small>
                     </div>
                     <a href="{{ route('changements.index') }}" class="btn btn-outline-secondary btn-sm">
@@ -90,6 +98,72 @@
                 </div>
             </div>
         </div>
+
+        <!-- Subject Information Card -->
+        @if($changement->subject)
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white border-0 py-3">
+                <h6 class="mb-0 fw-bold">
+                    <i class="bi bi-person-circle me-2 text-primary"></i>
+                    {{ __('messages.subject_information') }}
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-center mb-3">
+                            @if($changement->isForDriver())
+                                <div class="bg-info bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                                    <i class="bi bi-person-badge text-info fs-5"></i>
+                                </div>
+                                <div>
+                                    <strong class="text-dark d-block">{{ __('messages.driver') }}</strong>
+                                    <span class="text-muted">{{ $changement->getSubjectName() }}</span>
+                                </div>
+                            @elseif($changement->isForAdministrative())
+                                <div class="bg-warning bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                                    <i class="bi bi-person-gear text-warning fs-5"></i>
+                                </div>
+                                <div>
+                                    <strong class="text-dark d-block">{{ __('messages.administrative_user') }}</strong>
+                                    <span class="text-muted">{{ $changement->getSubjectName() }}</span>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                    @if($changement->isForDriver() && $changement->subject)
+                        <div class="col-md-6">
+                            <div class="mb-2">
+                                <small class="text-muted d-block">{{ __('messages.license_number') }}</small>
+                                <strong>{{ $changement->subject->license_number ?? __('messages.not_available') }}</strong>
+                            </div>
+                            @if($changement->subject->email)
+                            <div class="mb-2">
+                                <small class="text-muted d-block">{{ __('messages.email') }}</small>
+                                <strong>{{ $changement->subject->email }}</strong>
+                            </div>
+                            @endif
+                        </div>
+                    @elseif($changement->isForAdministrative() && $changement->subject)
+                        <div class="col-md-6">
+                            @if($changement->subject->email)
+                            <div class="mb-2">
+                                <small class="text-muted d-block">{{ __('messages.email') }}</small>
+                                <strong>{{ $changement->subject->email }}</strong>
+                            </div>
+                            @endif
+                            @if($changement->subject->department)
+                            <div class="mb-2">
+                                <small class="text-muted d-block">{{ __('messages.department') }}</small>
+                                <strong>{{ $changement->subject->department }}</strong>
+                            </div>
+                            @endif
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+        @endif
 
         <div class="row">
             <!-- Steps Sidebar -->

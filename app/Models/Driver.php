@@ -7,7 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use App\Models\IntegrationCandidate;
+use App\Models\Changement;
 
 class Driver extends Model
 {
@@ -133,6 +135,14 @@ class Driver extends Model
     public function coachingSessions(): HasMany
     {
         return $this->hasMany(CoachingSession::class);
+    }
+
+    /**
+     * Get all changements for this driver
+     */
+    public function changements(): MorphMany
+    {
+        return $this->morphMany(Changement::class, 'subject');
     }
 
     /**

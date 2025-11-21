@@ -8,6 +8,8 @@ use App\Models\ChangementChecklistResult;
 use App\Models\ChangementType;
 use App\Models\PrincipaleCretaire;
 use App\Models\SousCretaire;
+use App\Models\Driver;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -25,7 +27,7 @@ class ChangementController extends Controller
     {
         try {
             $query = Changement::query()
-                ->with(['changementType', 'steps'])
+                ->with(['changementType', 'steps', 'subject'])
                 ->orderBy('created_at', 'desc');
 
             // Filter by status if provided
@@ -48,7 +50,7 @@ class ChangementController extends Controller
 
             // Get stats before pagination (from base query without status filter)
             $baseQuery = Changement::query()
-                ->with(['changementType', 'steps'])
+                ->with(['changementType', 'steps', 'subject'])
                 ->orderBy('created_at', 'desc');
 
             // Apply same filters except status
@@ -94,7 +96,22 @@ class ChangementController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('changements.create', compact('changementTypes'));
+        // Get active drivers and users for subject selection
+        $drivers = Driver::where('status', 'active')
+            ->orWhere('status', 'actif')
+            ->orderBy('full_name')
+            ->get();
+
+        // Get users for administrative members (excluding admin role)
+        $users = User::where('role', '!=', 'admin')
+            ->where(function($query) {
+                $query->where('status', 'active')
+                      ->orWhere('status', 'actif');
+            })
+            ->orderBy('name')
+            ->get();
+
+        return view('changements.create', compact('changementTypes', 'drivers', 'users'));
     }
 
     /**
@@ -104,6 +121,8 @@ class ChangementController extends Controller
     {
         $validated = $request->validate([
             'changement_type_id' => ['required', 'exists:changement_types,id'],
+            'subject_type' => ['nullable', 'in:driver,administrative'],
+            'subject_id' => ['nullable', 'required_with:subject_type', 'integer'],
             'date_changement' => ['required', 'date'],
             'description_changement' => ['required', 'string'],
             'responsable_changement' => ['required', 'in:RH,DGA,QHSE'],
@@ -112,8 +131,35 @@ class ChangementController extends Controller
         ]);
 
         try {
+            // Determine subject_type and subject_id based on selection
+            $subjectType = null;
+            $subjectId = null;
+
+            if ($request->filled('subject_type') && $request->filled('subject_id')) {
+                if ($request->subject_type === 'driver') {
+                    $subjectType = Driver::class;
+                    // Validate driver exists
+                    if (!Driver::find($request->subject_id)) {
+                        return back()
+                            ->withInput()
+                            ->withErrors(['subject_id' => __('validation.exists', ['attribute' => 'driver'])]);
+                    }
+                } elseif ($request->subject_type === 'administrative') {
+                    $subjectType = User::class;
+                    // Validate user exists
+                    if (!User::find($request->subject_id)) {
+                        return back()
+                            ->withInput()
+                            ->withErrors(['subject_id' => __('validation.exists', ['attribute' => 'user'])]);
+                    }
+                }
+                $subjectId = $request->subject_id;
+            }
+
             $changement = Changement::create([
                 'changement_type_id' => $validated['changement_type_id'],
+                'subject_type' => $subjectType,
+                'subject_id' => $subjectId,
                 'date_changement' => $validated['date_changement'],
                 'description_changement' => $validated['description_changement'],
                 'responsable_changement' => $validated['responsable_changement'],
@@ -159,7 +205,7 @@ class ChangementController extends Controller
     public function show(Changement $changement): View|RedirectResponse
     {
         try {
-            $changement->load(['steps', 'changementType']);
+            $changement->load(['steps', 'changementType', 'subject']);
 
             $stepNumbers = range(1, 6);
 
@@ -205,7 +251,7 @@ class ChangementController extends Controller
                     ->with('error', __('messages.changements_step_rejected'));
             }
 
-            $changement->load(['steps', 'changementType']);
+            $changement->load(['steps', 'changementType', 'subject']);
 
             $stepNumbers = range(1, 6);
 
@@ -508,7 +554,7 @@ class ChangementController extends Controller
                     ->with('error', __('messages.changements_checklist_must_validate_step5'));
             }
 
-            $changement->load(['changementType.principaleCretaires.sousCretaires', 'checklistResults']);
+            $changement->load(['changementType.principaleCretaires.sousCretaires', 'checklistResults', 'subject']);
 
             // Get all principale cretaire for this changement type
             $principaleCretaires = $changement->changementType->principaleCretaires()

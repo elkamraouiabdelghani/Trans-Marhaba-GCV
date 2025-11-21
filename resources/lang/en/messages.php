@@ -166,6 +166,7 @@ return [
     'changements_step_not_found' => 'Step not found.',
     'changements_step_must_validate_previous' => 'You must validate the previous steps.',
     'changements_save_step_success' => 'Step saved successfully.',
+    'changements_update_step_success' => 'Step updated successfully.',
     'changements_save_step_error' => 'Error saving the step.',
     'changements_save_step_cannot_modify' => 'You cannot modify this step.',
     'changements_save_step_already_finalized' => 'This changement is already finalized.',
@@ -1167,6 +1168,16 @@ return [
     'tbt_planning_no_formation' => 'No formation scheduled',
     'tbt_planning_add_week' => 'Add',
     'tbt_planning_week' => 'W',
+    
+    // Changement Subject
+    'subject_type' => 'Subject Type',
+    'subject_type_help' => 'Select if this change is for a driver or an administrative member',
+    'select_driver' => 'Select a driver',
+    'select_administrative_user' => 'Select an administrative member',
+    'administrative_user' => 'Administrative Member',
+    'subject' => 'Subject',
+    'not_specified' => 'Not specified',
+    'subject_information' => 'Subject Information',
 ];
 
 

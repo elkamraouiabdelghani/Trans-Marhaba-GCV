@@ -195,6 +195,7 @@
                         <thead class="table-light">
                             <tr>
                                 <th class="border-0 py-3 px-4">{{ __('messages.changement_type') }}</th>
+                                <th class="border-0 py-3 px-4">{{ __('messages.subject') }}</th>
                                 <th class="border-0 py-3 px-4">{{ __('messages.date_changement') }}</th>
                                 <th class="border-0 py-3 px-4">{{ __('messages.description') }}</th>
                                 <th class="border-0 py-3 px-4">{{ __('messages.responsable') }}</th>
@@ -215,6 +216,30 @@
                                                 <strong class="text-dark">{{ $changement->changementType->name ?? __('messages.not_available') }}</strong>
                                             </div>
                                         </div>
+                                    </td>
+                                    <td class="py-3 px-4">
+                                        @if($changement->subject)
+                                            <div class="d-flex align-items-center">
+                                                @if($changement->isForDriver())
+                                                    <div>
+                                                        <strong class="text-dark">{{ $changement->getSubjectName() }}</strong>
+                                                        <br>
+                                                        <small class="text-muted">{{ __('messages.driver') }}</small>
+                                                    </div>
+                                                @elseif($changement->isForAdministrative())
+                                                    <div>
+                                                        <strong class="text-dark">{{ $changement->getSubjectName() }}</strong>
+                                                        <br>
+                                                        <div>
+                                                            <small class="text-muted">{{ __('messages.administrative_user') }}</small>|
+                                                            <small class="text-muted">{{ $changement->subject->department }}</small>
+                                                        </div>
+                                                    </div>
+                                                @endif
+                                            </div>
+                                        @else
+                                            <span class="text-muted">{{ __('messages.not_specified') }}</span>
+                                        @endif
                                     </td>
                                     <td class="py-3 px-4">
                                         <span class="text-muted">{{ $changement->date_changement->format('d/m/Y') }}</span>

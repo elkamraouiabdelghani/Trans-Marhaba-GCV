@@ -2,13 +2,12 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use App\Models\Teacher;
-use App\Models\Student;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use App\Models\Changement;
 
 class User extends Authenticatable
 {
@@ -74,5 +73,13 @@ class User extends Authenticatable
     public function confirmedTurnovers()
     {
         return $this->hasMany(Turnover::class, 'confirmed_by');
+    }
+
+    /**
+     * Get all changements for this administrative user
+     */
+    public function changements(): MorphMany
+    {
+        return $this->morphMany(Changement::class, 'subject');
     }
 }
