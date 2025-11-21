@@ -18,21 +18,21 @@ class TbtFormationController extends Controller
      */
     public function index(Request $request): View
     {
-        $query = TbtFormation::query();
-
-        // Filter by year if provided
-        if ($request->has('year') && $request->year) {
-            $query->where('year', $request->year);
+        $selectedYear = $request->input('year');
+        if (empty($selectedYear)) {
+            $selectedYear = date('Y');
         }
+
+        $baseQuery = TbtFormation::query()->where('year', $selectedYear);
 
         // Filter by month if provided
         if ($request->has('month') && $request->month) {
-            $query->where('month', $request->month);
+            $baseQuery->where('month', $request->month);
         }
 
         // Filter by active status
         if ($request->has('active')) {
-            $query->where('is_active', $request->boolean('active'));
+            $baseQuery->where('is_active', $request->boolean('active'));
         }
 
         // Get available years for filter
@@ -41,10 +41,27 @@ class TbtFormationController extends Controller
             ->orderBy('year', 'desc')
             ->pluck('year');
 
-        $formations = $query->orderBy('year', 'desc')
+        if (!$years->contains($selectedYear)) {
+            $years->push($selectedYear);
+            $years = $years->sortDesc()->values();
+        }
+
+        $totalCount = (clone $baseQuery)->count();
+        $realizedCount = (clone $baseQuery)->where('status', 'realized')->count();
+        $plannedCount = (clone $baseQuery)->where('status', 'planned')->count();
+        $realizedPercentage = $totalCount > 0 ? round(($realizedCount / $totalCount) * 100, 1) : 0;
+
+        $formations = $baseQuery->orderBy('year', 'desc')
             ->paginate(20);
 
-        return view('formations.tbt_formations.index', compact('formations', 'years'));
+        $stats = [
+            'total' => $totalCount,
+            'planned' => $plannedCount,
+            'realized' => $realizedCount,
+            'realized_percentage' => $realizedPercentage,
+        ];
+
+        return view('formations.tbt_formations.index', compact('formations', 'years', 'selectedYear', 'stats'));
     }
 
     /**
@@ -162,6 +179,20 @@ class TbtFormationController extends Controller
 
         return redirect()->route('tbt-formations.index')
             ->with('success', __('messages.tbt_formations_deleted'));
+    }
+
+    /**
+     * Mark the specified formation as realized.
+     */
+    public function markAsRealized(Request $request, TbtFormation $tbtFormation): RedirectResponse
+    {
+        if ($tbtFormation->status !== 'realized') {
+            $tbtFormation->status = 'realized';
+            $tbtFormation->save();
+        }
+
+        return redirect()->route('tbt-formations.index', ['year' => $tbtFormation->year])
+            ->with('success', __('messages.tbt_formation_marked_realized'));
     }
 
     /**

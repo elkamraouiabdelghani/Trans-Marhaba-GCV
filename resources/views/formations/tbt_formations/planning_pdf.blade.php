@@ -208,7 +208,20 @@
                     @foreach($monthData['weeks'] as $weekIndex => $week)
                         <td class="{{ isset($week['formation']) && $week['formation'] ? 'formation-cell' : 'empty-cell' }}">
                             @if(isset($week['formation']) && $week['formation'])
+                                @php
+                                    $statusLabel = $week['formation']->status === 'realized'
+                                        ? __('messages.tbt_formation_status_realized')
+                                        : __('messages.tbt_formation_status_planned');
+                                @endphp
                                 <div class="formation-title">{{ Str::limit($week['formation']->title, 30) }}</div>
+                                @if($week['formation']->participant)
+                                    <div class="formation-title" style="color:#555;">
+                                        {{ Str::limit($week['formation']->participant, 30) }}
+                                    </div>
+                                @endif
+                                <div class="formation-title" style="font-weight:bold; color:#1b5e20;">
+                                    {{ $statusLabel }}
+                                </div>
                             @endif
                         </td>
                     @endforeach

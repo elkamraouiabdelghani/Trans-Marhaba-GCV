@@ -56,17 +56,33 @@
                             </div>
 
                             <div class="mb-3">
-                                <label for="code" class="form-label">{{ __('messages.tbt_formation_code') }} <span class="text-danger">*</span></label>
-                                <input type="text" 
-                                       class="form-control @error('code') is-invalid @enderror" 
-                                       id="code" 
-                                       name="code" 
-                                       value="{{ old('code') }}" 
-                                       required>
-                                @error('code')
+                                <label for="participant" class="form-label">{{ __('messages.tbt_formation_participant') }}</label>
+                                <textarea
+                                       class="form-control @error('participant') is-invalid @enderror"
+                                       id="participant"
+                                       name="participant"
+                                       rows="2">{{ old('participant') }}</textarea>
+                                @error('participant')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
-                                <small class="form-text text-muted">{{ __('messages.tbt_formation_code_uppercase_hint') }}</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="status" class="form-label">{{ __('messages.tbt_formation_status') }} <span class="text-danger">*</span></label>
+                                <select class="form-select @error('status') is-invalid @enderror"
+                                        id="status"
+                                        name="status"
+                                        required>
+                                    <option value="planned" {{ old('status', 'planned') === 'planned' ? 'selected' : '' }}>
+                                        {{ __('messages.tbt_formation_status_planned') }}
+                                    </option>
+                                    <option value="realized" {{ old('status') === 'realized' ? 'selected' : '' }}>
+                                        {{ __('messages.tbt_formation_status_realized') }}
+                                    </option>
+                                </select>
+                                @error('status')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
                             </div>
 
                             <div class="mb-3">

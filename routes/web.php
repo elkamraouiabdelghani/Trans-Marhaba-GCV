@@ -138,6 +138,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/tbt-formations/planning', [TbtFormationController::class, 'planning'])->name('tbt-formations.planning');
     Route::get('/tbt-formations/planning/pdf', [TbtFormationController::class, 'planningPdf'])->name('tbt-formations.planning.pdf');
     Route::resource('tbt-formations', TbtFormationController::class)->except(['show']);
+    Route::post('/tbt-formations/{tbtFormation}/mark-realized', [TbtFormationController::class, 'markAsRealized'])->name('tbt-formations.mark-realized');
     
     // Coaching Cabines
     Route::get('/coaching-cabines/planning/{year?}', [CoachingCabineController::class, 'planning'])->name('coaching-cabines.planning');

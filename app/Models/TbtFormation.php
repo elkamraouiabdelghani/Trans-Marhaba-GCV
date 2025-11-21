@@ -11,7 +11,8 @@ class TbtFormation extends Model
 
     protected $fillable = [
         'title',
-        'code',
+        'participant',
+        'status',
         'description',
         'is_active',
         'year',

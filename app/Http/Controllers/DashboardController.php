@@ -103,12 +103,21 @@ class DashboardController extends Controller
                         );
                     }
 
+                    $statusLabel = $tbtFormation->status === 'realized'
+                        ? __('messages.tbt_formation_status_realized')
+                        : __('messages.tbt_formation_status_planned');
+
+                    $metaParts = [
+                        __('messages.status') . ': ' . $statusLabel,
+                        $dateRange,
+                    ];
+
                     return [
                         'date' => $tbtFormation->week_start_date ?? $tbtFormation->week_end_date,
                         'title' => $tbtFormation->title,
                         'label' => __('messages.calendar_event_type_tbt'),
-                        'details' => $tbtFormation->code ? __('messages.tbt_formation_code') . ': ' . $tbtFormation->code : null,
-                        'meta' => $dateRange,
+                        'details' => $tbtFormation->participant ? __('messages.tbt_formation_participant') . ': ' . $tbtFormation->participant : null,
+                        'meta' => implode(' • ', array_filter($metaParts)),
                         'color' => 'warning',
                         'icon' => 'bi-calendar-week',
                         'link' => route('tbt-formations.edit', $tbtFormation),

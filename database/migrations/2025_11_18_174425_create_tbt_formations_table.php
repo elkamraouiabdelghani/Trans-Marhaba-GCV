@@ -15,7 +15,8 @@ return new class extends Migration
             $table->id();
             // Formation data
             $table->string('title');
-            $table->string('code')->unique();
+            $table->string('participant')->nullable();
+            $table->enum('status', ['planned', 'realized'])->default('planned');
             $table->text('description')->nullable();
             $table->boolean('is_active')->default(true);
             // Planning data

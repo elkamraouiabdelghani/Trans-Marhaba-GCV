@@ -20,12 +20,6 @@ class TbtFormationRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
-        if ($this->has('code')) {
-            $this->merge([
-                'code' => strtoupper($this->input('code')),
-            ]);
-        }
-
         // Auto-calculate month from week_start_date if not provided
         if ($this->has('week_start_date') && !$this->has('month')) {
             $startDate = \Carbon\Carbon::parse($this->input('week_start_date'));
@@ -42,20 +36,20 @@ class TbtFormationRequest extends FormRequest
      */
     public function rules(): array
     {
-        $tbtFormation = $this->route('tbt_formation') ?? $this->route('tbtFormation');
-        $tbtFormationId = $tbtFormation?->id;
-
         return [
             'title' => [
                 'required',
                 'string',
                 'max:255',
             ],
-            'code' => [
-                'required',
+            'participant' => [
+                'nullable',
                 'string',
-                'max:50',
-                Rule::unique('tbt_formations', 'code')->ignore($tbtFormationId),
+                'max:255',
+            ],
+            'status' => [
+                'required',
+                Rule::in(['planned', 'realized']),
             ],
             'description' => [
                 'nullable',
@@ -100,7 +94,6 @@ class TbtFormationRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'code.unique' => 'Ce code existe déjà.',
             'year.required' => 'L\'année est requise.',
             'week_start_date.required' => 'La date de début de semaine est requise.',
             'week_end_date.required' => 'La date de fin de semaine est requise.',
@@ -108,6 +101,7 @@ class TbtFormationRequest extends FormRequest
             'month.required' => 'Le mois est requis.',
             'month.min' => 'Le mois doit être entre 1 et 12.',
             'month.max' => 'Le mois doit être entre 1 et 12.',
+            'status.required' => 'Le statut est requis.',
         ];
     }
 }

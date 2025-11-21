@@ -128,11 +128,25 @@
                                     @foreach($monthData['weeks'] as $weekIndex => $week)
                                         <td class="p-2" style="vertical-align: middle; min-height: 60px;">
                                             @if(isset($week['formation']) && $week['formation'])
-                                                <div class="bg-primary bg-opacity-10 border border-primary rounded p-2 text-center" style="cursor: pointer; min-height: 50px; display: flex; align-items: center; justify-content: center;" 
+                                                @php
+                                                    $statusClass = $week['formation']->status === 'realized' ? 'bg-success' : 'bg-warning text-dark';
+                                                    $statusLabel = $week['formation']->status === 'realized'
+                                                        ? __('messages.tbt_formation_status_realized')
+                                                        : __('messages.tbt_formation_status_planned');
+                                                @endphp
+                                                <div class="bg-primary bg-opacity-10 border border-primary rounded p-2 text-center" style="cursor: pointer; min-height: 70px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;" 
                                                      onclick="window.location.href='{{ route('tbt-formations.edit', $week['formation']) }}'"
                                                      title="{{ __('messages.tbt_formation_edit') }}">
                                                     <div>
                                                         <div class="small text-dark" style="font-size: 0.75rem;">{{ Str::limit($week['formation']->title, 50) }}</div>
+                                                        @if($week['formation']->participant)
+                                                            <div class="text-muted" style="font-size: 0.7rem;">
+                                                                {{ Str::limit($week['formation']->participant, 45) }}
+                                                            </div>
+                                                        @endif
+                                                        <div class="mt-1">
+                                                            <span class="badge {{ $statusClass }}">{{ $statusLabel }}</span>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             @else
