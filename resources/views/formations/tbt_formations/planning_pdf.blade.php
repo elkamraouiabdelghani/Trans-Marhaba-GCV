@@ -188,17 +188,17 @@
                                 $dayNumbers = [];
                                 foreach($week as $key => $day) {
                                     if($key === 'formation') continue;
-                                    if(isset($day['isInMonth']) && $day['isInMonth']) {
-                                        $dayNumbers[] = $day['day'];
-                                    } else {
-                                        $dayNumbers[] = '';
-                                    }
-                                }
-                                while(count($dayNumbers) < 7) {
-                                    $dayNumbers[] = '';
+                                    $dayNumbers[] = [
+                                        'value' => $day['day'],
+                                        'inMonth' => $day['isInMonth'] ?? false,
+                                    ];
                                 }
                             @endphp
-                            {{ implode(' ', $dayNumbers) }}
+                            @foreach($dayNumbers as $dayData)
+                                <span style="padding:0 1px; {{ $dayData['inMonth'] ? 'font-weight:bold;color:#333;' : 'color:#aaa;' }}">
+                                    {{ $dayData['value'] }}
+                                </span>
+                            @endforeach
                         </td>
                     @endforeach
                 </tr>

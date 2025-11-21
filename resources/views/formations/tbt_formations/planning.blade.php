@@ -106,18 +106,19 @@
                                                 $dayNumbers = [];
                                                 foreach($week as $key => $day) {
                                                     if($key === 'formation') continue;
-                                                    if(isset($day['isInMonth']) && $day['isInMonth']) {
-                                                        $dayNumbers[] = $day['day'];
-                                                    } else {
-                                                        $dayNumbers[] = '';
-                                                    }
-                                                }
-                                                // Pad to 7 if needed
-                                                while(count($dayNumbers) < 7) {
-                                                    $dayNumbers[] = '';
+                                                    $dayNumbers[] = [
+                                                        'value' => $day['day'],
+                                                        'inMonth' => $day['isInMonth'] ?? false,
+                                                    ];
                                                 }
                                             @endphp
-                                            {{ implode(' ', $dayNumbers) }}
+                                            <div class="d-flex justify-content-center gap-1 flex-wrap">
+                                                @foreach($dayNumbers as $dayData)
+                                                    <span class="px-1 {{ $dayData['inMonth'] ? 'fw-semibold text-dark' : 'text-muted' }}">
+                                                        {{ $dayData['value'] }}
+                                                    </span>
+                                                @endforeach
+                                            </div>
                                         </td>
                                     @endforeach
                                 </tr>

@@ -222,6 +222,14 @@ class TbtFormationController extends Controller
             if (count($currentWeek) > 0) {
                 $weeks[] = $currentWeek;
             }
+
+            // Avoid duplicating weeks that already belong to the previous month
+            if (!empty($weeks)) {
+                $firstWeekStart = $weeks[0][0]['date'];
+                if ($firstWeekStart->year == $year && $firstWeekStart->month < $month) {
+                    array_shift($weeks);
+                }
+            }
             
             // Match formations to weeks
             $monthFormations = $formations->where('month', $month);
@@ -300,6 +308,14 @@ class TbtFormationController extends Controller
             }
             if (count($currentWeek) > 0) {
                 $weeks[] = $currentWeek;
+            }
+
+            // Avoid duplicating weeks that already belong to the previous month
+            if (!empty($weeks)) {
+                $firstWeekStart = $weeks[0][0]['date'];
+                if ($firstWeekStart->year == $year && $firstWeekStart->month < $month) {
+                    array_shift($weeks);
+                }
             }
             
             // Match formations to weeks
