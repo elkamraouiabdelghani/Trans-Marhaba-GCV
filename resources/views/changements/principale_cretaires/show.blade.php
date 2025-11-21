@@ -7,7 +7,6 @@
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3 bg-white p-4 rounded-3 shadow-sm">
             <div>
                 <h1 class="h4 mb-1">{{ $principaleCretaire->name }}</h1>
-                <p class="text-muted mb-0">{{ __('messages.code') }} : {{ $principaleCretaire->code }}</p>
                 <small class="text-muted">{{ __('messages.changement_types') }}: {{ $principaleCretaire->changementType->name }}</small>
             </div>
             <div class="d-flex gap-2">
@@ -390,7 +389,7 @@
                         @endif
 
                         <div class="row g-3">
-                            <div class="col-md-6">
+                            <div class="col-12">
                                 <label for="edit_principale_name_show" class="form-label fw-semibold">{{ __('messages.name') }}</label>
                                 <input
                                     type="text"
@@ -401,21 +400,6 @@
                                     required
                                 >
                                 @error('name')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-
-                            <div class="col-md-6">
-                                <label for="edit_principale_code_show" class="form-label fw-semibold">{{ __('messages.code') }}</label>
-                                <input
-                                    type="text"
-                                    name="code"
-                                    id="edit_principale_code_show"
-                                    class="form-control @error('code') is-invalid @enderror"
-                                    value="{{ old('code', $principaleCretaire->code) }}"
-                                    required
-                                >
-                                @error('code')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>

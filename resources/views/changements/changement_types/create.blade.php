@@ -46,21 +46,6 @@
                             @enderror
                         </div>
 
-                        <div class="col-md-6">
-                            <label for="code" class="form-label fw-semibold">{{ __('messages.code') }}</label>
-                            <input
-                                type="text"
-                                name="code"
-                                id="code"
-                                class="form-control @error('code') is-invalid @enderror"
-                                value="{{ old('code') }}"
-                                required
-                            >
-                            @error('code')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-
                         <div class="col-12">
                             <label for="description" class="form-label fw-semibold">{{ __('messages.description') }}</label>
                             <textarea

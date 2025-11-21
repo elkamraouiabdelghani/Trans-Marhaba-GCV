@@ -14,7 +14,6 @@ return new class extends Migration
         Schema::create('changement_types', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('code')->unique();
             $table->text('description')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();

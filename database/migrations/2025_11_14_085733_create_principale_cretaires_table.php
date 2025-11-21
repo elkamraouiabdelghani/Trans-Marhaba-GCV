@@ -17,12 +17,11 @@ return new class extends Migration
                 ->constrained('changement_types')
                 ->cascadeOnDelete();
             $table->string('name');
-            $table->string('code');
             $table->text('description')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
 
-            $table->unique(['changement_type_id', 'code']);
+            $table->unique(['changement_type_id']);
         });
     }
 

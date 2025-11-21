@@ -20,6 +20,8 @@
                     {{ __('messages.concerns') }}
                 @elseif(request()->routeIs('organigram.*'))
                     {{ __('messages.organigram') }}
+                @elseif(request()->routeIs('administration-roles.*'))
+                    {{ __('messages.administration_roles') }}
                 @elseif(request()->routeIs('changement-types.*') || request()->routeIs('changements.*') || request()->routeIs('principale-cretaires.*') || request()->routeIs('sous-cretaires.*'))
                     {{ __('messages.changements') }}
                 @elseif(request()->routeIs('coaching-cabines.*'))
@@ -43,6 +45,9 @@
             </li>
             <li class="nav-item">
                 <a href="#" class="nav-link text-dark">{{ __('messages.reports') }}</a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('administration-roles.index') }}" class="nav-link text-dark">{{ __('messages.administration_roles') }}</a>
             </li>
         </ul>
         {{-- language switcher --}}

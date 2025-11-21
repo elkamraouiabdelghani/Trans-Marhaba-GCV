@@ -69,7 +69,7 @@
                                         <option value="other">{{ __('messages.other') }}</option>
                                         @foreach($changementTypes as $type)
                                             <option value="{{ $type->id }}" {{ old('changement_type_id') == $type->id ? 'selected' : '' }}>
-                                                {{ $type->name }} @if($type->code)({{ $type->code }})@endif
+                                                {{ $type->name }}
                                             </option>
                                         @endforeach
                                     </select>

@@ -56,7 +56,6 @@
                         <thead class="table-light">
                             <tr>
                                 <th class="ps-4">{{ __('messages.name') }}</th>
-                                <th>{{ __('messages.code') }}</th>
                                 <th>{{ __('messages.changement_types_table_primary') }}</th>
                                 <th>{{ __('messages.status') }}</th>
                                 <th>{{ __('messages.changement_types_table_updated') }}</th>
@@ -69,11 +68,6 @@
                                     <td class="ps-4">
                                         <div class="fw-semibold text-dark">{{ $type->name }}</div>
                                         <small class="text-muted">{{ \Illuminate\Support\Str::limit($type->description ?? '', 80) }}</small>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-secondary bg-opacity-10 text-secondary">
-                                            {{ $type->code }}
-                                        </span>
                                     </td>
                                     <td>
                                         <span class="badge bg-info bg-opacity-10 text-info">
@@ -116,7 +110,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="text-center py-5 text-muted">
+                                    <td colspan="5" class="text-center py-5 text-muted">
                                         <i class="bi bi-inbox fs-1 d-block mb-2"></i>
                                         {{ __('messages.changement_types_empty') }}
                                     </td>
@@ -153,7 +147,7 @@
                     <input type="hidden" name="form_context" value="create_changement_type">
                     <div class="modal-body">
                         <div class="row g-3">
-                            <div class="col-md-6">
+                            <div class="col-12">
                                 <label for="create-name" class="form-label fw-semibold">{{ __('messages.name') }}</label>
                                 <input
                                     type="text"
@@ -165,22 +159,6 @@
                                 >
                                 @if($isCreateContext)
                                     @error('name')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                @endif
-                            </div>
-                            <div class="col-md-6">
-                                <label for="create-code" class="form-label fw-semibold">{{ __('messages.code') }}</label>
-                                <input
-                                    type="text"
-                                    name="code"
-                                    id="create-code"
-                                    class="form-control @if($isCreateContext && $errors->has('code')) is-invalid @endif"
-                                    value="{{ $isCreateContext ? old('code') : '' }}"
-                                    required
-                                >
-                                @if($isCreateContext)
-                                    @error('code')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 @endif
@@ -251,7 +229,7 @@
                         <input type="hidden" name="form_context" value="edit_changement_type_{{ $type->id }}">
                         <div class="modal-body">
                             <div class="row g-3">
-                                <div class="col-md-6">
+                                <div class="col-12">
                                     <label for="edit-name-{{ $type->id }}" class="form-label fw-semibold">{{ __('messages.name') }}</label>
                                     <input
                                         type="text"
@@ -263,22 +241,6 @@
                                     >
                                     @if($isEditContext)
                                         @error('name')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
-                                    @endif
-                                </div>
-                                <div class="col-md-6">
-                                    <label for="edit-code-{{ $type->id }}" class="form-label fw-semibold">{{ __('messages.code') }}</label>
-                                    <input
-                                        type="text"
-                                        name="code"
-                                        id="edit-code-{{ $type->id }}"
-                                        class="form-control @if($isEditContext && $errors->has('code')) is-invalid @endif"
-                                        value="{{ $isEditContext ? old('code') : $type->code }}"
-                                        required
-                                    >
-                                    @if($isEditContext)
-                                        @error('code')
                                             <div class="invalid-feedback">{{ $message }}</div>
                                         @enderror
                                     @endif

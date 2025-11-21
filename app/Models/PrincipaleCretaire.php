@@ -14,7 +14,6 @@ class PrincipaleCretaire extends Model
     protected $fillable = [
         'changement_type_id',
         'name',
-        'code',
         'description',
         'is_active',
     ];

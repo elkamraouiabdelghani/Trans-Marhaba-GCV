@@ -6,7 +6,6 @@ use App\Models\ChangementType;
 use App\Models\PrincipaleCretaire;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Throwable;
 
@@ -52,14 +51,6 @@ class PrincipaleCretaireController extends Controller
         $validated = $request->validate([
             'changement_type_id' => ['required', 'exists:changement_types,id'],
             'name' => ['required', 'string', 'max:255'],
-            'code' => [
-                'required',
-                'string',
-                'max:50',
-                Rule::unique('principale_cretaires')->where(function ($query) use ($request) {
-                    return $query->where('changement_type_id', $request->input('changement_type_id'));
-                }),
-            ],
             'description' => ['nullable', 'string'],
             'is_active' => ['nullable', 'boolean'],
         ]);
@@ -110,16 +101,6 @@ class PrincipaleCretaireController extends Controller
         $validated = $request->validate([
             'changement_type_id' => ['required', 'exists:changement_types,id'],
             'name' => ['required', 'string', 'max:255'],
-            'code' => [
-                'required',
-                'string',
-                'max:50',
-                Rule::unique('principale_cretaires')
-                    ->where(function ($query) use ($request) {
-                        return $query->where('changement_type_id', $request->input('changement_type_id'));
-                    })
-                    ->ignore($principaleCretaire->id),
-            ],
             'description' => ['nullable', 'string'],
             'is_active' => ['nullable', 'boolean'],
         ]);

@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DriversController;
 use App\Http\Controllers\FormationController;
+use App\Http\Controllers\AdministrationRoleController;
 use App\Http\Controllers\FormationCategoryController;
 use App\Http\Controllers\IntegrationController;
 use App\Http\Controllers\FormationProcessController;
@@ -134,6 +135,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/formation-processes/{formationProcess}/step/{stepNumber}/reject', [FormationProcessController::class, 'rejectStep'])->name('formation-processes.reject-step');
     Route::post('/formation-processes/{formationProcess}/finalize', [FormationProcessController::class, 'finalize'])->name('formation-processes.finalize');
     
+    // Administration Roles
+    Route::get('/administration-roles', [AdministrationRoleController::class, 'index'])->name('administration-roles.index');
+
     // TBT Formations
     Route::get('/tbt-formations/planning', [TbtFormationController::class, 'planning'])->name('tbt-formations.planning');
     Route::get('/tbt-formations/planning/pdf', [TbtFormationController::class, 'planningPdf'])->name('tbt-formations.planning.pdf');

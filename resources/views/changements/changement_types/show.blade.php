@@ -7,7 +7,6 @@
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3 bg-white p-4 rounded-3 shadow-sm">
             <div>
                 <h1 class="h4 mb-1">{{ $changementType->name }}</h1>
-                <p class="text-muted mb-0">Code : {{ $changementType->code }}</p>
             </div>
             <div class="d-flex gap-2">
                 <a href="{{ route('changement-types.index') }}" class="btn btn-outline-secondary">
@@ -49,7 +48,6 @@
                                 <thead class="table-light">
                                     <tr>
                                         <th>{{ __('messages.name') }}</th>
-                                        <th>{{ __('messages.code') }}</th>
                                         <th>{{ __('messages.status') }}</th>
                                         <th>{{ __('messages.sous_cretaires') }}</th>
                                         <th class="text-end">{{ __('messages.changement_types_primary_actions') }}</th>
@@ -59,11 +57,6 @@
                                     @forelse ($changementType->principaleCretaires as $principale)
                                         <tr>
                                             <td class="fw-semibold">{{ $principale->name }}</td>
-                                            <td>
-                                                <span class="badge bg-secondary bg-opacity-10 text-secondary">
-                                                    {{ $principale->code }}
-                                                </span>
-                                            </td>
                                             <td>
                                                 @if ($principale->is_active)
                                                     <span class="badge bg-success bg-opacity-10 text-success">{{ __('messages.active') }}</span>
@@ -127,7 +120,7 @@
                                                             @endif
 
                                                             <div class="row g-3">
-                                                                <div class="col-md-6">
+                                                                <div class="col-12">
                                                                     <label for="edit_principale_name_{{ $principale->id }}" class="form-label fw-semibold">{{ __('messages.name') }}</label>
                                                                     <input
                                                                         type="text"
@@ -138,21 +131,6 @@
                                                                         required
                                                                     >
                                                                     @error('name')
-                                                                        <div class="invalid-feedback">{{ $message }}</div>
-                                                                    @enderror
-                                                                </div>
-
-                                                                <div class="col-md-6">
-                                                                    <label for="edit_principale_code_{{ $principale->id }}" class="form-label fw-semibold">{{ __('messages.code') }}</label>
-                                                                    <input
-                                                                        type="text"
-                                                                        name="code"
-                                                                        id="edit_principale_code_{{ $principale->id }}"
-                                                                        class="form-control @error('code') is-invalid @enderror"
-                                                                        value="{{ old('code', $principale->code) }}"
-                                                                        required
-                                                                    >
-                                                                    @error('code')
                                                                         <div class="invalid-feedback">{{ $message }}</div>
                                                                     @enderror
                                                                 </div>
@@ -239,7 +217,7 @@
                                         </div>
                                     @empty
                                         <tr>
-                                            <td colspan="5" class="text-center py-4 text-muted">
+                                            <td colspan="4" class="text-center py-4 text-muted">
                                                 {{ __('messages.changement_types_primary_empty') }}
                                             </td>
                                         </tr>
@@ -327,7 +305,7 @@
                         @endif
 
                         <div class="row g-3">
-                            <div class="col-md-6">
+                            <div class="col-12">
                                 <label for="edit_name" class="form-label fw-semibold">{{ __('messages.name') }}</label>
                                 <input
                                     type="text"
@@ -338,21 +316,6 @@
                                     required
                                 >
                                 @error('name')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-
-                            <div class="col-md-6">
-                                <label for="edit_code" class="form-label fw-semibold">{{ __('messages.code') }}</label>
-                                <input
-                                    type="text"
-                                    name="code"
-                                    id="edit_code"
-                                    class="form-control @error('code') is-invalid @enderror"
-                                    value="{{ old('code', $changementType->code) }}"
-                                    required
-                                >
-                                @error('code')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
@@ -463,7 +426,7 @@
                         @endif
 
                         <div class="row g-3">
-                            <div class="col-md-6">
+                            <div class="col-12">
                                 <label for="create_principale_name" class="form-label fw-semibold">{{ __('messages.name') }}</label>
                                 <input
                                     type="text"
@@ -474,21 +437,6 @@
                                     required
                                 >
                                 @error('name')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-
-                            <div class="col-md-6">
-                                <label for="create_principale_code" class="form-label fw-semibold">{{ __('messages.code') }}</label>
-                                <input
-                                    type="text"
-                                    name="code"
-                                    id="create_principale_code"
-                                    class="form-control @error('code') is-invalid @enderror"
-                                    value="{{ old('code') }}"
-                                    required
-                                >
-                                @error('code')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>

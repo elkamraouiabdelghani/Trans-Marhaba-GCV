@@ -29,6 +29,12 @@
             </a>
         </li>
         <li class="mb-2">
+            <a href="{{ route('administration-roles.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('administration-roles.*') ? 'active' : '' }}">
+                <i class="bi bi-people me-2 text-gray-600 sidebar-icon"></i>
+                <span class="sidebar-text">{{ __('messages.administration_roles') }}</span>
+            </a>
+        </li>
+        <li class="mb-2">
             <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ (request()->routeIs('formations.*') || request()->routeIs('formation-processes.*') || request()->routeIs('formation-categories.*')) ? 'active' : '' }}" 
                data-bs-toggle="collapse" 
                data-bs-target="#formationsSubmenu" 
@@ -213,6 +219,8 @@
                         {{ __('messages.tbt_formations') }}
                     @elseif(request()->routeIs('reports.*') || request()->routeIs('reports.index') || request()->routeIs('reports.create') || request()->routeIs('reports.edit') || request()->routeIs('reports.show'))
                         {{ __('messages.reports') }}
+                    @elseif(request()->routeIs('administration-roles.*'))
+                        {{ __('messages.administration_roles') }}
                     @endif
                 </span>
             </div>
@@ -253,6 +261,12 @@
                 <a href="{{ route('drivers.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('drivers.*') ? 'active' : '' }}">
                     <i class="bi bi-people me-2 text-gray-600 sidebar-icon"></i>
                     <span class="sidebar-text">{{ __('messages.all_drivers') }}</span>
+                </a>
+            </li>
+            <li class="mb-2">
+                <a href="{{ route('administration-roles.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('administration-roles.*') ? 'active' : '' }}">
+                    <i class="bi bi-people me-2 text-gray-600 sidebar-icon"></i>
+                    <span class="sidebar-text">{{ __('messages.administration_roles') }}</span>
                 </a>
             </li>
             <li class="mb-2">
