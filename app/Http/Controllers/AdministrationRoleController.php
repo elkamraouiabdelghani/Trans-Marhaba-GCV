@@ -49,4 +49,58 @@ class AdministrationRoleController extends Controller
             'search' => $search,
         ]);
     }
+
+    /**
+     * Display the specified administrative user.
+     */
+    public function show(User $user)
+    {
+        // Ensure user is not an admin
+        if ($user->role === 'admin') {
+            abort(404);
+        }
+
+        // Load related data with their relationships
+        $user->load([
+            'turnovers' => function($query) {
+                $query->orderBy('departure_date', 'desc');
+            },
+            'changements' => function($query) {
+                $query->with('changementType')
+                      ->orderBy('date_changement', 'desc');
+            }
+        ]);
+
+        return view('administration_roles.show', [
+            'user' => $user,
+        ]);
+    }
+
+    /**
+     * Mark the administrative user as terminated.
+     */
+    public function terminate(User $user, Request $request)
+    {
+        // Ensure user is not an admin
+        if ($user->role === 'admin') {
+            abort(404);
+        }
+
+        // Validate the request
+        $validated = $request->validate([
+            'terminated_date' => 'required|date',
+        ]);
+
+        // Update user status and terminated date
+        $user->update([
+            'status' => 'terminated',
+            'terminated_date' => $validated['terminated_date'],
+            'is_integrated' => false,
+            'role' => 'other',
+            'department' => 'other',
+        ]);
+
+        return redirect()->route('administration-roles.show', $user)
+            ->with('success', __('messages.user_terminated_successfully'));
+    }
 }

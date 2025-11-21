@@ -137,6 +137,8 @@ Route::middleware('auth')->group(function () {
     
     // Administration Roles
     Route::get('/administration-roles', [AdministrationRoleController::class, 'index'])->name('administration-roles.index');
+    Route::get('/administration-roles/{user}', [AdministrationRoleController::class, 'show'])->name('administration-roles.show');
+    Route::post('/administration-roles/{user}/terminate', [AdministrationRoleController::class, 'terminate'])->name('administration-roles.terminate');
 
     // TBT Formations
     Route::get('/tbt-formations/planning', [TbtFormationController::class, 'planning'])->name('tbt-formations.planning');

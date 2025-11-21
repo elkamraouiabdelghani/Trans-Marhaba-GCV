@@ -112,6 +112,7 @@
                                 <th>{{ __('messages.role') }}</th>
                                 <th>{{ __('messages.status') }}</th>
                                 <th>{{ __('messages.date_integration') }}</th>
+                                <th class="text-center">{{ __('messages.actions') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -119,7 +120,7 @@
                                 <tr>
                                     <td class="px-4">
                                         <div class="d-flex align-items-center">
-                                            <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-3">
+                                            <div class="bg-primary bg-opacity-10 rounded-circle px-2 py-1 me-3">
                                                 <i class="bi bi-person text-primary"></i>
                                             </div>
                                             <div>
@@ -152,6 +153,11 @@
                                     </td>
                                     <td>
                                         {{ optional($user->date_integration)->format(__('messages.date_format_short')) ?? __('messages.not_available') }}
+                                    </td>
+                                    <td class="text-center">
+                                        <a href="{{ route('administration-roles.show', $user) }}" class="btn btn-outline-primary btn-sm" title="{{ __('messages.view_details') }}">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
                                     </td>
                                 </tr>
                             @empty
