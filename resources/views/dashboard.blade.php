@@ -96,18 +96,125 @@
             </div>
         </div>
 
-            <!-- Recent Activity Section -->
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
-                <div class="p-6">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">{{ __('Recent Activity') }}</h3>
-                    <div class="text-gray-600">
-                        {{ __("You're logged in!") }}
-                    </div>
+        {{-- this month actions planning calendar --}}
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <h5 class="mb-0 text-dark fw-bold">
+                        <i class="bi bi-calendar3 me-2 text-primary"></i>
+                        {{ __('messages.this_month_actions_calendar') }}
+                    </h5>
+                    <small class="text-muted">{{ $currentMonthLabel ?? now()->translatedFormat('F Y') }}</small>
+                </div>
+                <div class="d-flex align-items-center gap-3 flex-wrap">
+                    {{-- add a button for download the calendar as a pdf --}}
+                    <form method="GET" action="{{ route('dashboard') }}" class="d-flex align-items-center gap-2">
+                        <select id="month-filter"
+                                name="month"
+                                class="form-select form-select-sm"
+                                onchange="this.form.submit()"
+                                style="min-width: 180px;">
+                            @foreach(($monthOptions ?? collect()) as $option)
+                                <option value="{{ $option['value'] }}"
+                                    {{ ($selectedMonthValue ?? now()->format('Y-m')) === $option['value'] ? 'selected' : '' }}>
+                                    {{ $option['label'] }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </form>
+                    <a href="{{ route('dashboard.calendar.pdf', ['month' => $selectedMonthValue ?? now()->format('Y-m')]) }}"
+                       class="btn btn-danger btn-sm">
+                        <i class="bi bi-file-earmark-pdf me-1"></i>
+                        {{ __('messages.download_calendar_pdf') }}
+                    </a>
+                    <span class="badge bg-dark bg-opacity-10 text-dark">
+                        {{ ($calendarEvents ?? collect())->count() }} {{ __('messages.events') ?? 'events' }}
+                    </span>
                 </div>
             </div>
-            
+            <div class="card-body">
+                <div class="calendar-scroll">
+                    <div class="alert alert-secondary d-flex flex-wrap align-items-center gap-3 mb-4 calendar-legend" role="alert">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="calendar-legend-dot bg-primary"></span>
+                            <span>{{ __('messages.calendar_legend_formations') }}</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="calendar-legend-dot bg-warning"></span>
+                            <span>{{ __('messages.calendar_legend_tbt') }}</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="calendar-legend-dot bg-success"></span>
+                            <span>{{ __('messages.calendar_legend_coaching') }}</span>
+                        </div>
+                    </div>
+
+                    <div class="calendar-container">
+                        <div class="calendar-weekdays">
+                            @foreach(($weekdayLabels ?? []) as $weekday)
+                                <div class="calendar-weekday text-uppercase small fw-semibold text-muted text-center">
+                                    {{ $weekday }}
+                                </div>
+                            @endforeach
+                        </div>
+                        <div class="calendar-grid">
+                            @foreach(($calendarWeeks ?? collect()) as $week)
+                                @foreach($week as $day)
+                                    @php
+                                        $dayEvents = collect($day['events'] ?? []);
+                                    @endphp
+                                    <div class="calendar-day {{ $day['isCurrentMonth'] ? '' : 'calendar-day--muted' }} {{ $day['isToday'] ? 'calendar-day--today' : '' }}">
+                                        <div class="calendar-day-header d-flex justify-content-between align-items-center">
+                                            <span class="calendar-day-number">{{ $day['date']->format('j') }}</span>
+                                            @if($day['isToday'])
+                                                <span class="badge bg-dark bg-opacity-10 text-dark text-uppercase small">{{ __('messages.today') ?? 'Today' }}</span>
+                                            @endif
+                                        </div>
+                                        <div class="calendar-day-events">
+                                            @forelse($dayEvents as $event)
+                                                <a href="{{ $event['link'] ?? '#' }}"
+                                                   class="calendar-event badge bg-{{ $event['color'] }} bg-opacity-10 text-{{ $event['color'] }} w-100 text-start mb-1">
+                                                    <span class="d-flex align-items-center gap-1">
+                                                        <i class="bi {{ $event['icon'] }}"></i>
+                                                        <span class="text-truncate">{{ $event['title'] }}</span>
+                                                    </span>
+                                                    @if(!empty($event['details']))
+                                                        <small class="d-block text-muted text-truncate">{{ $event['details'] }}</small>
+                                                    @endif
+                                                </a>
+                                            @empty
+                                                <div class="calendar-event-placeholder text-muted small">
+                                                    {{ __('messages.no_events') ?? '—' }}
+                                                </div>
+                                            @endforelse
+                                        </div>
+                                    </div>
+                                @endforeach
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+                @if(($calendarEvents ?? collect())->isEmpty())
+                    <div class="text-center py-4">
+                        <i class="bi bi-calendar-x display-6 text-muted mb-2"></i>
+                        <h6 class="text-dark mb-1">{{ __('messages.no_events_this_month') }}</h6>
+                        <p class="text-muted mb-0">{{ __('messages.no_events_this_month_subtitle') }}</p>
+                    </div>
+                @endif
+            </div>
+        </div>
+
+        <!-- Recent Activity Section -->
+        <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
+            <div class="p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">{{ __('Recent Activity') }}</h3>
+                <div class="text-gray-600">
+                    {{ __("You're logged in!") }}
+                </div>
+            </div>
         </div>
     </div>
+</div>
 
     <style>
         /* Statistics badges */
@@ -144,6 +251,94 @@
 
         .bg-success.bg-opacity-10 {
             background-color: rgba(25, 135, 84, 0.1) !important;
+        }
+
+        .calendar-scroll {
+            width: 100%;
+            overflow-x: auto;
+            padding-bottom: 0.5rem;
+        }
+
+        .calendar-container {
+            width: 100%;
+            min-width: 980px;
+        }
+
+        .calendar-weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+            gap: 0.5rem;
+        }
+
+        .calendar-day {
+            min-height: 140px;
+            border: 1px solid #f1f2f6;
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            background-color: #ffffff;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .calendar-day--muted {
+            background-color: #f8f9fa;
+            color: #adb5bd;
+        }
+
+        .calendar-day--today {
+            border: 1px solid #0d6efd;
+            box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.15);
+        }
+
+        .calendar-day-number {
+            font-weight: 600;
+            font-size: 1.15rem;
+        }
+
+        .calendar-day-events {
+            margin-top: 0.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            overflow: hidden;
+        }
+
+        .calendar-event {
+            font-size: 0.75rem;
+            line-height: 1.2;
+            border-radius: 0.35rem;
+            white-space: normal;
+        }
+
+        .calendar-event-placeholder {
+            font-size: 0.75rem;
+        }
+
+        .calendar-legend {
+            border-radius: 0.75rem;
+        }
+
+        .calendar-legend-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        @media (max-width: 991px) {
+            .calendar-day {
+                min-height: 120px;
+            }
+
+            .calendar-container {
+                min-width: 900px;
+            }
         }
     </style>
 </x-app-layout>

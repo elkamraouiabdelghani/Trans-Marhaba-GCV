@@ -119,8 +119,9 @@
                                             <option 
                                                 value="{{ $formationItem->id }}" 
                                                 data-category-name="{{ $formationItem->category->name ?? __('messages.not_available') }}"
+                                                data-theme="{{ $formationItem->theme ?? '' }}"
                                                 {{ old('formation_id', request('formation_id', $selectedFormationId ?? null)) == $formationItem->id ? 'selected' : '' }}>
-                                                {{ $formationItem->name }} ({{ $formationItem->code }})
+                                                {{ $formationItem->name }}
                                             </option>
                                         @endforeach
                                     </select>
@@ -137,13 +138,18 @@
                                 </div>
                             </div>
 
+                            @php
+                                $currentFormationId = old('formation_id', request('formation_id', $selectedFormationId ?? null));
+                                $prefilledTheme = old('theme', optional($formations->firstWhere('id', $currentFormationId))->theme);
+                            @endphp
+
                             <div class="mb-3">
                                 <label for="theme" class="form-label">{{ __('messages.theme') }} <span class="text-danger">*</span></label>
                                 <input type="text" 
                                        class="form-control @error('theme') is-invalid @enderror" 
                                        id="theme" 
                                        name="theme" 
-                                       value="{{ old('theme') }}" 
+                                       value="{{ $prefilledTheme }}" 
                                        required>
                                 @error('theme')
                                     <div class="invalid-feedback">{{ $message }}</div>
@@ -192,6 +198,8 @@
 
             const formationSelect = document.getElementById('formation_id');
             const formationCategoryName = document.getElementById('formation-category-name');
+            const themeInput = document.getElementById('theme');
+            const hasOldTheme = @json((bool) old('theme'));
 
             if (formationSelect && formationCategoryName) {
                 const updateCategoryName = () => {
@@ -204,6 +212,22 @@
 
                 formationSelect.addEventListener('change', updateCategoryName);
                 updateCategoryName();
+            }
+
+            const updateThemeField = (force = false) => {
+                if (!formationSelect || !themeInput) return;
+                const selectedOption = formationSelect.options[formationSelect.selectedIndex];
+                if (!selectedOption) return;
+                const optionTheme = selectedOption.dataset.theme || '';
+                if (force || (!hasOldTheme && !themeInput.value)) {
+                    themeInput.value = optionTheme;
+                }
+            };
+
+            formationSelect?.addEventListener('change', () => updateThemeField(true));
+
+            if (!hasOldTheme && themeInput && formationSelect) {
+                updateThemeField(true);
             }
         });
     </script>

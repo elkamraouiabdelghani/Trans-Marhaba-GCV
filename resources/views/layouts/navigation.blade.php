@@ -99,7 +99,7 @@
         </li>
         <li class="mb-1">
             <a href="{{ route('coaching-cabines.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('coaching-cabines.index') || request()->routeIs('coaching-cabines.create') || request()->routeIs('coaching-cabines.edit') || request()->routeIs('coaching-cabines.show') ? 'active' : '' }}">
-                <i class="bi bi-clipboard-check me-2 text-gray-600 sidebar-icon"></i>
+                <i class="bi bi-person-video3 me-2 text-gray-600 sidebar-icon"></i>
                 <span class="sidebar-text">{{ __('messages.coaching_sessions') }}</span>
             </a>
         </li>
@@ -326,7 +326,7 @@
             </li>
             <li class="mb-1">
                 <a href="{{ route('coaching-cabines.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('coaching-cabines.index') || request()->routeIs('coaching-cabines.create') || request()->routeIs('coaching-cabines.edit') || request()->routeIs('coaching-cabines.show') ? 'active' : '' }}">
-                    <i class="bi bi-clipboard-check me-2 text-gray-600 sidebar-icon"></i>
+                    <i class="bi bi-person-video3 me-2 text-gray-600 sidebar-icon"></i>
                     <span class="sidebar-text">{{ __('messages.coaching_sessions') }}</span>
                 </a>
             </li>

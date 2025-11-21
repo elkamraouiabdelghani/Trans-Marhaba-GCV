@@ -34,6 +34,9 @@ Route::get('/locale/{locale}', function (string $locale) {
 Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
+Route::get('/dashboard/calendar/pdf', [DashboardController::class, 'calendarPdf'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard.calendar.pdf');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

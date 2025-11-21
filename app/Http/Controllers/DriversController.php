@@ -225,7 +225,10 @@ class DriversController extends Controller
         $warningAlerts = $alertStates->filter(fn ($state) => $state === 'warning')->count();
         $criticalAlerts = $alertStates->filter(fn ($state) => $state === 'critical')->count();
 
+        $currentYear = now()->year;
+
         $formationsCatalog = Formation::with(['category', 'flotte'])
+            ->whereYear('realizing_date', $currentYear)
             ->orderBy('name')
             ->get();
 
