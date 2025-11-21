@@ -1182,9 +1182,29 @@ return [
     'select_driver' => 'Select a driver',
     'select_administrative_user' => 'Select an administrative member',
     'administrative_user' => 'Administrative Member',
-    'subject' => 'Subject',
+    'subject' => 'Replace',
     'not_specified' => 'Not specified',
     'subject_information' => 'Subject Information',
+    
+    // Replacement
+    'replacement' => 'Replacement',
+    'replaceur' => 'Replacement',
+    'remplaçant' => 'Replacement',
+    'select_replacement' => 'Select a replacement',
+    'select_replaceur' => 'Select a replacement',
+    'select_replacement_driver' => 'Select a replacement driver',
+    'select_replaceur_driver' => 'Select a replacement driver',
+    'select_replacement_administrative' => 'Select a replacement administrative member',
+    'select_replaceur_administrative' => 'Select a replacement administrative member',
+    'replacement_information' => 'Replacement Information',
+    'informations_replaceur' => 'Replacement Information',
+    'replacement_must_match_subject' => 'Replacement type must match subject type (driver → driver, administrative → administrative).',
+    'le_replaceur_doit_correspondre_au_sujet' => 'Replacement type must match subject type.',
+    'replacement_required' => 'Replacement required',
+    'replaceur_requis' => 'Replacement required',
+    'replacement_help' => 'Select the person who will replace the subject (optional).',
+    'replacement_cannot_be_same_as_subject' => 'Replacement cannot be the same person as the subject.',
+    'replacement_cannot_be_admin' => 'Replacement cannot be an administrator.',
 ];
 
 

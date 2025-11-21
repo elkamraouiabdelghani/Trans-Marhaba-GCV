@@ -16,6 +16,8 @@ return new class extends Migration
             $table->foreignId('changement_type_id')->constrained('changement_types')->onDelete('restrict');
             $table->string('subject_type')->nullable();
             $table->unsignedBigInteger('subject_id')->nullable();
+            $table->string('replacement_type')->nullable();
+            $table->unsignedBigInteger('replacement_id')->nullable();
             $table->date('date_changement');
             $table->text('description_changement');
             $table->enum('responsable_changement', ['RH', 'DGA', 'QHSE']);

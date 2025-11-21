@@ -18,6 +18,8 @@ class Changement extends Model
         'changement_type_id',
         'subject_type',
         'subject_id',
+        'replacement_type',
+        'replacement_id',
         'date_changement',
         'description_changement',
         'responsable_changement',
@@ -54,6 +56,14 @@ class Changement extends Model
     public function subject(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    /**
+     * Get the replacement (Driver or User) for this changement
+     */
+    public function replacement(): MorphTo
+    {
+        return $this->morphTo('replacement');
     }
 
     /**
@@ -257,6 +267,52 @@ class Changement extends Model
 
         if ($this->isForAdministrative()) {
             return $subject->name ?? null;
+        }
+
+        return null;
+    }
+
+    /**
+     * Get the replacement (Driver or User) instance
+     */
+    public function getReplacement()
+    {
+        return $this->replacement;
+    }
+
+    /**
+     * Check if replacement is a driver
+     */
+    public function isReplacementDriver(): bool
+    {
+        return $this->replacement_type === Driver::class;
+    }
+
+    /**
+     * Check if replacement is an administrative user
+     */
+    public function isReplacementAdministrative(): bool
+    {
+        return $this->replacement_type === User::class;
+    }
+
+    /**
+     * Get the name of the replacement
+     */
+    public function getReplacementName(): ?string
+    {
+        $replacement = $this->getReplacement();
+        
+        if (!$replacement) {
+            return null;
+        }
+
+        if ($this->isReplacementDriver()) {
+            return $replacement->full_name ?? null;
+        }
+
+        if ($this->isReplacementAdministrative()) {
+            return $replacement->name ?? null;
         }
 
         return null;
