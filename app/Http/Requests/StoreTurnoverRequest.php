@@ -22,11 +22,11 @@ class StoreTurnoverRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'departure_date' => ['required', 'date'],
+            'departure_date' => ['nullable', 'date'],
             'flotte' => ['nullable', 'string', 'max:255'],
             'driver_id' => ['nullable', 'exists:drivers,id', 'required_without:user_id'],
             'user_id' => ['nullable', 'exists:users,id', 'required_without:driver_id'],
-            'departure_reason' => ['required', 'string', 'max:65535'],
+            'departure_reason' => ['nullable', 'string', 'max:65535'],
             'interview_notes' => ['nullable', 'string', 'max:65535'],
             'interviewed_by' => ['nullable', 'string', 'max:255'],
             'observations' => ['nullable', 'string', 'max:65535'],

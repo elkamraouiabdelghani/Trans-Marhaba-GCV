@@ -4,22 +4,42 @@
     <meta charset="UTF-8">
     <title>{{ __('messages.exit_interview') }}</title>
     <style>
+        @font-face {
+            font-family: 'NotoNaskhArabic';
+            src: url("{{ public_path('fonts/NotoNaskhArabic-Regular.ttf') }}") format('truetype');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
         @page { margin: 40px 30px; }
-        body { font-family: DejaVu Sans, sans-serif; font-size: 12px; color: #1f2937; }
+        body { font-family: 'DejaVu Sans', sans-serif; font-size: 12px; color: #1f2937; }
         .header { text-align: center; margin-bottom: 10px; }
         .header h1 { font-size: 24px; color: #166534; margin: 0; }
         .sub-title { color: #166534; font-size: 18px; margin: 0; }
         .card { border: 1px solid #166534; padding: 12px; margin-bottom: 16px; }
         .section-title { background-color: #166534; color: #fff; padding: 6px 10px; font-weight: bold; margin: 20px 0 10px; }
         table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
-        th, td { border: 1px solid #94a3b8; padding: 6px 8px; }
+        th, td { border: 1px solid #94a3b8; padding: 6px 8px; font-family: 'DejaVu Sans', sans-serif; }
         th { background-color: #e2f3e9; font-weight: bold; text-align: center; }
         .text-end { text-align: right; }
         .text-center { text-align: center; }
         .text-sm { font-size: 11px; }
         .text-muted { color: #6b7280; }
         .info-table td { width: 33%; }
-        .rtl { direction: rtl; text-align: right; font-weight: bold; }
+        .rtl {
+            direction: rtl;
+            unicode-bidi: bidi-override;
+            text-align: center;
+            font-family: 'NotoNaskhArabic', 'DejaVu Sans', sans-serif;
+            display: block;
+        }
+        td.rtl {
+            direction: rtl;
+            unicode-bidi: bidi-override;
+            text-align: right;
+            font-weight: bold;
+            font-family: 'NotoNaskhArabic', 'DejaVu Sans', sans-serif;
+        }
         .rating-dot { display: inline-block; width: 14px; height: 14px; border-radius: 50%; border: 1px solid #166534; }
         .rating-dot.filled { background-color: #166534; }
         .page-break { page-break-after: always; }
@@ -35,7 +55,7 @@
 @endphp
 <body>
     <div class="header">
-        <h2 class="sub-title">{{ __('messages.exit_interview_ar_title') }}</h2>
+        <h2 class="sub-title rtl" dir="rtl">{{ $exitInterviewTitleAr ?? __('messages.exit_interview_ar_title') }}</h2>
         <h1>{{ __('messages.exit_interview') }}</h1>
     </div>
 
@@ -84,7 +104,7 @@
                 <tr>
                     <td class="text-center">{{ $question['number'] }}</td>
                     <td>{{ $question['text']['en'] }}</td>
-                    <td class="rtl">{{ $question['text']['ar'] }}</td>
+                    <td class="rtl" dir="rtl">{{ $question['text']['ar_shaped'] ?? $question['text']['ar'] }}</td>
                     @foreach ($ratingScale as $value)
                         <td class="text-center">
                             <span class="rating-dot {{ ($answers[$question['key']] ?? null) == $value ? 'filled' : '' }}"></span>
@@ -114,7 +134,7 @@
                 <tr>
                     <td class="text-center">{{ $question['number'] }}</td>
                     <td>{{ $question['text']['en'] }}</td>
-                    <td class="rtl">{{ $question['text']['ar'] }}</td>
+                    <td class="rtl" dir="rtl">{{ $question['text']['ar_shaped'] ?? $question['text']['ar'] }}</td>
                     @foreach ($ratingScale as $value)
                         <td class="text-center">
                             <span class="rating-dot {{ ($answers[$question['key']] ?? null) == $value ? 'filled' : '' }}"></span>
@@ -142,7 +162,7 @@
                 <tr>
                     <td class="text-center">{{ $question['number'] }}</td>
                     <td>{{ $question['text']['en'] }}</td>
-                    <td class="rtl">{{ $question['text']['ar'] }}</td>
+                    <td class="rtl" dir="rtl">{{ $question['text']['ar_shaped'] ?? $question['text']['ar'] }}</td>
                     <td style="height: 80px; vertical-align: top;">{!! nl2br(e($answers[$question['key']] ?? '')) !!}</td>
                 </tr>
             @endforeach

@@ -1344,6 +1344,7 @@ return [
     'terminated_drivers_count' => '{0} No terminated drivers|{1} :count terminated driver|[2,*] :count terminated drivers',
     'alerts' => 'Alerts',
     'formation_alerts' => 'Formation Alerts',
+    'dg_dga_signature' => 'DG/DGA Signature',
 ];
 
 

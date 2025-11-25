@@ -1333,4 +1333,5 @@ return [
     'terminated' => 'Terminé',
     'alerts' => 'Alertes',
     'formation_alerts' => 'Alertes de formation',
+    'dg_dga_signature' => 'Signature DG/DGA',
 ];

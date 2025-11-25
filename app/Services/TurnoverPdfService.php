@@ -6,6 +6,7 @@ use App\Models\Turnover;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use ArPHP\I18N\Arabic;
 
 class TurnoverPdfService
 {
@@ -18,7 +19,13 @@ class TurnoverPdfService
     {
         $turnover->loadMissing(['driver', 'user', 'confirmedBy']);
 
-        $questions = config('turnover_interview.questions', []);
+        $questionsConfig = config('turnover_interview.questions', []);
+        $arabicShaper = new Arabic();
+
+        $questions = array_map(function (array $question) use ($arabicShaper) {
+            $question['text']['ar_shaped'] = $arabicShaper->utf8Glyphs($question['text']['ar'] ?? '');
+            return $question;
+        }, $questionsConfig);
         $ratingScale = config('turnover_interview.rating_scale', [1, 2, 3, 4, 5]);
 
         $interviewData = $turnover->interview_answers ?? [];
@@ -57,7 +64,12 @@ class TurnoverPdfService
             'employeeName' => $employeeName,
             'interviewDate' => $interviewDate,
             'employeeSignature' => $employeeSignature,
-        ])->setPaper('a4', 'portrait');
+            'exitInterviewTitleAr' => $arabicShaper->utf8Glyphs(__('messages.exit_interview_ar_title')),
+        ])
+            ->setPaper('a4', 'portrait')
+            ->setOption('isHtml5ParserEnabled', true)
+            ->setOption('isRemoteEnabled', true)
+            ->setOption('defaultFont', 'DejaVu Sans');
 
         $timestamp = now()->format('YmdHis');
         $fileName = sprintf('turnover-%d-exit-interview-%s.pdf', $turnover->id, $timestamp);

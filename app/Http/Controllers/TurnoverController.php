@@ -320,7 +320,7 @@ class TurnoverController extends Controller
 
         $fileName = sprintf('exit-interview-%d.pdf', $turnover->id);
 
-        return Storage::disk('uploads')->download($turnover->turnover_pdf_path, $fileName);
+        return response()->download(Storage::disk('uploads')->path($turnover->turnover_pdf_path), $fileName);
     }
 
     /**

@@ -87,7 +87,7 @@
                                        name="interview_date"
                                        class="form-control @error('interview_date') is-invalid @enderror"
                                        value="{{ old('interview_date', $meta['interview_date']) }}"
-                                       required>
+                                       >
                                 @error('interview_date')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -166,8 +166,7 @@
                                                                type="radio"
                                                                name="{{ $question['key'] }}"
                                                                value="{{ $rate }}"
-                                                               {{ (string) old($question['key'], $answers[$question['key']] ?? '') === (string) $rate ? 'checked' : '' }}
-                                                               required>
+                                                               {{ (string) old($question['key'], $answers[$question['key']] ?? '') === (string) $rate ? 'checked' : '' }}>
                                                         <label class="form-check-label">{{ $rate }}</label>
                                                     </div>
                                                 </td>
@@ -204,7 +203,7 @@
                                                                    name="{{ $question['key'] }}"
                                                                    value="{{ $rate }}"
                                                                    {{ (string) old($question['key'], $answers[$question['key']] ?? '') === (string) $rate ? 'checked' : '' }}
-                                                                   required>
+                                                                   >
                                                             <label class="form-check-label" for="{{ $question['key'] }}_{{ $rate }}">{{ $rate }}</label>
                                                         </div>
                                                     @endforeach
@@ -248,7 +247,7 @@
                                        class="form-control @error('employee_signature') is-invalid @enderror"
                                        name="employee_signature"
                                        value="{{ old('employee_signature', $meta['employee_signature']) }}"
-                                       required>
+                                       >
                                 @error('employee_signature')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -259,7 +258,7 @@
                                        class="form-control @error('employee_name') is-invalid @enderror"
                                        name="employee_name"
                                        value="{{ old('employee_name', $meta['employee_name']) }}"
-                                       required>
+                                       >
                                 @error('employee_name')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
