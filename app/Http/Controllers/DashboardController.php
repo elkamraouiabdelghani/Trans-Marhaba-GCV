@@ -6,6 +6,7 @@ use App\Models\Driver;
 use App\Models\Formation;
 use App\Models\TbtFormation;
 use App\Models\CoachingSession;
+use App\Models\DriverViolation;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -74,6 +75,38 @@ class DashboardController extends Controller
             ->whereMonth('date', $currentMonth)
             ->whereIn('status', ['planned', 'in_progress', 'completed'])
             ->get();
+
+        $rangeStartInput = $request->input('from');
+        $rangeEndInput = $request->input('to');
+        $defaultRangeStart = Carbon::now()->startOfWeek(Carbon::MONDAY);
+        $defaultRangeEnd = Carbon::now()->endOfWeek(Carbon::SUNDAY);
+
+        $rangeStart = $defaultRangeStart->copy();
+        $rangeEnd = $defaultRangeEnd->copy();
+
+        if ($rangeStartInput) {
+            try {
+                $rangeStart = Carbon::createFromFormat('Y-m-d', $rangeStartInput)->startOfDay();
+            } catch (\Exception $e) {
+                // keep default
+            }
+        }
+
+        if ($rangeEndInput) {
+            try {
+                $rangeEnd = Carbon::createFromFormat('Y-m-d', $rangeEndInput)->endOfDay();
+            } catch (\Exception $e) {
+                // keep default
+            }
+        }
+
+        if ($rangeStart->gt($rangeEnd)) {
+            [$rangeStart, $rangeEnd] = [$rangeEnd->copy()->startOfDay(), $rangeStart->copy()->endOfDay()];
+        }
+
+        $violationsInRange = DriverViolation::query()
+            ->whereBetween('violation_date', [$rangeStart->toDateString(), $rangeEnd->toDateString()])
+            ->count();
 
         $calendarEvents = collect()
             ->merge(
@@ -200,6 +233,9 @@ class DashboardController extends Controller
             'monthOptions' => $monthOptions,
             'calendarWeeks' => $calendarWeeks,
             'weekdayLabels' => $weekdayLabels,
+            'dashboardRangeStart' => $rangeStart,
+            'dashboardRangeEnd' => $rangeEnd,
+            'violationsInRange' => $violationsInRange,
         ];
     }
 }

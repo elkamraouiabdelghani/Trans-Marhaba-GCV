@@ -22,36 +22,52 @@
                 </div>
             </div>
             <div class="col-xl-3 col-lg-6 col-md-6">
-                <div class="card border-0 shadow-sm h-100">
-                    <div class="card-body p-4">
-                        <div class="d-flex align-items-center">
-                            <div class="bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 60px; height: 60px;">
-                                <i class="bi bi-check-circle text-success fs-4"></i>
-                            </div>
-                            <div class="flex-grow-1">
-                                <h6 class="text-muted mb-1">{{ __('messages.active') }}</h6>
-                                <h3 class="mb-0 fw-bold text-dark">{{ $active ?? 0 }}</h3>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-xl-3 col-lg-6 col-md-6">
-                <div class="card border-0 shadow-sm h-100">
-                    <div class="card-body p-4">
-                        <div class="d-flex align-items-center">
-                            <div class="bg-danger bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 60px; height: 60px;">
-                                <i class="bi bi-x-circle text-danger fs-4"></i>
-                            </div>
-                            <div class="flex-grow-1">
-                                <h6 class="text-muted mb-1">{{ __('messages.inactive') }}</h6>
-                                <h3 class="mb-0 fw-bold text-dark">{{ $inactive ?? 0 }}</h3>
+                @php
+                    $activeCardParams = array_filter([
+                        'flotte_id' => $flotteId,
+                        'status' => $statusFilter === 'active' ? null : 'active',
+                    ]);
+                @endphp
+                <a href="{{ route('drivers.index', $activeCardParams) }}" class="text-decoration-none">
+                    <div class="card border-0 shadow-sm h-100 {{ $statusFilter === 'active' ? 'border-2 border-success' : '' }}">
+                        <div class="card-body p-4">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 60px; height: 60px;">
+                                    <i class="bi bi-check-circle text-success fs-4"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h6 class="text-muted mb-1">{{ __('messages.active') }}</h6>
+                                    <h3 class="mb-0 fw-bold text-dark">{{ $active ?? 0 }}</h3>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
+                </a>
             </div>
             <div class="col-xl-3 col-lg-6 col-md-6">
+                @php
+                    $inactiveCardParams = array_filter([
+                        'flotte_id' => $flotteId,
+                        'status' => $statusFilter === 'inactive' ? null : 'inactive',
+                    ]);
+                @endphp
+                <a href="{{ route('drivers.index', $inactiveCardParams) }}" class="text-decoration-none">
+                    <div class="card border-0 shadow-sm h-100 {{ $statusFilter === 'inactive' ? 'border-2 border-danger' : '' }}">
+                        <div class="card-body p-4">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-danger bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 60px; height: 60px;">
+                                    <i class="bi bi-x-circle text-danger fs-4"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h6 class="text-muted mb-1">{{ __('messages.inactive') }}</h6>
+                                    <h3 class="mb-0 fw-bold text-dark">{{ $inactive ?? 0 }}</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            {{-- <div class="col-xl-3 col-lg-6 col-md-6">
                 <a href="{{ route('drivers.alerts') }}" class="text-decoration-none">
                     <div class="card border-0 shadow-sm h-100 position-relative overflow-hidden">
                         <div class="card-body p-4">
@@ -62,6 +78,24 @@
                                 <div class="flex-grow-1">
                                     <h6 class="text-muted mb-1">{{ __('messages.drivers_with_alerts') }}</h6>
                                     <h3 class="mb-0 fw-bold text-dark">{{ $driversWithAlerts ?? 0 }}</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <span class="stretched-link"></span>
+                    </div>
+                </a>
+            </div> --}}
+            <div class="col-xl-3 col-lg-6 col-md-6">
+                <a href="{{ route('drivers.terminated') }}" class="text-decoration-none">
+                    <div class="card border-0 shadow-sm h-100 position-relative overflow-hidden">
+                        <div class="card-body p-4">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-dark bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 60px; height: 60px;">
+                                    <i class="bi bi-person-x text-dark fs-4"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h6 class="text-muted mb-1">{{ __('messages.terminated') }}</h6>
+                                    <h3 class="mb-0 fw-bold text-dark">{{ $terminated ?? 0 }}</h3>
                                 </div>
                             </div>
                         </div>
@@ -79,8 +113,14 @@
                         <i class="bi bi-list-ul me-2 text-primary"></i>
                         {{ __('messages.drivers_page_title') }}
                     </h5>
-                    <div class="d-flex gap-2">
-                        <div class="col-md-12">
+                @php
+                    $driverExportParams = array_filter([
+                        'flotte_id' => $flotteId,
+                        'status' => $statusFilter,
+                    ]);
+                @endphp
+                <div class="d-flex flex-column flex-md-row gap-3 align-items-md-center">
+                        <div class="col-md-12 col-lg-auto">
                             <div class="input-group input-group-sm">
                                 <span class="input-group-text">
                                     <i class="bi bi-search"></i>
@@ -89,6 +129,26 @@
                             </div>
                             <span id="driverSearchCount" class="text-muted small mt-2"></span>
                         </div>
+                        <form method="GET" action="{{ route('drivers.index') }}" class="d-flex gap-2 align-items-center">
+                            <div class="input-group input-group-sm" style="min-width: 150px;">
+                                <select class="form-select" id="flotteFilter" name="flotte_id" onchange="this.form.submit()">
+                                    <option value="">{{ __('messages.all_flottes') }}</option>
+                                    @foreach($flottes as $flotte)
+                                        <option value="{{ $flotte->id }}" @selected((string)($flotteId ?? '') === (string) $flotte->id)>
+                                            {{ $flotte->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            @if($flotteId)
+                                <a href="{{ route('drivers.index') }}" class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-x-circle"></i>
+                                </a>
+                            @endif
+                        </form>
+                        <a href="{{ route('drivers.export', $driverExportParams) }}" class="btn btn-sm btn-success">
+                            <i class="bi bi-download me-1"></i>{{ __('messages.export_drivers') }}
+                        </a>
                     </div>
                 </div>
             </div>
@@ -107,7 +167,7 @@
                         </thead>
                         <tbody>
                             @forelse($drivers ?? [] as $driver)
-                                <tr class="border-bottom">
+                                <tr class="border-bottom driver-row" data-driver-url="{{ route('drivers.show', $driver) }}" style="cursor: pointer;">
                                     <td class="py-3 px-4">
                                         <div class="d-flex align-items-center">
                                             <div class="bg-primary bg-opacity-10 rounded-circle px-2 py-1 me-3">
@@ -161,10 +221,7 @@
                                     <td class="py-3 px-4">
                                         @if($driver->flotte && $driver->flotte->name)
                                             <div class="d-flex align-items-center">
-                                                <div class="bg-info bg-opacity-10 rounded-circle px-2 py-1 me-2">
-                                                    <i class="bi bi-building text-info"></i>
-                                                </div>
-                                                <span class="text-info">
+                                                <span class="text-primary">
                                                     <strong>{{ $driver->flotte->name }}</strong>
                                                 </span>
                                             </div>
@@ -179,37 +236,19 @@
                                             $statusColors = [
                                                 'active' => 'success',
                                                 'actif' => 'success',
-                                                'enabled' => 'success',
-                                                'enable' => 'success',
-                                                '1' => 'success',
-                                                'true' => 'success',
-                                                'yes' => 'success',
                                                 'inactive' => 'secondary',
                                                 'inactif' => 'secondary',
-                                                'disabled' => 'secondary',
-                                                'disable' => 'secondary',
-                                                'deactive' => 'secondary',
-                                                '0' => 'secondary',
-                                                'false' => 'secondary',
-                                                'no' => 'secondary',
+                                                'suspended' => 'warning',
+                                                'terminated' => 'danger',
                                             ];
                                             $color = $statusColors[$statusLower] ?? 'secondary';
                                             $statusLabels = [
                                                 'active' => __('messages.active'),
                                                 'actif' => __('messages.active'),
-                                                'enabled' => __('messages.active'),
-                                                'enable' => __('messages.active'),
-                                                '1' => __('messages.active'),
-                                                'true' => __('messages.active'),
-                                                'yes' => __('messages.active'),
                                                 'inactive' => __('messages.inactive'),
                                                 'inactif' => __('messages.inactive'),
-                                                'disabled' => __('messages.inactive'),
-                                                'disable' => __('messages.inactive'),
-                                                'deactive' => __('messages.inactive'),
-                                                '0' => __('messages.inactive'),
-                                                'false' => __('messages.inactive'),
-                                                'no' => __('messages.inactive'),
+                                                'suspended' => __('messages.suspended'),
+                                                'terminated' => __('messages.terminated'),
                                             ];
                                             $label = $statusLabels[$statusLower] ?? __('messages.inactive');
                                         @endphp
@@ -219,10 +258,7 @@
                                     </td>
                                     <td class="py-3 px-4 text-center">
                                         <div class="btn-group" role="group">
-                                            <a href="{{ route('drivers.show', $driver) }}" class="btn btn-outline-success btn-sm" title="{{ __('messages.view') }}">
-                                                <i class="bi bi-eye"></i>
-                                            </a>
-                                            <a href="{{ route('drivers.edit', $driver) }}" class="btn btn-outline-warning btn-sm" title="{{ __('messages.edit') }}">
+                                            <a href="{{ route('drivers.edit', $driver) }}" class="btn btn-outline-warning btn-sm" title="{{ __('messages.edit') }}" onclick="event.stopPropagation();">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
                                             @if(!$driver->is_integrated)
@@ -292,6 +328,15 @@
                     timer = setTimeout(() => filterDrivers(val), 120);
                 });
             }
+
+            document.querySelectorAll('.driver-row').forEach(row => {
+                row.addEventListener('click', function() {
+                    const url = this.dataset.driverUrl;
+                    if (url) {
+                        window.location.href = url;
+                    }
+                });
+            });
         });
     </script>
 

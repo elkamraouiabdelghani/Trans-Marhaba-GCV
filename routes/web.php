@@ -17,6 +17,8 @@ use App\Http\Controllers\SousCretaireController;
 use App\Http\Controllers\ChangementController;
 use App\Http\Controllers\CoachingCabineController;
 use App\Http\Controllers\TbtFormationController;
+use App\Http\Controllers\ViolationTypeController;
+use App\Http\Controllers\DriverViolationController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Session;
 
@@ -46,8 +48,11 @@ Route::middleware('auth')->group(function () {
 
     // Drivers
     Route::get('/drivers', [DriversController::class, 'index'])->name('drivers.index');
+    Route::get('/drivers/export', [DriversController::class, 'export'])->name('drivers.export');
+    Route::get('/drivers/terminated', [DriversController::class, 'terminated'])->name('drivers.terminated');
     Route::get('/drivers/alerts', [DriversController::class, 'alerts'])->name('drivers.alerts');
     Route::get('/drivers/alerts/export', [DriversController::class, 'exportAlerts'])->name('drivers.alerts.export');
+    Route::post('/drivers/{driver}/terminate', [DriversController::class, 'terminate'])->name('drivers.terminate');
     Route::get('/drivers/{driver}', [DriversController::class, 'show'])->name('drivers.show');
     Route::get('/drivers/{driver}/edit', [DriversController::class, 'edit'])->name('drivers.edit');
     Route::patch('/drivers/{driver}', [DriversController::class, 'update'])->name('drivers.update');
@@ -59,6 +64,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/drivers/{driver}/activities', [DriversController::class, 'storeActivity'])->name('drivers.activities.store');
     Route::get('/drivers/{driver}/activities/export-pdf', [DriversController::class, 'exportTimelinePDF'])->name('drivers.activities.export-pdf');
     Route::get('/drivers/{driver}/activities/export-csv', [DriversController::class, 'exportTimelineCSV'])->name('drivers.activities.export-csv');
+    Route::get('/drivers/{driver}/violations/export-pdf', [DriversController::class, 'exportViolationsPDF'])->name('drivers.violations.export-pdf');
+    Route::get('/drivers/{driver}/violations/export-csv', [DriversController::class, 'exportViolationsCSV'])->name('drivers.violations.export-csv');
 
     // Formation Types & Categories
     Route::get('/formations/planning', [FormationController::class, 'planning'])->name('formations.planning');
@@ -101,6 +108,32 @@ Route::middleware('auth')->group(function () {
     Route::post('driver-concerns/{driver_concern}/complete', [DriverConcernController::class, 'complete'])
         ->name('concerns.driver-concerns.complete');
 
+    // Violation Types
+    Route::resource('violation-types', ViolationTypeController::class);
+
+    // Driver Violations
+    Route::resource('driver-violations', DriverViolationController::class)->names([
+        'index' => 'violations.index',
+        'create' => 'violations.create',
+        'store' => 'violations.store',
+        'show' => 'violations.show',
+        'edit' => 'violations.edit',
+        'update' => 'violations.update',
+        'destroy' => 'violations.destroy',
+    ]);
+    Route::post('/driver-violations/{driverViolation}/mark-confirmed', [DriverViolationController::class, 'markAsConfirmed'])
+        ->name('violations.mark-confirmed');
+    Route::post('/driver-violations/{driverViolation}/mark-rejected', [DriverViolationController::class, 'markAsRejected'])
+        ->name('violations.mark-rejected');
+    Route::post('/driver-violations/{driverViolation}/update-status', [DriverViolationController::class, 'updateStatus'])
+        ->name('violations.update-status');
+    Route::get('/driver-violations/{driverViolation}/document', [DriverViolationController::class, 'downloadDocument'])
+        ->name('violations.document');
+    Route::get('/driver-violations/{driverViolation}/action-plan/evidence', [DriverViolationController::class, 'downloadActionEvidence'])
+        ->name('violations.action-plan.evidence');
+    Route::get('/driver-violations/{driverViolation}/report', [DriverViolationController::class, 'downloadReport'])
+        ->name('violations.report');
+
     // Organigram
     Route::get('organigram/download', [OrganigramMemberController::class, 'download'])->name('organigram.download');
     Route::resource('organigram', OrganigramMemberController::class)
@@ -137,8 +170,11 @@ Route::middleware('auth')->group(function () {
     
     // Administration Roles
     Route::get('/administration-roles', [AdministrationRoleController::class, 'index'])->name('administration-roles.index');
+    Route::get('/administration-roles/export', [AdministrationRoleController::class, 'export'])->name('administration-roles.export');
+    Route::get('/administration-roles/terminated', [AdministrationRoleController::class, 'terminated'])->name('administration-roles.terminated');
     Route::get('/administration-roles/{user}', [AdministrationRoleController::class, 'show'])->name('administration-roles.show');
     Route::post('/administration-roles/{user}/terminate', [AdministrationRoleController::class, 'terminate'])->name('administration-roles.terminate');
+    Route::post('/administration-roles/{user}/update-status', [AdministrationRoleController::class, 'updateStatus'])->name('administration-roles.update-status');
 
     // TBT Formations
     Route::get('/tbt-formations/planning', [TbtFormationController::class, 'planning'])->name('tbt-formations.planning');

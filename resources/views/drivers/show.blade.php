@@ -4,125 +4,177 @@
     </x-slot>
 
     <div class="container-fluid py-4">
+        <!-- Breadcrumb -->
+        <nav aria-label="breadcrumb" class="p-3 mb-4 rounded-3 shadow-sm bg-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">{{ __('messages.dashboard') }}</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('drivers.index') }}">{{ __('messages.drivers') }}</a></li>
+                    <li class="breadcrumb-item active">{{ $driver->full_name ?? __('messages.driver_number') . $driver->id }}</li>
+                </ol>
+                
+                <div class="d-flex gap-2">
+                    <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-arrow-left me-1"></i>
+                        {{ __('messages.back') }}
+                    </a>
+                </div>
+            </div>
+        </nav>
 
-        <!-- Driver Information Box -->
-        <div class="card border-0 shadow-sm mb-4">
-            <nav aria-label="breadcrumb" class="p-3">
-                <div class="d-flex justify-content-between align-items-center">
-                    <ol class="breadcrumb mb-0">
-                        <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">{{ __('messages.dashboard') }}</a></li>
-                        <li class="breadcrumb-item"><a href="{{ route('drivers.index') }}">{{ __('messages.drivers') }}</a></li>
-                        <li class="breadcrumb-item active">{{ $driver->full_name ?? __('messages.driver_number') . $driver->id }}</li>
-                    </ol>
-                    
-                    <div class="d-flex gap-2">
-                        <a href="{{ route('drivers.index') }}" class="btn btn-outline-secondary btn-sm">
-                            <i class="bi bi-arrow-left me-1"></i>
-                            {{ __('messages.back') }}
-                        </a>
-                        {{-- add a button to can access ti the integration process of the driver --}}
-                        @if($driver->integrationCandidate)
-                            <a href="{{ route('integrations.show', $driver->integrationCandidate) }}" class="btn btn-outline-primary btn-sm">
-                                <i class="bi bi-person-check me-1"></i>
-                                {{ __('messages.integration_process') }}
-                            </a>
-                        @endif
-                        <a href="{{ route('drivers.edit', $driver) }}" class="btn btn-warning btn-sm">
-                            <i class="bi bi-pencil me-1"></i>
-                            {{ __('messages.edit_driver') ?? __('messages.edit') }}
-                        </a>
+        @php
+            $violationExportParams = array_filter([
+                'violation_type_id' => $violationFilters['violation_type_id'] ?? null,
+                'status' => $violationFilters['status'] ?? null,
+                'date_from' => $violationFilters['date_from'] ?? $dateFrom,
+                'date_to' => $violationFilters['date_to'] ?? $dateTo,
+            ], fn($value) => $value !== null && $value !== '');
+        @endphp
+
+        <div class="row g-4 mb-4">
+            <div class="col-12 col-lg-8 col-xl-9">
+                <!-- Driver Information Box -->
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body p-4">
+                        <div class="row align-items-center">
+                            <div class="col-md-2 text-center mb-3 mb-md-0">
+                                <div class="position-relative d-inline-block">
+                                    <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style="width: 120px; height: 120px;">
+                                        <i class="bi bi-person-fill text-primary" style="font-size: 4rem;"></i>
+                                    </div>
+                                    @if(method_exists($driver, 'isActive') && $driver->isActive())
+                                        <span class="badge bg-success position-absolute top-0 end-0 rounded-circle d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; padding: 0;">
+                                            <i class="bi bi-check"></i>
+                                        </span>
+                                    @elseif(strtolower((string)($driver->status ?? $driver->statu ?? $driver->state ?? '')) === 'terminated')
+                                        <span class="badge bg-danger position-absolute top-0 end-0 rounded-circle d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; padding: 0;">
+                                            <i class="bi bi-x-lg"></i>
+                                        </span>
+                                    @endif
+                                </div>
+                            </div>
+                            <div class="col-md-10">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <h3 class="mb-2 text-dark fw-bold">{{ $driver->full_name ?? __('messages.driver_number') . $driver->id }}</h3>
+                                        <div class="row g-3">
+                                            <div class="col-6">
+                                                <small class="text-muted d-block">{{ __('messages.license_number') }}</small>
+                                                <strong class="text-dark">{{ $driver->license_number ?? 'N/A' }}</strong>
+                                            </div>
+                                            <div class="col-6">
+                                                <small class="text-muted d-block">{{ __('messages.phone') }}</small>
+                                                <span class="text-dark">
+                                                    {{ $driver->phone ?? $driver->phone_number ?? $driver->phone_numbre ?? 'N/A' }}
+                                                </span>
+                                            </div>
+                                            <div class="col-6">
+                                                <small class="text-muted d-block">{{ __('messages.assigned_vehicle') }}</small>
+                                                <span class="text-dark">
+                                                    @if($driver->assignedVehicle && $driver->assignedVehicle->license_plate)
+                                                        {{ $driver->assignedVehicle->license_plate }}
+                                                    @else
+                                                        {{ $driver->vehicle_matricule ?? $driver->matricule ?? __('messages.not_assigned') }}
+                                                    @endif
+                                                </span>
+                                            </div>
+                                            <div class="col-6">
+                                                <small class="text-muted d-block">{{ __('messages.flotte') }}</small>
+                                                <span class="text-dark">
+                                                    {{ $driver->flotte->name ?? 'N/A' }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <div class="bg-info bg-opacity-10 rounded p-3 text-center h-100">
+                                                    <i class="bi bi-clock-history text-info fs-4 d-block mb-2"></i>
+                                                    <small class="text-muted d-block">{{ __('messages.driving_hours') }}</small>
+                                                    <h4 class="mb-0 fw-bold text-dark">{{ $totalDrivingHoursThisWeek }}h</h4>
+                                                    <small class="text-muted">{{ __('messages.this_week') }}</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="bg-danger bg-opacity-10 rounded p-3 text-center h-100">
+                                                    <i class="bi bi-exclamation-triangle text-danger fs-4 d-block mb-2"></i>
+                                                    <small class="text-muted d-block">{{ __('messages.total_violations') }}</small>
+                                                    <h4 class="mb-0 fw-bold text-dark">{{ $totalViolations }}</h4>
+                                                    <small class="text-muted">{{ __('messages.total') }}</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                @if($driver->terminated_cause || $driver->terminated_date)
+                                    <div class="alert alert-danger bg-danger bg-opacity-10 border-0 mt-3">
+                                        <div class="d-flex align-items-start">
+                                            <i class="bi bi-info-circle me-2 fs-4"></i>
+                                            <div>
+                                                <p class="mb-1 fw-semibold text-danger text-uppercase small">
+                                                    {{ __('messages.terminated') }}
+                                                    @if($driver->terminated_date)
+                                                        · {{ __('messages.terminated_date') }}: {{ optional($driver->terminated_date)->format('d/m/Y') }}
+                                                    @endif
+                                                </p>
+                                                @if($driver->terminated_cause)
+                                                    <p class="mb-0 text-dark">{{ $driver->terminated_cause }}</p>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </nav>
+            </div>
 
-            <hr class="my-2">
-
-            <div class="card-body p-4">
-                <div class="row align-items-center">
-                    <div class="col-md-2 text-center mb-3 mb-md-0">
-                        <div class="position-relative d-inline-block">
-                            <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style="width: 120px; height: 120px;">
-                                <i class="bi bi-person-fill text-primary" style="font-size: 4rem;"></i>
-                            </div>
-                            @if($driver->isActive())
-                                <span class="badge bg-success position-absolute top-0 end-0 rounded-circle d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; padding: 0;">
-                                    <i class="bi bi-check"></i>
-                                </span>
+            {{-- Quick Actions --}}
+            <div class="col-12 col-lg-4 col-xl-3">
+                <aside class="position-sticky" style="top: 0.5rem;">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white border-0 py-3">
+                            <h6 class="mb-0 text-dark fw-bold text-uppercase small">
+                                <i class="bi bi-lightning-charge text-warning me-2"></i>
+                                {{ __('messages.quick_actions') }}
+                            </h6>
+                        </div>
+                        <div class="card-body d-grid gap-2">
+                            <a href="{{ route('drivers.edit', $driver) }}" class="btn btn-warning btn-sm">
+                                <i class="bi bi-pencil me-1"></i>
+                                {{ __('messages.edit_driver') ?? __('messages.edit') }}
+                            </a>
+                            @if($driver->integrationCandidate)
+                                <a href="{{ route('integrations.show', $driver->integrationCandidate) }}" class="btn btn-primary btn-sm">
+                                    <i class="bi bi-person-check me-1"></i>
+                                    {{ __('messages.integration_process') }}
+                                </a>
+                            @endif
+                            <hr class="my-2">
+                            @php
+                                $driverStatusValue = strtolower((string)($driver->status ?? $driver->statu ?? $driver->state ?? ''));
+                            @endphp
+                            @unless($driverStatusValue === 'terminated')
+                                <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#terminateDriverModal">
+                                    <i class="bi bi-person-x me-1"></i>{{ __('messages.terminate_driver') }}
+                                </button>
+                            @endunless
+                            @if($driverStatusValue !== 'terminated')
+                                <a href="{{ route('violations.create', ['driver_id' => $driver->id]) }}"
+                                class="btn btn-success btn-sm d-flex align-items-center justify-content-center">
+                                    <i class="bi bi-flag-fill me-2"></i>
+                                    {{ __('messages.add') }} {{ __('messages.violation') }}
+                                </a>
+                                <a href="{{ route('drivers.alerts') }}" class="btn btn-warning btn-sm d-flex align-items-center justify-content-center">
+                                    <i class="bi bi-bell me-2"></i>
+                                    {{ __('messages.formation_alerts') }}
+                                </a>
                             @endif
                         </div>
                     </div>
-                    <div class="col-md-10">
-                        <div class="row g-3">
-                            <div class="col-md-3">
-                                <h3 class="mb-2 text-dark fw-bold">{{ $driver->full_name ?? __('messages.driver_number') . $driver->id }}</h3>
-                                <div class="row g-3">
-                                    <div class="col-6">
-                                        <small class="text-muted d-block">{{ __('messages.license_number') }}</small>
-                                        <strong class="text-dark">{{ $driver->license_number ?? 'N/A' }}</strong>
-                                    </div>
-                                    <div class="col-6">
-                                        <small class="text-muted d-block">{{ __('messages.phone') }}</small>
-                                        <span class="text-dark">
-                                            {{ $driver->phone ?? $driver->phone_number ?? $driver->phone_numbre ?? 'N/A' }}
-                                        </span>
-                                    </div>
-                                    <div class="col-6">
-                                        <small class="text-muted d-block">{{ __('messages.assigned_vehicle') }}</small>
-                                        <span class="text-dark">
-                                            @if($driver->assignedVehicle && $driver->assignedVehicle->license_plate)
-                                                {{ $driver->assignedVehicle->license_plate }}
-                                            @else
-                                                {{ $driver->vehicle_matricule ?? $driver->matricule ?? __('messages.not_assigned') }}
-                                            @endif
-                                        </span>
-                                    </div>
-                                    <div class="col-6">
-                                        <small class="text-muted d-block">{{ __('messages.flotte') }}</small>
-                                        <span class="text-dark">
-                                            {{ $driver->flotte->name ?? 'N/A' }}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-9">
-                                <div class="row g-3">
-                                    <div class="col-md-4">
-                                        <div class="bg-warning bg-opacity-10 rounded p-3 text-center h-100">
-                                            <i class="bi bi-bell text-warning fs-4 d-block mb-2"></i>
-                                            <small class="text-muted d-block">{{ __('messages.driver_alerts_total') }}</small>
-                                            <h4 class="mb-0 fw-bold text-dark">
-                                                {{ $criticalAlerts + $warningAlerts }}
-                                            </h4>
-                                            <div class="small text-muted">
-                                                {{ __('messages.driver_alerts_detail', ['critical' => $criticalAlerts, 'warning' => $warningAlerts]) }}
-                                            </div>
-                                            <a href="{{ route('drivers.alerts') }}" class="small fw-semibold text-warning text-decoration-none mt-2 d-inline-block">
-                                                {{ __('messages.view_alerts_overview') }}
-                                                <i class="bi bi-arrow-right-circle ms-1"></i>
-                                            </a>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="bg-info bg-opacity-10 rounded p-3 text-center h-100">
-                                            <i class="bi bi-clock-history text-info fs-4 d-block mb-2"></i>
-                                            <small class="text-muted d-block">{{ __('messages.driving_hours') }}</small>
-                                            <h4 class="mb-0 fw-bold text-dark">{{ $totalDrivingHoursThisWeek }}h</h4>
-                                            <small class="text-muted">{{ __('messages.this_week') }}</small>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="bg-danger bg-opacity-10 rounded p-3 text-center h-100">
-                                            <i class="bi bi-exclamation-triangle text-danger fs-4 d-block mb-2"></i>
-                                            <small class="text-muted d-block">{{ __('messages.total_violations') }}</small>
-                                            <h4 class="mb-0 fw-bold text-dark">{{ $totalViolations }}</h4>
-                                            <small class="text-muted">{{ __('messages.total') }}</small>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                </aside>
             </div>
         </div>
 
@@ -139,39 +191,44 @@
                     <div class="row g-3">
                         <div class="col-md-3">
                             <label class="form-label small text-muted">{{ __('messages.violation_type') }}</label>
-                            <select name="violation_type" class="form-select form-select-sm">
+                            <select name="violation_type_id" class="form-select form-select-sm">
                                 <option value="">{{ __('messages.all_types') }}</option>
-                                @foreach($violationTypes as $key => $label)
-                                    <option value="{{ $key }}" {{ $violationType === $key ? 'selected' : '' }}>
+                                @foreach($violationTypes as $id => $label)
+                                    <option value="{{ $id }}" {{ (string) $violationTypeId === (string) $id ? 'selected' : '' }}>
+                                        {{ $label }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small text-muted">{{ __('messages.status') }}</label>
+                            <select name="status" class="form-select form-select-sm">
+                                <option value="">{{ __('messages.all_status') }}</option>
+                                @foreach($statusOptions as $key => $label)
+                                    <option value="{{ $key }}" {{ $statusFilter === $key ? 'selected' : '' }}>
                                         {{ $label }}
                                     </option>
                                 @endforeach
                             </select>
                         </div>
                         <div class="col-md-2">
-                            <label class="form-label small text-muted">{{ __('messages.severity') }}</label>
-                            <select name="severity" class="form-select form-select-sm">
-                                <option value="">{{ __('messages.all_severities') }}</option>
-                                @foreach($severityOptions as $key => $label)
-                                    <option value="{{ $key }}" {{ $severity === $key ? 'selected' : '' }}>
-                                        {{ $label }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-md-3">
                             <label class="form-label small text-muted">{{ __('messages.date_from') }}</label>
                             <input type="date" name="date_from" class="form-control form-control-sm" value="{{ $dateFrom }}">
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label class="form-label small text-muted">{{ __('messages.date_to') }}</label>
                             <input type="date" name="date_to" class="form-control form-control-sm" value="{{ $dateTo }}">
                         </div>
-                        <div class="col-md-1">
+                        <div class="col-md-2">
                             <label class="form-label small text-muted d-block">&nbsp;</label>
-                            <button type="submit" class="btn btn-primary btn-sm w-100">
-                                <i class="bi bi-search"></i>
-                            </button>
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary btn-sm w-100">
+                                    <i class="bi bi-search"></i>
+                                </button>
+                                <button type="button" class="btn btn-secondary btn-sm w-100" onclick="resetFilters()">
+                                    <i class="bi bi-arrow-counterclockwise"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </form>
@@ -196,100 +253,169 @@
             </div>
         </div>
 
-
         <!-- Violations Table -->
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-white border-0 py-3">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="mb-0 text-dark fw-bold">
+                <div class="d-flex flex-column flex-md-row gap-3 justify-content-between align-items-md-center mb-3">
+                    <h5 class="mb-0 text-dark fw-bold" style="width: 200px;">
                         <i class="bi bi-list-ul me-2 text-primary"></i>
                         {{ __('messages.violations_table') }}
                     </h5>
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-sm btn-outline-primary" onclick="exportViolationsPDF()">
-                            <i class="bi bi-file-pdf me-1"></i> {{ __('messages.export_pdf') }}
-                        </button>
-                        <button class="btn btn-sm btn-outline-success" onclick="exportViolationsCSV()">
-                            <i class="bi bi-file-earmark-spreadsheet me-1"></i> {{ __('messages.export_csv') }}
-                        </button>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-4">
-                        <div class="input-group input-group-sm">
+                    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-md-end gap-2 ms-md-auto w-100 w-md-auto">
+                        <div class="input-group input-group-sm" style="width: 200px;">
                             <span class="input-group-text">
                                 <i class="bi bi-search"></i>
                             </span>
                             <input type="text" class="form-control" id="violationSearch" placeholder="{{ __('messages.search_in_table') }}" onkeyup="searchViolations()">
                         </div>
+                        <div class="d-flex gap-2 justify-content-end flex-wrap">
+                            <a class="btn btn-sm btn-outline-danger"
+                               href="{{ route('drivers.violations.export-pdf', ['driver' => $driver] + $violationExportParams) }}">
+                                <i class="bi bi-file-pdf me-1"></i> {{ __('messages.export_pdf') }}
+                            </a>
+                            <a class="btn btn-sm btn-outline-success"
+                               href="{{ route('drivers.violations.export-csv', ['driver' => $driver] + $violationExportParams) }}">
+                                <i class="bi bi-file-earmark-spreadsheet me-1"></i> {{ __('messages.export_csv') }}
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
             <div class="card-body p-0">
+                @php
+                    $statusLabels = [
+                        'pending' => __('messages.pending'),
+                        'confirmed' => __('messages.confirmed'),
+                        'rejected' => __('messages.rejected'),
+                    ];
+                    $statusBadges = [
+                        'pending' => 'warning',
+                        'confirmed' => 'success',
+                        'rejected' => 'danger',
+                    ];
+                @endphp
                 <div class="table-responsive">
                     <table class="table table-hover mb-0 align-middle" id="violationsTable">
                         <thead class="table-light">
                             <tr>
-                                <th class="border-0 py-3 px-4" style="cursor: pointer;" onclick="sortTable(0)">
-                                    {{ __('messages.date') }} <i class="bi bi-arrow-down-up"></i>
-                                </th>
-                                <th class="border-0 py-3 px-4" style="cursor: pointer;" onclick="sortTable(1)">
-                                    {{ __('messages.time') }} <i class="bi bi-arrow-down-up"></i>
-                                </th>
-                                <th class="border-0 py-3 px-4" style="cursor: pointer;" onclick="sortTable(2)">
-                                    {{ __('messages.type') }} <i class="bi bi-arrow-down-up"></i>
-                                </th>
-                                <th class="border-0 py-3 px-4">{{ __('messages.rule_broken') }}</th>
-                                <th class="border-0 py-3 px-4" style="cursor: pointer;" onclick="sortTable(4)">
-                                    {{ __('messages.severity') }} <i class="bi bi-arrow-down-up"></i>
-                                </th>
+                                <th class="border-0 py-3 px-4">{{ __('messages.violation_date') }}</th>
+                                <th class="border-0 py-3 px-4">{{ __('messages.violation_type') }}</th>
+                                <th class="border-0 py-3 px-4">{{ __('messages.vehicle') }}</th>
                                 <th class="border-0 py-3 px-4">{{ __('messages.location') }}</th>
-                                <th class="border-0 py-3 px-4 text-center">{{ __('messages.action') }}</th>
+                                <th class="border-0 py-3 px-4">{{ __('messages.status') }}</th>
+                                <th class="border-0 py-3 px-4">{{ __('messages.description') }}</th>
+                                <th class="border-0 py-3 px-4">{{ __('messages.violation_action_plan') }}</th>
+                                <th class="border-0 py-3 px-4 text-center">{{ __('messages.actions') }}</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse($violations as $violation)
+                            @forelse($driverViolations as $violation)
                                 @php
-                                    $severityBadges = [
-                                        'low' => 'warning',
-                                        'medium' => 'warning',
-                                        'high' => 'danger'
+                                    $status = $violation->status ?? 'pending';
+                                    $badgeColor = $statusBadges[$status] ?? 'secondary';
+                                    $actionPlan = $violation->actionPlan;
+                                    $violationTime = optional($violation->violation_time)->format('H:i');
+                                    $speedLabel = $violation->speed !== null ? number_format($violation->speed, 2) . ' km/h' : null;
+                                    $speedLimitLabel = $violation->speed_limit !== null ? number_format($violation->speed_limit, 2) . ' km/h' : null;
+                                    $durationSeconds = $violation->violation_duration_seconds;
+                                    $durationLabel = $durationSeconds ? sprintf('%02dm %02ds', intdiv($durationSeconds, 60), $durationSeconds % 60) : null;
+                                    $distanceLabel = $violation->violation_distance_km !== null ? number_format($violation->violation_distance_km, 2) . ' km' : null;
+                                    $violationPayload = [
+                                        'id' => $violation->id,
+                                        'date' => optional($violation->violation_date)->format('d/m/Y'),
+                                        'type' => $violation->violationType->name ?? __('messages.not_specified'),
+                                        'status' => $status,
+                                        'status_label' => $statusLabels[$status] ?? ucfirst($status),
+                                        'location' => $violation->location ?? __('messages.not_available'),
+                                        'description' => $violation->description ?? null,
+                                        'notes' => $violation->notes ?? null,
+                                        'analysis' => $actionPlan?->analysis,
+                                        'action_plan' => $actionPlan?->action_plan,
+                                        'vehicle' => $violation->vehicle->license_plate ?? null,
+                                        'document_url' => $violation->document_path
+                                            ? route('violations.document', $violation)
+                                            : null,
+                                        'evidence_url' => $actionPlan && $actionPlan->evidence_path
+                                            ? route('violations.action-plan.evidence', $violation)
+                                            : null,
+                                        'evidence_name' => $actionPlan?->evidence_original_name,
+                                        'show_url' => route('violations.show', $violation),
+                                        'violation_time' => $violationTime,
+                                        'speed_label' => $speedLabel,
+                                        'speed_limit_label' => $speedLimitLabel,
+                                        'duration_seconds' => $durationSeconds,
+                                        'duration_label' => $durationLabel,
+                                        'distance_label' => $distanceLabel,
                                     ];
-                                    $badgeColor = $severityBadges[$violation['severity']] ?? 'secondary';
                                 @endphp
-                                <tr class="border-bottom violation-row" data-violation-id="{{ $violation['id'] }}">
-                                    <td class="py-3 px-4">{{ $violation['date'] }}</td>
-                                    <td class="py-3 px-4">{{ $violation['time'] }}</td>
+                                <tr class="border-bottom violation-row" data-violation-id="{{ $violation->id }}">
+                                    <td class="py-3 px-4">
+                                        {{ optional($violation->violation_date)->format('d/m/Y') ?? __('messages.not_available') }}
+                                    </td>
                                     <td class="py-3 px-4">
                                         <span class="badge bg-primary bg-opacity-10 text-primary">
-                                            {{ $violation['type_label'] }}
+                                            {{ $violation->violationType->name ?? __('messages.not_specified') }}
                                         </span>
                                     </td>
                                     <td class="py-3 px-4">
-                                        <small class="text-dark">{{ $violation['rule'] }}</small>
-                                    </td>
-                                    <td class="py-3 px-4">
-                                        <span class="badge bg-{{ $badgeColor }} bg-opacity-10 text-{{ $badgeColor }}">
-                                            {{ $violation['severity_label'] }}
-                                        </span>
+                                        <small class="text-dark">
+                                            {{ $violation->vehicle->license_plate ?? __('messages.not_available') }}
+                                        </small>
                                     </td>
                                     <td class="py-3 px-4">
                                         <small class="text-muted">
                                             <i class="bi bi-geo-alt me-1"></i>
-                                            {{ $violation['location'] }}
+                                            {{ $violation->location ?? __('messages.not_available') }}
                                         </small>
                                     </td>
+                                    <td class="py-3 px-4">
+                                        <span class="badge bg-{{ $badgeColor }} bg-opacity-10 text-{{ $badgeColor }}">
+                                            {{ $statusLabels[$status] ?? ucfirst($status) }}
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-4">
+                                        <div class="text-dark text-truncate" style="max-width: 220px;"
+                                            title="{{ $violation->description ? strip_tags($violation->description) : __('messages.not_available') }}">
+                                            {{ $violation->description
+                                                ? strip_tags($violation->description)
+                                                : __('messages.not_available') }}
+                                        </div>
+                                    </td>
+                                    <td class="py-3 px-4">
+                                        <div class="text-dark text-truncate" style="max-width: 220px;"
+                                            title="{{ $actionPlan?->action_plan ? strip_tags($actionPlan->action_plan) : __('messages.not_available') }}">
+                                            {{ $actionPlan?->action_plan
+                                                ? strip_tags($actionPlan->action_plan)
+                                                : __('messages.not_available') }}
+                                        </div>
+                                    </td>
                                     <td class="py-3 px-4 text-center">
-                                        <button class="btn btn-sm btn-outline-info" 
-                                                onclick="showViolationDetails({{ json_encode($violation) }})"
-                                                title="{{ __('messages.view_details') }}">
-                                            <i class="bi bi-eye"></i>
-                                        </button>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            @if($violation->document_path)
+                                                <a href="{{ route('violations.document', $violation) }}"
+                                                   class="btn btn-outline-primary"
+                                                   title="{{ __('messages.download') }}">
+                                                    <i class="bi bi-download"></i>
+                                                </a>
+                                            @endif
+                                            @if($actionPlan && $actionPlan->evidence_path)
+                                                <a href="{{ route('violations.action-plan.evidence', $violation) }}"
+                                                   class="btn btn-outline-info"
+                                                   title="{{ __('messages.download_evidence') }}">
+                                                    <i class="bi bi-paperclip"></i>
+                                                </a>
+                                            @endif
+                                            <a href="{{ route('violations.show', $violation) }}"
+                                                class="btn btn-outline-secondary"
+                                                title="{{ __('messages.view') }}">
+                                                <i class="bi bi-box-arrow-up-right"></i>
+                                            </a>
+                                        </div>
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" class="text-center py-5">
+                                    <td colspan="9" class="text-center py-5">
                                         <div class="text-muted">
                                             <i class="bi bi-check-circle display-1 mb-3"></i>
                                             <h5 class="mb-2">{{ __('messages.no_violations_found') }}</h5>
@@ -301,7 +427,7 @@
                         </tbody>
                     </table>
                 </div>
-                @if(count($violations) > 10)
+                @if($driverViolations->count() > 10)
                     <div class="card-footer bg-white border-0 py-3">
                         <nav aria-label="Violations pagination">
                             <ul class="pagination pagination-sm justify-content-center mb-0">
@@ -605,24 +731,6 @@
         </div>
     </div>
 
-    <!-- Violation Details Modal -->
-    <div class="modal fade" id="violationModal" tabindex="-1" aria-labelledby="violationModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="violationModalLabel">{{ __('messages.violation_details') }}</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body" id="violationModalBody">
-                    <!-- Content will be populated by JavaScript -->
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('messages.close') }}</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     @push('styles')
     <style>
         /* Timeline styles removed - placeholder only */
@@ -684,6 +792,50 @@
         }
     </style>
     @endpush
+    
+    <!-- Terminate Driver Modal -->
+    <div class="modal fade" id="terminateDriverModal" tabindex="-1" aria-labelledby="terminateDriverModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <form method="POST" action="{{ route('drivers.terminate', $driver) }}" class="modal-content">
+                @csrf
+                <div class="modal-header">
+                    <h5 class="modal-title" id="terminateDriverModalLabel">
+                        <i class="bi bi-person-x text-danger me-2"></i>{{ __('messages.terminate_driver') }}
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted">{{ __('messages.terminate_driver_description') }}</p>
+                    <div class="mb-3">
+                        <label for="terminatedAtInput" class="form-label">{{ __('messages.terminated_at') }}</label>
+                        <input type="date" id="terminatedAtInput" name="terminated_at" class="form-control" value="{{ now()->format('Y-m-d') }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="terminatedCauseInput" class="form-label">{{ __('messages.terminated_cause') }}</label>
+                        <textarea
+                            id="terminatedCauseInput"
+                            name="terminated_cause"
+                            class="form-control"
+                            rows="3"
+                            maxlength="500"
+                            placeholder="{{ __('messages.terminated_cause_placeholder') }}"
+                            required
+                        >{{ old('terminated_cause') }}</textarea>
+                        <small class="text-muted">{{ __('messages.terminated_cause_hint') }}</small>
+                    </div>
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle me-2"></i>{{ __('messages.terminate_driver_warning') }}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ __('messages.cancel') }}</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-check2-circle me-1"></i>{{ __('messages.confirm_termination') }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     @push('scripts')
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js" 
@@ -753,6 +905,24 @@
 
         // Activity modal removed - timeline system rejected
 
+        // Basic HTML escaping for dynamic content
+        function escapeHtml(value) {
+            if (value === null || value === undefined) {
+                return '';
+            }
+            return value
+                .toString()
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function resetFilters() {
+            window.location.href = "{{ route('drivers.show', $driver) }}";
+        }
+
         // Table sorting
         let sortDirection = {};
         function sortTable(columnIndex) {
@@ -767,8 +937,8 @@
                 const aText = a.cells[columnIndex].textContent.trim();
                 const bText = b.cells[columnIndex].textContent.trim();
                 
-                if (columnIndex === 0 || columnIndex === 1) {
-                    // Date/Time sorting
+                if (columnIndex === 0) {
+                    // Date sorting
                     return isAscending ? aText.localeCompare(bText) : bText.localeCompare(aText);
                 } else {
                     // Text sorting
@@ -778,62 +948,6 @@
             
             rows.forEach(row => tbody.appendChild(row));
         }
-
-        // Show violation details
-        function showViolationDetails(violation) {
-            const modal = new bootstrap.Modal(document.getElementById('violationModal'));
-            const body = document.getElementById('violationModalBody');
-            
-            const severityColors = {
-                'low': 'warning',
-                'medium': 'warning',
-                'high': 'danger'
-            };
-            const badgeColor = severityColors[violation.severity] || 'secondary';
-            
-            body.innerHTML = `
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <strong class="text-muted d-block mb-1">{{ __('messages.date') }}</strong>
-                        <p class="mb-0">${violation.date}</p>
-                    </div>
-                    <div class="col-md-6">
-                        <strong class="text-muted d-block mb-1">{{ __('messages.time') }}</strong>
-                        <p class="mb-0">${violation.time}</p>
-                    </div>
-                    <div class="col-md-6">
-                        <strong class="text-muted d-block mb-1">{{ __('messages.violation_type') }}</strong>
-                        <span class="badge bg-primary bg-opacity-10 text-primary">${violation.type_label}</span>
-                    </div>
-                    <div class="col-md-6">
-                        <strong class="text-muted d-block mb-1">{{ __('messages.severity') }}</strong>
-                        <span class="badge bg-${badgeColor} bg-opacity-10 text-${badgeColor}">${violation.severity_label}</span>
-                    </div>
-                    <div class="col-12">
-                        <strong class="text-muted d-block mb-1">{{ __('messages.rule_broken') }}</strong>
-                        <p class="mb-0">${violation.rule}</p>
-                    </div>
-                    <div class="col-12">
-                        <strong class="text-muted d-block mb-1">{{ __('messages.location') }}</strong>
-                        <p class="mb-0"><i class="bi bi-geo-alt me-1"></i>${violation.location}</p>
-                    </div>
-                </div>
-            `;
-            
-            modal.show();
-        }
-
-        // Export functions (placeholders)
-        function exportViolationsPDF() {
-            alert('{{ __('messages.export_violations_pdf') }}');
-            // TODO: Implement PDF export
-        }
-
-        function exportViolationsCSV() {
-            alert('{{ __('messages.export_violations_csv') }}');
-            // TODO: Implement CSV export
-        }
-
 
         // Comment form submission
         document.getElementById('commentForm').addEventListener('submit', function(e) {

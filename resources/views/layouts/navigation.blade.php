@@ -63,12 +63,12 @@
                         <span class="sidebar-text">{{ __('messages.tbt_formations') }}</span>
                     </a>
                 </li>
-                <li class="mb-1">
+                {{-- <li class="mb-1">
                     <a href="{{ route('formation-processes.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('formation-processes.*') ? 'active' : '' }}">
                         <i class="bi bi-book-half me-2 text-gray-600 sidebar-icon"></i>
                         <span class="sidebar-text">{{ __('messages.formation_processes') }}</span>
                     </a>
-                </li>
+                </li> --}}
             </ul>
         </li>
         <li class="mb-2">
@@ -117,9 +117,9 @@
             </a>
         </li>
         <li class="mb-2">
-            <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2">
+            <a href="{{ route('violations.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2">
                 <i class="bi bi-flag me-2 text-gray-600 sidebar-icon"></i>
-                <span class="sidebar-text">{{ __('messages.violations_by_type') }}</span>
+                <span class="sidebar-text">{{ __('messages.violations') }}</span>
             </a>
         </li>
         <li class="mb-2">
@@ -201,7 +201,7 @@
                         {{ __('messages.driver_integrations') }}
                     @elseif(request()->routeIs('formations.*') || request()->routeIs('formation-processes.*') || request()->routeIs('formation-categories.*'))
                         {{ __('messages.formations') }}
-                    @elseif(request()->routeIs('violations.*'))
+                    @elseif(request()->routeIs('violations.*') || request()->routeIs('violations.index') || request()->routeIs('violations.create') || request()->routeIs('violations.edit') || request()->routeIs('violations.show'))
                         {{ __('messages.violations') }}
                     @elseif(request()->routeIs('reports.*'))
                         {{ __('messages.reports') }}
@@ -298,12 +298,12 @@
                             <span class="sidebar-text">{{ __('messages.tbt_formations') }}</span>
                         </a>
                     </li>
-                    <li class="mb-1">
+                    {{-- <li class="mb-1">
                         <a href="{{ route('formation-processes.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('formation-processes.*') ? 'active' : '' }}">
                             <i class="bi bi-book-half me-2 text-gray-600 sidebar-icon"></i>
                             <span class="sidebar-text">{{ __('messages.formation_processes') }}</span>
                         </a>
-                    </li>
+                    </li> --}}
                 </ul>
             </li>
             <li class="mb-2">
@@ -352,7 +352,7 @@
                 </a>
             </li>
             <li class="mb-2">
-                <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2">
+                <a href="{{ route('violations.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2">
                     <i class="bi bi-flag me-2 text-gray-600 sidebar-icon"></i>
                     <span class="sidebar-text">{{ __('messages.violations_by_type') }}</span>
                 </a>

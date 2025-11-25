@@ -4,33 +4,42 @@ namespace App\Http\Controllers;
 
 use App\Exports\DriverFormationAlertsExport;
 use App\Exports\DriverActivityTimelineExport;
+use App\Exports\DriverViolationsExport;
+use App\Exports\DriversExport;
 use App\Http\Requests\UpdateDriverRequest;
 use App\Models\Driver;
 use App\Models\Vehicle;
 use App\Models\Flotte;
 use App\Models\DriverFormation;
+use App\Models\DriverViolation;
 use App\Models\DriverActivity;
 use App\Models\Formation;
+use App\Models\ViolationType;
 use Illuminate\View\View;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
 use Barryvdh\DomPDF\Facade\Pdf;
 
 class DriversController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $drivers = Driver::query()
-            ->with(['assignedVehicle', 'flotte'])
+        $flotteId = $request->get('flotte_id');
+        $statusFilter = $request->get('status');
+
+        $driversCollection = $this->driversQuery($flotteId)
+            ->when($statusFilter !== 'terminated', fn($query) => $query->whereNotIn('status', ['terminated']))
             ->get();
 
-        $total = $drivers->count();
+        $total = $driversCollection->count();
 
         $resolveStatus = function ($driver): ?string {
             $status = data_get($driver, 'status') ?? data_get($driver, 'statu') ?? data_get($driver, 'state');
@@ -38,24 +47,110 @@ class DriversController extends Controller
             return strtolower(trim((string)$status));
         };
 
-        $activeValues = ['active','actif','enabled','enable','1','true','yes'];
-        $inactiveValues = ['inactive','inactif','disabled','disable','deactive','0','false','no'];
+        $activeValues = ['active','actif'];
+        $inactiveValues = ['inactive','inactif'];
 
-        $active = $drivers->filter(function ($driver) use ($resolveStatus, $activeValues) {
+        $active = $driversCollection->filter(function ($driver) use ($resolveStatus, $activeValues) {
             $v = $resolveStatus($driver);
             return $v !== null && in_array($v, $activeValues, true);
         })->count();
 
-        $inactive = $drivers->filter(function ($driver) use ($resolveStatus, $inactiveValues) {
+        $inactive = $driversCollection->filter(function ($driver) use ($resolveStatus, $inactiveValues) {
             $v = $resolveStatus($driver);
             return $v !== null && in_array($v, $inactiveValues, true);
         })->count();
 
+        $terminated = $this->countTerminatedDrivers($flotteId);
+
         $alertFormations = $this->getFormationAlerts();
 
         $driversWithAlerts = $alertFormations->pluck('driver_id')->unique()->count();
+        $flottes = Flotte::orderBy('name')->get();
 
-        return view('drivers.index', compact('drivers', 'total', 'active', 'inactive', 'driversWithAlerts'));
+        $drivers = $driversCollection
+            ->reject(fn($driver) => $this->isDriverTerminated($driver));
+
+        if ($statusFilter === 'active') {
+            $drivers = $drivers->filter(fn($driver) => $this->isDriverActive($driver));
+        } elseif ($statusFilter === 'inactive') {
+            $drivers = $drivers->filter(fn($driver) => $this->isDriverInactive($driver));
+        }
+
+        $drivers = $drivers->values();
+
+        return view('drivers.index', compact(
+            'drivers',
+            'total',
+            'active',
+            'inactive',
+            'terminated',
+            'driversWithAlerts',
+            'flottes',
+            'flotteId',
+            'statusFilter'
+        ));
+    }
+
+    public function export(Request $request)
+    {
+        $flotteId = $request->get('flotte_id');
+        $statusFilter = $request->get('status');
+        $driversCollection = $this->driversQuery($flotteId)->get();
+
+        if ($statusFilter === 'active') {
+            $driversCollection = $driversCollection->filter(fn($driver) => $this->isDriverActive($driver));
+        } elseif ($statusFilter === 'inactive') {
+            $driversCollection = $driversCollection->filter(fn($driver) => $this->isDriverInactive($driver));
+        } elseif ($statusFilter === 'terminated') {
+            $driversCollection = $driversCollection->filter(fn($driver) => $this->isDriverTerminated($driver));
+        }
+
+        $fileName = 'drivers-' . ($flotteId ?: 'all') . '-' . ($statusFilter ?? 'all') . '-' . now()->format('Ymd_His') . '.xlsx';
+
+        return Excel::download(new DriversExport($driversCollection->values()), $fileName);
+    }
+
+    public function terminated(): View
+    {
+        $drivers = $this->driversQuery()
+            ->get()
+            ->filter(fn($driver) => $this->isDriverTerminated($driver))
+            ->values();
+
+        return view('drivers.terminated', compact('drivers'));
+    }
+
+    public function terminate(Request $request, Driver $driver): RedirectResponse
+    {
+        $validated = $request->validate([
+            'terminated_at' => ['required', 'date'],
+            'terminated_cause' => ['required', 'string', 'max:500'],
+        ]);
+
+        try {
+            DB::transaction(function () use ($driver, $validated) {
+                $driver->assigned_vehicle_id = null;
+                $driver->flotte_id = null;
+                $driver->is_integrated = false;
+                $driver->status = 'terminated';
+                $driver->terminated_date = Carbon::parse($validated['terminated_at'])->toDateString();
+                $driver->terminated_cause = trim($validated['terminated_cause']);
+                $driver->save();
+            });
+
+            return redirect()
+                ->route('drivers.show', $driver)
+                ->with('success', __('messages.driver_terminated_successfully'));
+        } catch (\Throwable $e) {
+            Log::error('Failed to terminate driver', [
+                'driver_id' => $driver->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return redirect()
+                ->route('drivers.show', $driver)
+                ->with('error', __('messages.driver_terminated_error'));
+        }
     }
 
     public function show(Request $request, Driver $driver): View
@@ -68,16 +163,39 @@ class DriversController extends Controller
             'formations.formationProcess.steps',
             'integrationCandidate',
         ]);
-
+       
         // Get filter parameters
-        $violationType = $request->get('violation_type');
-        $severity = $request->get('severity');
-        $dateFrom = $request->get('date_from', Carbon::now()->subWeek()->format('Y-m-d'));
-        $dateTo = $request->get('date_to', Carbon::now()->format('Y-m-d'));
+        $violationTypeId = $request->get('violation_type_id');
+        $statusFilter = $request->get('status');
+
+        $defaultRangeStart = Carbon::now()->startOfYear();
+        $defaultRangeEnd = Carbon::now()->endOfYear();
+
+        $dateFromInput = $request->get('date_from');
+        $dateToInput = $request->get('date_to');
+
+        try {
+            $rangeStart = $dateFromInput ? Carbon::createFromFormat('Y-m-d', $dateFromInput)->startOfDay() : $defaultRangeStart->copy();
+        } catch (\Exception) {
+            $rangeStart = $defaultRangeStart->copy();
+        }
+
+        try {
+            $rangeEnd = $dateToInput ? Carbon::createFromFormat('Y-m-d', $dateToInput)->endOfDay() : $defaultRangeEnd->copy();
+        } catch (\Exception) {
+            $rangeEnd = $defaultRangeEnd->copy();
+        }
+
+        if ($rangeStart->gt($rangeEnd)) {
+            [$rangeStart, $rangeEnd] = [$rangeEnd->copy()->startOfDay(), $rangeStart->copy()->endOfDay()];
+        }
+
+        $dateFromApplied = $rangeStart->toDateString();
+        $dateToApplied = $rangeEnd->toDateString();
 
         // Load driver activities for the selected date range
         $activities = DriverActivity::where('driver_id', $driver->id)
-            ->whereBetween('activity_date', [$dateFrom, $dateTo])
+            ->whereBetween('activity_date', [$dateFromApplied, $dateToApplied])
             ->orderBy('activity_date')
             ->orderBy('start_time')
             ->get();
@@ -162,38 +280,22 @@ class DriversController extends Controller
             ];
         }
 
-        // Filter violations based on request filters
-        $violations = collect($allViolations);
-
-        if ($violationType) {
-            $violations = $violations->filter(function ($violation) use ($violationType) {
-                return $violation['type'] === $violationType;
-            });
-        }
-
-        if ($severity) {
-            $violations = $violations->filter(function ($violation) use ($severity) {
-                return $violation['severity'] === $severity;
-            });
-        }
-
-        $violations = $violations->values()->all();
-        $totalViolations = count($allViolations);
-
-        // Violation types for filter dropdown
-        $violationTypes = [
-            'speed' => __('messages.speed_excess'),
-            'rest' => __('messages.insufficient_rest'),
-            'driving_time' => __('messages.driving_time_exceeded'),
-            'safety' => __('messages.safety_violation'),
-            'documentation' => __('messages.missing_documentation'),
+        $violationFilters = [
+            'violation_type_id' => $violationTypeId,
+            'status' => $statusFilter,
+            'date_from' => $dateFromApplied,
+            'date_to' => $dateToApplied,
         ];
 
-        // Severity options
-        $severityOptions = [
-            'low' => __('messages.low'),
-            'medium' => __('messages.medium'),
-            'high' => __('messages.high'),
+        $driverViolations = $this->buildDriverViolationsQuery($driver, $violationFilters)->get();
+        $totalViolations = DriverViolation::where('driver_id', $driver->id)->count();
+
+        $violationTypes = ViolationType::orderBy('name')->pluck('name', 'id');
+
+        $statusOptions = [
+            'pending' => __('messages.pending'),
+            'confirmed' => __('messages.confirmed'),
+            'rejected' => __('messages.rejected'),
         ];
 
         // Integration removed; set placeholders
@@ -232,16 +334,19 @@ class DriversController extends Controller
             ->orderBy('name')
             ->get();
 
+        $dateFrom = $dateFromInput;
+        $dateTo = $dateToInput;
+
         return view('drivers.show', compact(
             'driver',
-            'violations',
+            'driverViolations',
             'totalViolations',
             'totalDrivingHoursThisWeek',
             'timelineData',
             'violationTypes',
-            'severityOptions',
-            'violationType',
-            'severity',
+            'statusOptions',
+            'violationTypeId',
+            'statusFilter',
             'dateFrom',
             'dateTo',
             'integration',
@@ -249,7 +354,8 @@ class DriversController extends Controller
             'formations',
             'formationsCatalog',
             'warningAlerts',
-            'criticalAlerts'
+            'criticalAlerts',
+            'violationFilters'
         ));
     }
 
@@ -709,6 +815,63 @@ class DriversController extends Controller
         }
     }
 
+    public function exportViolationsPDF(Request $request, Driver $driver)
+    {
+        try {
+            $filters = $this->extractViolationFilters($request);
+            $violations = $this->buildDriverViolationsQuery($driver, $filters)->get();
+
+            if ($violations->isEmpty()) {
+                return back()->with('error', __('messages.no_violations_found'));
+            }
+
+            $pdf = Pdf::loadView('drivers.violations-pdf', [
+                'driver' => $driver,
+                'violations' => $violations,
+                'filters' => $filters,
+            ])->setPaper('a4', 'landscape');
+            $driverSlug = Str::slug($driver->full_name ?? 'driver');
+
+            $fileName = sprintf(
+                'driver-%s-violations-%s.pdf',
+                $driverSlug,
+                now()->format('Ymd_His')
+            );
+
+            return $pdf->download($fileName);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()->with('error', __('messages.error_exporting_pdf') ?? 'Error exporting PDF.');
+        }
+    }
+
+    public function exportViolationsCSV(Request $request, Driver $driver)
+    {
+        try {
+            $filters = $this->extractViolationFilters($request);
+            $violations = $this->buildDriverViolationsQuery($driver, $filters)->get();
+
+            if ($violations->isEmpty()) {
+                return back()->with('error', __('messages.no_violations_found'));
+            }
+
+            $export = new DriverViolationsExport($violations);
+            $driverSlug = Str::slug($driver->full_name ?? 'driver');
+            $fileName = sprintf(
+                'driver-%s-violations-%s.xlsx',
+                $driverSlug,
+                now()->format('Ymd_His')
+            );
+
+            return Excel::download($export, $fileName);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()->with('error', __('messages.error_exporting_csv') ?? 'Error exporting CSV.');
+        }
+    }
+
     // Removed placeholder violations method; wire actual data when available
 
     /**
@@ -887,6 +1050,118 @@ class DriversController extends Controller
     private function prepareTimelineData($driver, $dateFrom, $dateTo, $violations)
     {
         return [];
+    }
+
+    private function driversQuery(?int $flotteId = null)
+    {
+        $query = Driver::query()
+            ->with(['assignedVehicle', 'flotte']);
+
+        if ($flotteId) {
+            $query->where('flotte_id', $flotteId);
+        }
+
+        return $query;
+    }
+
+    private function getNormalizedStatus($driver): ?string
+    {
+        $status = data_get($driver, 'status') ?? data_get($driver, 'statu') ?? data_get($driver, 'state');
+        return $status ? strtolower(trim((string) $status)) : null;
+    }
+
+    private function isDriverActive($driver): bool
+    {
+        $value = $this->getNormalizedStatus($driver);
+        if ($value === null) {
+            return false;
+        }
+        $activeValues = ['active','actif','enabled','enable','1','true','yes'];
+        return in_array($value, $activeValues, true);
+    }
+
+    private function isDriverInactive($driver): bool
+    {
+        $value = $this->getNormalizedStatus($driver);
+        if ($value === null) {
+            return false;
+        }
+
+        $inactiveValues = [
+            'inactive','inactif',
+        ];
+
+        return in_array($value, $inactiveValues, true);
+    }
+
+    private function isDriverTerminated($driver): bool
+    {
+        if (!empty($driver->terminated_date)) {
+            return true;
+        }
+
+        $value = $this->getNormalizedStatus($driver);
+        if ($value === null) {
+            return false;
+        }
+
+        $terminatedValues = [
+            'terminated',
+            'terminé',
+            'termine',
+            'terminated.',
+            'terminated ',
+        ];
+
+        return in_array($value, $terminatedValues, true);
+    }
+
+    private function countTerminatedDrivers(?int $flotteId = null): int
+    {
+        return Driver::query()
+            ->when($flotteId, fn($query) => $query->where('flotte_id', $flotteId))
+            ->get()
+            ->filter(fn($driver) => $this->isDriverTerminated($driver))
+            ->count();
+    }
+
+    private function buildDriverViolationsQuery(Driver $driver, array $filters = [])
+    {
+        $query = DriverViolation::query()
+            ->with(['violationType', 'vehicle', 'actionPlan'])
+            ->where('driver_id', $driver->id)
+            ->latest('violation_date');
+
+        if (!empty($filters['violation_type_id'])) {
+            $query->where('violation_type_id', $filters['violation_type_id']);
+        }
+
+        if (!empty($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+
+        if (!empty($filters['date_from'])) {
+            $query->whereDate('violation_date', '>=', $filters['date_from']);
+        }
+
+        if (!empty($filters['date_to'])) {
+            $query->whereDate('violation_date', '<=', $filters['date_to']);
+        }
+
+        return $query;
+    }
+
+    private function extractViolationFilters(Request $request): array
+    {
+        $defaultFrom = Carbon::now()->startOfYear()->format('Y-m-d');
+        $defaultTo = Carbon::now()->endOfYear()->format('Y-m-d');
+
+        return [
+            'violation_type_id' => $request->get('violation_type_id'),
+            'status' => $request->get('status'),
+            'date_from' => $request->get('date_from', $defaultFrom),
+            'date_to' => $request->get('date_to', $defaultTo),
+        ];
     }
 
     /**

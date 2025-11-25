@@ -41,18 +41,19 @@
                 <a href="{{ route('drivers.index') }}" class="nav-link text-dark">{{ __('messages.drivers') }}</a>
             </li>
             <li class="nav-item">
-                <a href="#" class="nav-link text-dark">{{ __('messages.violations') }}</a>
+                <a href="{{ route('violations.index') }}" class="nav-link text-dark">{{ __('messages.violations') }}</a>
             </li>
             <li class="nav-item">
                 <a href="#" class="nav-link text-dark">{{ __('messages.reports') }}</a>
             </li>
-            <li class="nav-item">
-                <a href="{{ route('administration-roles.index') }}" class="nav-link text-dark">{{ __('messages.administration_roles') }}</a>
-            </li>
         </ul>
         {{-- language switcher --}}
         <div class="d-flex align-items-center">
-            <button class="btn btn-light me-2" type="button" title="{{ __('messages.search') }}" data-bs-toggle="modal" data-bs-target="#searchModal"><i class="bi bi-search"></i></button>
+            @if(request()->routeIs('dashboard'))
+                <button class="btn btn-light me-2" type="button" title="{{ __('messages.search') }}" data-bs-toggle="modal" data-bs-target="#searchModal">
+                    <i class="bi bi-search"></i>
+                </button>
+            @endif
             <div class="dropdown me-2">
                 <button class="btn btn-light dropdown-toggle" type="button" id="topnavUserDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="{{ __('messages.profile') }}">
                     <i class="bi bi-person"></i>
@@ -88,6 +89,7 @@
     </div>
 </nav>
 
+@if(request()->routeIs('dashboard'))
 <!-- Search Modal -->
 <div class="modal fade" id="searchModal" tabindex="-1" aria-labelledby="searchModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" style="max-width: 75vw; width: 75vw;">
@@ -97,7 +99,7 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form id="searchForm" method="GET" action="#">
+                <form id="searchForm" method="GET" action="{{ route('dashboard') }}">
                     <div class="container-fluid">
                         <div class="row g-3 align-items-end">
                             <div class="col-12 col-md-4">
@@ -122,7 +124,6 @@
 
 <script>
 function performSearch() {
-    const form = document.getElementById('searchForm');
     const fromDate = document.getElementById('dateFrom').value;
     const toDate = document.getElementById('dateTo').value;
     
@@ -136,12 +137,12 @@ function performSearch() {
         return;
     }
     
-    // Get current URL parameters
-    const urlParams = new URLSearchParams(window.location.search);
+    const urlParams = new URLSearchParams();
     urlParams.set('from', fromDate);
     urlParams.set('to', toDate);
     
-    // Redirect to current page with date parameters
-    window.location.href = window.location.pathname + '?' + urlParams.toString();
+    const dashboardUrl = "{{ route('dashboard') }}";
+    window.location.href = dashboardUrl + '?' + urlParams.toString();
 }
 </script>
+@endif

@@ -27,6 +27,7 @@ class User extends Authenticatable
         'date_integration',
         'is_integrated',
         'terminated_date',
+        'terminated_cause',
         'phone',
         'email',
         'password',

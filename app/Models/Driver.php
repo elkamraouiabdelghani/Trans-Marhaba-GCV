@@ -54,6 +54,7 @@ class Driver extends Model
         'license_class',
         'status',
         'terminated_date',
+        'terminated_cause',
         'assigned_vehicle_id',
         'notes',
         'documents',
@@ -146,6 +147,14 @@ class Driver extends Model
     }
 
     /**
+     * Get all violations for this driver
+     */
+    public function violations(): HasMany
+    {
+        return $this->hasMany(DriverViolation::class);
+    }
+
+    /**
      * Get coaching sessions for a specific year
      */
     public function getCoachingSessionsForYear($year)
@@ -166,8 +175,6 @@ class Driver extends Model
               ->orWhere('status', '1')
               ->orWhere('status', 'true')
               ->orWhere('status', 'yes')
-              ->orWhere('statu', 'active')
-              ->orWhere('statu', 'actif')
               ->orWhere('state', 'active')
               ->orWhere('state', 'actif');
         });

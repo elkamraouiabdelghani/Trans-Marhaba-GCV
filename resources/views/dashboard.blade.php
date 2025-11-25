@@ -29,7 +29,7 @@
                 </div>
             </div>
 
-            <!-- Violations This Week Overview -->
+            <!-- Violations Overview -->
             <div class="col-xl-3 col-lg-6 col-md-6">
                 <div class="card border-0 shadow-sm h-100">
                     <div class="card-body p-4">
@@ -39,11 +39,22 @@
                             </div>
                             <div class="col-9">
                                 <h6 class="text-muted mb-1">{{ __('messages.violations_this_week') }}</h6>
-                                <h3 class="mb-0 fw-bold text-dark">N/A</h3>
+                                <h3 class="mb-0 fw-bold text-dark">
+                                    {{ number_format($violationsInRange ?? 0) }}
+                                </h3>
+                                <small class="text-muted d-block">
+                                    {{ optional($dashboardRangeStart ?? null)?->format('d M Y') }}
+                                    –
+                                    {{ optional($dashboardRangeEnd ?? null)?->format('d M Y') }}
+                                </small>
                             </div>
                         </div>
                         <div class="mt-3">
-                            <a href="#" class="btn btn-outline-danger btn-sm">
+                            <a href="{{ route('violations.index', [
+                                    'date_from' => optional($dashboardRangeStart ?? null)?->toDateString(),
+                                    'date_to' => optional($dashboardRangeEnd ?? null)?->toDateString(),
+                                ]) }}"
+                               class="btn btn-outline-danger btn-sm">
                                 <i class="bi bi-eye me-1"></i>{{ __('messages.view_all') }}
                             </a>
                         </div>
@@ -203,16 +214,7 @@
                 @endif
             </div>
         </div>
-
-        <!-- Recent Activity Section -->
-        <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
-            <div class="p-6">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4">{{ __('Recent Activity') }}</h3>
-                <div class="text-gray-600">
-                    {{ __("You're logged in!") }}
-                </div>
-            </div>
-        </div>
+        
     </div>
 </div>
 

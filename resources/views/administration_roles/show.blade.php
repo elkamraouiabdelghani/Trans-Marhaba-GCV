@@ -4,100 +4,80 @@
     </x-slot>
 
     <div class="container-fluid py-4 mt-4">
-        <!-- User Information Box -->
-        <div class="card border-0 shadow-sm mb-4">
-            <nav aria-label="breadcrumb" class="p-3">
-                <div class="d-flex justify-content-between align-items-center">
-                    <ol class="breadcrumb mb-0">
-                        <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">{{ __('messages.dashboard') }}</a></li>
-                        <li class="breadcrumb-item"><a href="{{ route('administration-roles.index') }}">{{ __('messages.administration_roles') }}</a></li>
-                        <li class="breadcrumb-item active">{{ $user->name }}</li>
-                    </ol>
-                    
-                    <div class="d-flex gap-2">
-                        @if($user->status !== 'terminated')
-                            <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#terminateModal">
-                                <i class="bi bi-x-circle me-1"></i>
-                                {{ __('messages.mark_as_terminated') }}
-                            </button>
-                        @endif
-                        <a href="{{ route('administration-roles.index') }}" class="btn btn-outline-secondary btn-sm">
-                            <i class="bi bi-arrow-left me-1"></i>
-                            {{ __('messages.back_to_list') }}
-                        </a>
-                    </div>
+        <!-- Breadcrumb -->
+        <nav aria-label="breadcrumb" class="p-3 mb-4 rounded-3 shadow-sm bg-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">{{ __('messages.dashboard') }}</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('administration-roles.index') }}">{{ __('messages.administration_roles') }}</a></li>
+                    <li class="breadcrumb-item active">{{ $user->name }}</li>
+                </ol>
+
+                <div class="d-flex gap-2">
+                    <a href="{{ route('administration-roles.index') }}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-arrow-left me-1"></i>
+                        {{ __('messages.back_to_list') }}
+                    </a>
                 </div>
-            </nav>
+            </div>
+        </nav>
 
-            <hr class="my-2">
-
-            <div class="card-body p-4">
-                <div class="row align-items-center">
-                    <div class="col-md-2 text-center mb-3 mb-md-0">
-                        <div class="position-relative d-inline-block">
-                            <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style="width: 120px; height: 120px;">
-                                <i class="bi bi-person-gear text-primary" style="font-size: 4rem;"></i>
-                            </div>
-                            @if($user->status === 'active')
-                                <span class="badge bg-success position-absolute top-0 end-0 rounded-circle d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; padding: 0;">
-                                    <i class="bi bi-check"></i>
-                                </span>
-                            @endif
-                        </div>
-                    </div>
-                    <div class="col-md-10">
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <h3 class="mb-2 text-dark fw-bold">{{ $user->name }}</h3>
-                                <div class="row g-3">
-                                    <div class="col-12">
-                                        <small class="text-muted d-block">{{ __('messages.email') }}</small>
-                                        <strong class="text-dark">{{ $user->email ?? __('messages.not_available') }}</strong>
+        <div class="row g-4 mb-4">
+            <div class="col-12 col-lg-8 col-xl-9">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body p-4">
+                        <div class="row align-items-center">
+                            <div class="col-md-2 text-center mb-3 mb-md-0">
+                                <div class="position-relative d-inline-block">
+                                    <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style="width: 120px; height: 120px;">
+                                        <i class="bi bi-person-gear text-primary" style="font-size: 4rem;"></i>
                                     </div>
-                                    <div class="col-6">
-                                        <small class="text-muted d-block">{{ __('messages.phone') }}</small>
-                                        <span class="text-dark">{{ $user->phone ?? __('messages.not_available') }}</span>
-                                    </div>
-                                    <div class="col-6">
-                                        <small class="text-muted d-block">{{ __('messages.department') }}</small>
-                                        <span class="text-dark">{{ $user->department ?? __('messages.not_available') }}</span>
-                                    </div>
-                                    <div class="col-6">
-                                        <small class="text-muted d-block">{{ __('messages.role') }}</small>
-                                        <span class="badge bg-primary bg-opacity-10 text-primary text-uppercase">{{ $user->role }}</span>
-                                    </div>
-                                    <div class="col-6">
-                                        <small class="text-muted d-block">{{ __('messages.status') }}</small>
-                                        @php
-                                            $statusColorMap = [
-                                                'active' => 'success',
-                                                'inactive' => 'secondary',
-                                                'on_leave' => 'warning',
-                                                'terminated' => 'danger',
-                                            ];
-                                            $statusKey = 'status_' . ($user->status ?? 'inactive');
-                                            $badgeColor = $statusColorMap[$user->status] ?? 'secondary';
-                                        @endphp
-                                        <span class="badge bg-{{ $badgeColor }} bg-opacity-10 text-{{ $badgeColor }}">
-                                            {{ __('messages.' . $statusKey) }}
+                                    @if($user->status === 'active')
+                                        <span class="badge bg-success position-absolute top-0 end-0 rounded-circle d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; padding: 0;">
+                                            <i class="bi bi-check"></i>
                                         </span>
-                                    </div>
+                                    @elseif($user->status === 'terminated')
+                                        <span class="badge bg-danger position-absolute top-0 end-0 rounded-circle d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; padding: 0;">
+                                            <i class="bi bi-x-lg"></i>
+                                        </span>
+                                    @endif
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-10">
                                 <div class="row g-3">
                                     <div class="col-md-6">
-                                        <div class="bg-info bg-opacity-10 rounded p-3 text-center h-100">
-                                            <i class="bi bi-arrow-repeat text-info fs-4 d-block mb-2"></i>
-                                            <small class="text-muted d-block">{{ __('messages.turnovers') }}</small>
-                                            <h4 class="mb-0 fw-bold text-dark">{{ $user->turnovers->count() }}</h4>
+                                        <h3 class="mb-2 text-dark fw-bold">{{ $user->name }}</h3>
+                                        <div class="row g-3">
+                                            <div class="col-12">
+                                                <small class="text-muted d-block">{{ __('messages.email') }}</small>
+                                                <strong class="text-dark">{{ $user->email ?? __('messages.not_available') }}</strong>
+                                            </div>
+                                            <div class="col-6">
+                                                <small class="text-muted d-block">{{ __('messages.phone') }}</small>
+                                                <span class="text-dark">{{ $user->phone ?? __('messages.not_available') }}</span>
+                                            </div>
+                                            <div class="col-6">
+                                                <small class="text-muted d-block">{{ __('messages.department') }}</small>
+                                                <span class="text-dark">{{ $user->department ?? __('messages.not_available') }}</span>
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
-                                        <div class="bg-warning bg-opacity-10 rounded p-3 text-center h-100">
-                                            <i class="bi bi-list-check text-warning fs-4 d-block mb-2"></i>
-                                            <small class="text-muted d-block">{{ __('messages.changements') }}</small>
-                                            <h4 class="mb-0 fw-bold text-dark">{{ $user->changements->count() }}</h4>
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <div class="bg-info bg-opacity-10 rounded p-3 text-center h-100">
+                                                    <i class="bi bi-arrow-repeat text-info fs-4 d-block mb-2"></i>
+                                                    <small class="text-muted d-block">{{ __('messages.turnovers') }}</small>
+                                                    <h4 class="mb-0 fw-bold text-dark">{{ $user->turnovers->count() }}</h4>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="bg-warning bg-opacity-10 rounded p-3 text-center h-100">
+                                                    <i class="bi bi-list-check text-warning fs-4 d-block mb-2"></i>
+                                                    <small class="text-muted d-block">{{ __('messages.changements') }}</small>
+                                                    <h4 class="mb-0 fw-bold text-dark">{{ $user->changements->count() }}</h4>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -106,10 +86,40 @@
                     </div>
                 </div>
             </div>
+
+            <div class="col-12 col-lg-4 col-xl-3">
+                <aside class="position-sticky" style="top: 0.5rem;">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white border-0 py-3">
+                            <h6 class="mb-0 text-dark fw-bold text-uppercase small">
+                                <i class="bi bi-lightning-charge text-warning me-2"></i>
+                                {{ __('messages.quick_actions') }}
+                            </h6>
+                        </div>
+                        <div class="card-body d-grid gap-2">
+                            @if($user->status !== 'terminated')
+                                <button type="button" class="btn btn-primary btn-sm d-flex align-items-center justify-content-center" data-bs-toggle="modal" data-bs-target="#updateStatusModal">
+                                    <i class="bi bi-arrow-repeat me-2"></i>{{ __('messages.update_status') }}
+                                </button>
+                            @endif
+                            <hr class="my-2">
+                            @if($user->status !== 'terminated')
+                                <button type="button" class="btn btn-outline-danger btn-sm d-flex align-items-center justify-content-center" data-bs-toggle="modal" data-bs-target="#terminateModal">
+                                    <i class="bi bi-x-circle me-2"></i>{{ __('messages.mark_as_terminated') }}
+                                </button>
+                            @else
+                                <span class="btn btn-outline-danger btn-sm disabled d-flex align-items-center justify-content-center">
+                                    <i class="bi bi-info-circle me-2"></i>{{ __('messages.terminated') }}
+                                </span>
+                            @endif
+                        </div>
+                    </div>
+                </aside>
+            </div>
         </div>
 
         <!-- Additional Information -->
-        <div class="row">
+        <div class="row g-4">
             <!-- Personal Information -->
             <div class="col-lg-6 mb-4">
                 <div class="card border-0 shadow-sm h-100">
@@ -219,6 +229,19 @@
                                 </strong>
                             </div>
                             @endif
+                            @if($user->terminated_cause)
+                            <div class="col-12">
+                                <div class="alert alert-danger bg-danger bg-opacity-10 border-0 mb-0">
+                                    <div class="d-flex align-items-start">
+                                        <i class="bi bi-info-circle me-2 fs-5"></i>
+                                        <div>
+                                            <p class="mb-1 fw-semibold text-danger text-uppercase small">{{ __('messages.terminated_cause') }}</p>
+                                            <p class="mb-0 text-dark">{{ $user->terminated_cause }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -226,7 +249,7 @@
         </div>
 
         <!-- Related Data -->
-        <div class="row">
+        <div class="row g-4">
             <!-- Turnovers -->
             <div class="col-lg-6 mb-4">
                 <div class="card border-0 shadow-sm h-100">
@@ -367,6 +390,52 @@
         </div>
     </div>
 
+    <!-- Update Status Modal -->
+    <div class="modal fade" id="updateStatusModal" tabindex="-1" aria-labelledby="updateStatusModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="updateStatusModalLabel">
+                        <i class="bi bi-arrow-repeat me-2"></i>{{ __('messages.update_status') }}
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form action="{{ route('administration-roles.update-status', $user) }}" method="POST">
+                    @csrf
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="status" class="form-label">
+                                {{ __('messages.status') }} <span class="text-danger">*</span>
+                            </label>
+                            <select
+                                class="form-select @error('status') is-invalid @enderror"
+                                id="status"
+                                name="status"
+                                required
+                            >
+                                <option value="active" @selected($user->status === 'active')>{{ __('messages.status_active') }}</option>
+                                <option value="on_leave" @selected($user->status === 'on_leave')>{{ __('messages.status_on_leave') }}</option>
+                                <option value="inactive" @selected($user->status === 'inactive')>{{ __('messages.status_inactive') }}</option>
+                            </select>
+                            @error('status')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i>{{ __('messages.update_status') }} - {{ $user->name }}
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ __('messages.cancel') }}</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check2 me-1"></i>{{ __('messages.update') }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Terminate User Modal -->
     @if($user->status !== 'terminated')
     <div class="modal fade" id="terminateModal" tabindex="-1" aria-labelledby="terminateModalLabel" aria-hidden="true">
@@ -400,6 +469,24 @@
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                             <small class="form-text text-muted">{{ __('messages.terminated_date_help') }}</small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="terminated_cause" class="form-label">
+                                {{ __('messages.terminated_cause') }} <span class="text-danger">*</span>
+                            </label>
+                            <textarea
+                                class="form-control @error('terminated_cause') is-invalid @enderror"
+                                id="terminated_cause"
+                                name="terminated_cause"
+                                rows="3"
+                                maxlength="500"
+                                placeholder="{{ __('messages.terminated_cause_placeholder') }}"
+                                required
+                            >{{ old('terminated_cause') }}</textarea>
+                            @error('terminated_cause')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                            <small class="form-text text-muted">{{ __('messages.terminated_cause_hint') }}</small>
                         </div>
                     </div>
                     <div class="modal-footer">

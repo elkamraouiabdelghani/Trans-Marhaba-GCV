@@ -87,10 +87,16 @@
                         <i class="bi bi-funnel me-2 text-primary"></i>
                         {{ __('messages.filters_suivi_formations') }}
                     </h6>
-                    <a href="{{ route('formations.planning') }}" class="btn btn-sm btn-dark" title="{{ __('messages.planning') }}">
-                        <i class="bi bi-calendar-date me-1"></i>
-                        {{ __('messages.planning') }}
-                    </a>
+                    <div>
+                        <a href="{{ route('formations.planning') }}" class="btn btn-sm btn-dark" title="{{ __('messages.planning') }}">
+                            <i class="bi bi-calendar-date me-1"></i>
+                            {{ __('messages.planning') }}
+                        </a>
+                        <a href="{{ route('drivers.alerts') }}" class="btn btn-sm btn-warning" title="{{ __('messages.alerts') }}">
+                            <i class="bi bi-bell-fill me-1"></i>
+                            {{ __('messages.alerts') }}
+                        </a>
+                    </div>
                 </div>
             </div>
             <div class="card-body">
@@ -175,7 +181,6 @@
             </div>
         </div>
 
-        {{-- Bar Graph Section (hidden by default, shown when filters are applied) --}}
         @if($hasFilters ?? false)
             <div class="card border-0 shadow-sm mb-4" id="graphCard">
                 <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
