@@ -94,13 +94,29 @@
                             </div>
                             <div class="col-9">
                                 <h6 class="text-muted mb-1">{{ __('messages.top_violating_driver') }}</h6>
-                                <h3 class="mb-0 fw-bold text-dark">N/A</h3>
+                                @if(!empty($topViolatingDriver) && ($topViolatingDriver->violations_count ?? 0) > 0)
+                                    <h5 class="mb-0 fw-bold text-dark">
+                                        {{ $topViolatingDriver->full_name ?? ($topViolatingDriver->name ?? __('messages.not_available')) }}
+                                    </h5>
+                                    <small class="text-muted d-block">
+                                        {{ __('messages.total_violations') }}: {{ $topViolatingDriver->violations_count ?? 0 }}
+                                    </small>
+                                @else
+                                    <h3 class="mb-0 fw-bold text-dark">N/A</h3>
+                                    <small class="text-muted d-block">{{ __('messages.no_violations_found') }}</small>
+                                @endif
                             </div>
                         </div>
                         <div class="mt-3">
-                            <a href="#" class="btn btn-outline-primary btn-sm">
-                                <i class="bi bi-eye me-1"></i>{{ __('messages.view_details') }}
-                            </a>
+                            @if(!empty($topViolatingDriver) && ($topViolatingDriver->violations_count ?? 0) > 0)
+                                <a href="{{ route('drivers.show', $topViolatingDriver) }}" class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-eye me-1"></i>{{ __('messages.view_details') }}
+                                </a>
+                            @else
+                                <button class="btn btn-outline-primary btn-sm" type="button" disabled>
+                                    <i class="bi bi-eye me-1"></i>{{ __('messages.view_details') }}
+                                </button>
+                            @endif
                         </div>
                     </div>
                 </div>

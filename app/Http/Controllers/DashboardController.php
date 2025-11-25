@@ -108,6 +108,11 @@ class DashboardController extends Controller
             ->whereBetween('violation_date', [$rangeStart->toDateString(), $rangeEnd->toDateString()])
             ->count();
 
+        $topViolatingDriver = Driver::query()
+            ->withCount('violations')
+            ->orderByDesc('violations_count')
+            ->first();
+
         $calendarEvents = collect()
             ->merge(
                 $formationsThisMonth->map(function (Formation $formation) {
@@ -236,6 +241,7 @@ class DashboardController extends Controller
             'dashboardRangeStart' => $rangeStart,
             'dashboardRangeEnd' => $rangeEnd,
             'violationsInRange' => $violationsInRange,
+            'topViolatingDriver' => $topViolatingDriver,
         ];
     }
 }
