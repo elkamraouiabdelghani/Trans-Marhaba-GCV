@@ -10,9 +10,12 @@
             $stepData = $step ? $step->step_data : [];
             $isValidated = $step && $step->isValidated();
             $isRejected = $step && $step->isRejected();
-            $formationCategoryName = optional($formationProcess->formation->category)->name;
-            $normalizedCategoryName = $formationCategoryName ? strtoupper(trim($formationCategoryName)) : null;
-            $showTbtFields = $normalizedCategoryName && in_array($normalizedCategoryName, ['TBT', 'TBX']);
+            $formationTypeLabel = $formationProcess->formation->type_label ?? null;
+            $normalizedTypeLabel = $formationTypeLabel ? strtoupper(trim($formationTypeLabel)) : null;
+            $formationTheme = strtoupper($formationProcess->formation->theme ?? '');
+            $showTbtFields = ($normalizedTypeLabel && in_array($normalizedTypeLabel, ['TBT', 'TBX']))
+                || str_contains($formationTheme, 'TBT')
+                || str_contains($formationTheme, 'TBX');
         @endphp
 
         @if(!$isRejected)

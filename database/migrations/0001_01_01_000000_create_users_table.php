@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('name');
             $table->enum('role', ['admin', 'manager', 'other']);
             $table->enum('status', ['active', 'inactive', 'on_leave', 'terminated']);
+            $table->date('date_of_birth')->nullable();
             $table->date('date_integration')->nullable();
             $table->boolean('is_integrated')->default(false);
             $table->date('terminated_date')->nullable();

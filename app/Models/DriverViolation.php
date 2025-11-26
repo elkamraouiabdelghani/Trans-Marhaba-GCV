@@ -22,10 +22,15 @@ class DriverViolation extends Model
         'violation_duration_seconds',
         'violation_distance_km',
         'location',
+        'location_lat',
+        'location_lng',
         'status',
         'vehicle_id',
         'description',
-        'notes',
+        'analysis',
+        'action_plan',
+        'evidence_path',
+        'evidence_original_name',
         'document_path',
         'created_by',
     ];
@@ -37,6 +42,12 @@ class DriverViolation extends Model
         'speed_limit' => 'decimal:2',
         'violation_duration_seconds' => 'integer',
         'violation_distance_km' => 'decimal:2',
+        'location_lat' => 'decimal:7',
+        'location_lng' => 'decimal:7',
+        'analysis' => 'string',
+        'action_plan' => 'string',
+        'evidence_path' => 'string',
+        'evidence_original_name' => 'string',
     ];
 
     /**
@@ -45,11 +56,6 @@ class DriverViolation extends Model
     public function driver(): BelongsTo
     {
         return $this->belongsTo(Driver::class);
-    }
-
-    public function actionPlan(): HasOne
-    {
-        return $this->hasOne(DriverViolationAction::class);
     }
 
     /**

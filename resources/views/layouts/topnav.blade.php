@@ -12,7 +12,7 @@
                     {{ __('messages.reports') }}
                 @elseif(request()->routeIs('integrations.*'))
                     {{ __('messages.driver_integrations') }}
-                @elseif(request()->routeIs('formations.*') || request()->routeIs('formation-processes.*') || request()->routeIs('formation-categories.*'))
+                @elseif(request()->routeIs('formations.*') || request()->routeIs('formation-processes.*'))
                     {{ __('messages.formations') }}
                 @elseif(request()->routeIs('turnovers.*') || request()->routeIs('turnovers.index') || request()->routeIs('turnovers.create') || request()->routeIs('turnovers.edit') || request()->routeIs('turnovers.show'))
                     {{ __('messages.turnovers') }}
@@ -26,7 +26,7 @@
                     {{ __('messages.changements') }}
                 @elseif(request()->routeIs('coaching-cabines.*'))
                     {{ __('messages.coaching_cabines') }}
-                @elseif(request()->routeIs('tbt-formations.*') || request()->routeIs('tbt-formations.index') || request()->routeIs('tbt-formations.create') || request()->routeIs('tbt-formations.edit') || request()->routeIs('tbt-formations.show') || request()->routeIs('formation-processes.*') || request()->routeIs('formation-processes.index') || request()->routeIs('formation-processes.create') || request()->routeIs('formation-processes.edit') || request()->routeIs('formation-processes.show') || request()->routeIs('formation-categories.*') || request()->routeIs('formation-categories.index') || request()->routeIs('formation-categories.create') || request()->routeIs('formation-categories.edit') || request()->routeIs('formation-categories.show'))
+                @elseif(request()->routeIs('tbt-formations.*') || request()->routeIs('tbt-formations.index') || request()->routeIs('tbt-formations.create') || request()->routeIs('tbt-formations.edit') || request()->routeIs('tbt-formations.show') || request()->routeIs('formation-processes.*') || request()->routeIs('formation-processes.index') || request()->routeIs('formation-processes.create') || request()->routeIs('formation-processes.edit') || request()->routeIs('formation-processes.show'))
                     {{ __('messages.tbt_formations') }}
                 @else
                     {{ __('messages.brand') }}

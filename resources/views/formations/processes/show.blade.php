@@ -40,10 +40,10 @@
                     <div>
                         <h5 class="mb-0 text-dark fw-bold">
                             <i class="bi bi-book me-2 text-primary"></i>
-                            {{ __('messages.formation_process_progress') }}: {{ $formationProcess->formation->name }}
+                            {{ __('messages.formation_process_progress') }}: {{ $formationProcess->formation->theme }}
                         </h5>
                         <small class="text-muted">
-                            {{ $formationProcess->driver->full_name ?? 'N/A' }} - {{ $formationProcess->formation->name ?? 'N/A' }} - {{ $formationProcess->formation->category->name ?? 'N/A' }}
+                            {{ $formationProcess->driver->full_name ?? 'N/A' }} - {{ $formationProcess->formation->theme ?? 'N/A' }} - {{ $formationProcess->formation->type_label ?? 'N/A' }}
                         </small>
                     </div>
                     <a href="{{ route('formation-processes.index') }}" class="btn btn-outline-secondary btn-sm">

@@ -36,7 +36,7 @@
                         </div>
                     </div>
                     <div class="card-body">
-                        <form action="{{ route('tbt-formations.store') }}" method="POST">
+                        <form action="{{ route('tbt-formations.store') }}" method="POST" enctype="multipart/form-data">
                             @csrf
                             @if(request('year'))
                                 <input type="hidden" name="from_planning" value="1">
@@ -172,6 +172,22 @@
                                           rows="2">{{ old('notes') }}</textarea>
                                 @error('notes')
                                     <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="documents" class="form-label fw-semibold">{{ __('messages.upload_documents') }}</label>
+                                <input type="file"
+                                       id="documents"
+                                       name="documents[]"
+                                       class="form-control @error('documents') is-invalid @enderror @error('documents.*') is-invalid @enderror"
+                                       multiple>
+                                <small class="text-muted">{{ __('messages.max_file_size') ?? 'Max file size' }}: 10MB</small>
+                                @error('documents')
+                                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                                @enderror
+                                @error('documents.*')
+                                    <div class="invalid-feedback d-block">{{ $message }}</div>
                                 @enderror
                             </div>
 

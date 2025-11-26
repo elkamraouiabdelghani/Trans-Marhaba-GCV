@@ -64,9 +64,9 @@ class DriverViolationsExport implements FromCollection, WithHeadings, WithMappin
             $violation->violation_distance_km !== null ? number_format($violation->violation_distance_km, 2) : __('messages.not_available'),
             $violation->vehicle->license_plate ?? __('messages.not_available'),
             (string) ($violation->description ?? __('messages.not_available')),
-            $violation->actionPlan->analysis ?? __('messages.not_available'),
-            $violation->actionPlan->action_plan ?? __('messages.not_available'),
-            $violation->actionPlan && $violation->actionPlan->evidence_path
+            $violation->analysis ?? __('messages.not_available'),
+            $violation->action_plan ?? __('messages.not_available'),
+            $violation->evidence_path
                 ? __('messages.yes')
                 : __('messages.no'),
         ];

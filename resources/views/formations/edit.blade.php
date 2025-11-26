@@ -55,43 +55,34 @@
 
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label for="name" class="form-label">{{ __('messages.formation_name') }} </label>
-                                    <input type="text" 
-                                        class="form-control @error('name') is-invalid @enderror" 
-                                        id="name" 
-                                        name="name" 
-                                        value="{{ old('name', $formation->name) }}" 
-                                        required>
-                                    @error('name')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-
-                                <div class="col-md-6 mb-3">
                                     <label for="theme" class="form-label">{{ __('messages.formation_theme') }}</label>
                                     <input type="text"
                                         class="form-control @error('theme') is-invalid @enderror"
                                         id="theme"
                                         name="theme"
-                                        value="{{ old('theme', $formation->theme) }}">
+                                        value="{{ old('theme', $formation->theme) }}"
+                                        required>
                                     @error('theme')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
 
                                 <div class="col-md-6 mb-3">
-                                    <label for="formation_category_id" class="form-label">{{ __('messages.formation_category_name') }}</label>
-                                    <select class="form-select @error('formation_category_id') is-invalid @enderror"
-                                            id="formation_category_id"
-                                            name="formation_category_id">
-                                        <option value="">{{ __('messages.select_option') }}</option>
-                                        @foreach(($categories ?? collect()) as $category)
-                                            <option value="{{ $category->id }}" {{ (int) old('formation_category_id', $formation->formation_category_id) === $category->id ? 'selected' : '' }}>
-                                                {{ $category->name }}
+                                    <label for="type" class="form-label">{{ __('messages.formation_type_label') }}</label>
+                                    @php
+                                        $defaultType = old('type', $formation->type);
+                                    @endphp
+                                    <select class="form-select @error('type') is-invalid @enderror"
+                                            id="type"
+                                            name="type"
+                                            required>
+                                        @foreach(($typeOptions ?? []) as $value => $label)
+                                            <option value="{{ $value }}" {{ $defaultType === $value ? 'selected' : '' }}>
+                                                {{ $label }}
                                             </option>
                                         @endforeach
                                     </select>
-                                    @error('formation_category_id')
+                                    @error('type')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
@@ -235,17 +226,6 @@
                                     {{ __('messages.formation_active') }}
                                 </label>
                             </div>
-                            <div class="mb-3 form-check">
-                                <input type="checkbox" 
-                                       class="form-check-input" 
-                                       id="obligatoire" 
-                                       name="obligatoire" 
-                                       value="1" 
-                                       {{ old('obligatoire', $formation->obligatoire) ? 'checked' : '' }}>
-                                <label class="form-check-label" for="obligatoire">
-                                    {{ __('messages.obligatoire') }}
-                                </label>
-                            </div>
                             <hr class="my-3">
 
                             <div class="row">
@@ -285,35 +265,19 @@
 
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">{{ __('messages.warning_alert') ?? 'Warning Alert' }}</label>
-                                    <div class="row g-2">
-                                        <div class="col">
-                                            <input type="number"
-                                                   class="form-control @error('warning_alert_percent') is-invalid @enderror"
-                                                   id="warning_alert_percent"
-                                                   name="warning_alert_percent"
-                                                   min="0"
-                                                   max="100"
-                                                   value="{{ old('warning_alert_percent', $formation->warning_alert_percent) }}"
-                                                   placeholder="%">
-                                            @error('warning_alert_percent')
-                                                <div class="invalid-feedback">{{ $message }}</div>
-                                            @enderror
-                                        </div>
-                                        <div class="col">
-                                            <input type="number"
-                                                   class="form-control @error('warning_alert_days') is-invalid @enderror"
-                                                   id="warning_alert_days"
-                                                   name="warning_alert_days"
-                                                   min="0"
-                                                   value="{{ old('warning_alert_days', $formation->warning_alert_days) }}"
-                                                   placeholder="{{ __('messages.days') ?? 'Days' }}">
-                                            @error('warning_alert_days')
-                                                <div class="invalid-feedback">{{ $message }}</div>
-                                            @enderror
-                                        </div>
-                                    </div>
+                                    <input type="number"
+                                           class="form-control @error('warning_alert_percent') is-invalid @enderror"
+                                           id="warning_alert_percent"
+                                           name="warning_alert_percent"
+                                           min="0"
+                                           max="100"
+                                           value="{{ old('warning_alert_percent', $formation->warning_alert_percent) }}"
+                                           placeholder="%">
+                                    @error('warning_alert_percent')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
                                     <small class="form-text text-muted">
-                                        {{ __('messages.warning_alert_hint') ?? 'Percentage of period elapsed and/or days before expiry to trigger a warning.' }}
+                                        {{ __('messages.warning_alert_hint') ?? 'Percentage of period elapsed to trigger a warning.' }}
                                     </small>
                                 </div>
                             </div>
@@ -321,35 +285,19 @@
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">{{ __('messages.critical_alert') ?? 'Critical Alert' }}</label>
-                                    <div class="row g-2">
-                                        <div class="col">
-                                            <input type="number"
-                                                   class="form-control @error('critical_alert_percent') is-invalid @enderror"
-                                                   id="critical_alert_percent"
-                                                   name="critical_alert_percent"
-                                                   min="0"
-                                                   max="100"
-                                                   value="{{ old('critical_alert_percent', $formation->critical_alert_percent) }}"
-                                                   placeholder="%">
-                                            @error('critical_alert_percent')
-                                                <div class="invalid-feedback">{{ $message }}</div>
-                                            @enderror
-                                        </div>
-                                        <div class="col">
-                                            <input type="number"
-                                                   class="form-control @error('critical_alert_days') is-invalid @enderror"
-                                                   id="critical_alert_days"
-                                                   name="critical_alert_days"
-                                                   min="0"
-                                                   value="{{ old('critical_alert_days', $formation->critical_alert_days) }}"
-                                                   placeholder="{{ __('messages.days') ?? 'Days' }}">
-                                            @error('critical_alert_days')
-                                                <div class="invalid-feedback">{{ $message }}</div>
-                                            @enderror
-                                        </div>
-                                    </div>
+                                    <input type="number"
+                                           class="form-control @error('critical_alert_percent') is-invalid @enderror"
+                                           id="critical_alert_percent"
+                                           name="critical_alert_percent"
+                                           min="0"
+                                           max="100"
+                                           value="{{ old('critical_alert_percent', $formation->critical_alert_percent) }}"
+                                           placeholder="%">
+                                    @error('critical_alert_percent')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
                                     <small class="form-text text-muted">
-                                        {{ __('messages.critical_alert_hint') ?? 'Percentage of period elapsed and/or days before expiry to trigger a critical alert.' }}
+                                        {{ __('messages.critical_alert_hint') ?? 'Percentage of period elapsed to trigger a critical alert.' }}
                                     </small>
                                 </div>
                             </div>

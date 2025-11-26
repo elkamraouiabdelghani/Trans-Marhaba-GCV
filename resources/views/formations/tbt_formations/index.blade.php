@@ -147,7 +147,7 @@
                         {{ __('messages.tbt_formations_title') }}
                     </h5>
                     <div class="d-flex gap-2">
-                        <a href="{{ route('tbt-formations.planning') }}" class="btn btn-outline-primary btn-sm">
+                        <a href="{{ route('tbt-formations.planning') }}" class="btn btn-outline-dark btn-sm">
                             <i class="bi bi-calendar3 me-1"></i>
                             {{ __('messages.tbt_formation_planning_annual') }}
                         </a>

@@ -60,54 +60,34 @@ CREATE TABLE `integration_steps` (
 -- Note: If JSON is not supported, replace `step_data` JSON with `step_data` TEXT
 
 -- ============================================
--- 3. formation_categories
--- ============================================
-DROP TABLE IF EXISTS `formation_categories`;
-
-CREATE TABLE `formation_categories` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `name` VARCHAR(255) NOT NULL,
-  `code` VARCHAR(255) NOT NULL,
-  `created_at` TIMESTAMP NULL,
-  `updated_at` TIMESTAMP NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `formation_categories_code_unique` (`code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- ============================================
--- 4. formations
+-- 3. formations
 -- ============================================
 DROP TABLE IF EXISTS `formations`;
 
 CREATE TABLE `formations` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `formation_category_id` BIGINT UNSIGNED NULL,
+  `type` ENUM('mondatory','optionnel','complimentaire','other') NOT NULL DEFAULT 'mondatory',
   `flotte_id` BIGINT UNSIGNED NULL,
-  `name` VARCHAR(255) NOT NULL,
+  `theme` VARCHAR(255) NOT NULL,
   `code` VARCHAR(255) NOT NULL,
   `planned_year` YEAR NULL,
   `description` TEXT NULL,
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-  `obligatoire` TINYINT(1) NOT NULL DEFAULT 0,
   `reference_value` INT UNSIGNED NULL,
   `reference_unit` ENUM('months', 'years') NULL,
   `warning_alert_percent` TINYINT UNSIGNED NULL,
-  `warning_alert_days` INT UNSIGNED NULL,
   `critical_alert_percent` TINYINT UNSIGNED NULL,
-  `critical_alert_days` INT UNSIGNED NULL,
   `created_at` TIMESTAMP NULL,
   `updated_at` TIMESTAMP NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `formations_name_unique` (`name`),
+  UNIQUE KEY `formations_theme_unique` (`theme`),
   UNIQUE KEY `formations_code_unique` (`code`),
-  KEY `formations_formation_category_id_foreign` (`formation_category_id`),
   KEY `formations_flotte_id_foreign` (`flotte_id`),
-  CONSTRAINT `formations_formation_category_id_foreign` FOREIGN KEY (`formation_category_id`) REFERENCES `formation_categories` (`id`) ON DELETE SET NULL,
   CONSTRAINT `formations_flotte_id_foreign` FOREIGN KEY (`flotte_id`) REFERENCES `flottes` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================
--- 5. driver_activities
+-- 4. driver_activities
 -- ============================================
 DROP TABLE IF EXISTS `driver_activities`;
 

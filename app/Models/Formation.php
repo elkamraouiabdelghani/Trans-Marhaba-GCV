@@ -10,36 +10,42 @@ class Formation extends Model
 {
     use HasFactory;
 
+    public const TYPE_MONDATORY = 'mondatory';
+    public const TYPE_OPTIONNEL = 'optionnel';
+    public const TYPE_COMPLIMENTAIRE = 'complimentaire';
+    public const TYPE_OTHER = 'other';
+
+    public const TYPE_OPTIONS = [
+        self::TYPE_MONDATORY,
+        self::TYPE_OPTIONNEL,
+        self::TYPE_COMPLIMENTAIRE,
+        self::TYPE_OTHER,
+    ];
+
     protected $fillable = [
-        'formation_category_id',
+        'type',
         'flotte_id',
-        'name',
-        'participant',
         'theme',
+        'participant',
         'duree',
         'realizing_date',
         'status',
         'organisme',
         'description',
         'is_active',
-        'obligatoire',
         'delivery_type',
         'reference_value',
         'reference_unit',
         'warning_alert_percent',
-        'warning_alert_days',
         'critical_alert_percent',
-        'critical_alert_days',
     ];
 
     protected $casts = [
+        'type' => 'string',
         'is_active' => 'boolean',
-        'obligatoire' => 'boolean',
         'reference_value' => 'integer',
         'warning_alert_percent' => 'integer',
-        'warning_alert_days' => 'integer',
         'critical_alert_percent' => 'integer',
-        'critical_alert_days' => 'integer',
         'duree' => 'integer',
         'realizing_date' => 'date',
     ];
@@ -47,14 +53,6 @@ class Formation extends Model
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
-    }
-
-    /**
-     * Get the category this formation belongs to.
-     */
-    public function category(): BelongsTo
-    {
-        return $this->belongsTo(FormationCategory::class, 'formation_category_id');
     }
 
     /**
@@ -71,6 +69,33 @@ class Formation extends Model
     public function driverFormations()
     {
         return $this->hasMany(DriverFormation::class);
+    }
+
+    /**
+     * Returns the localized label for the formation type.
+     */
+    public function getTypeLabelAttribute(): string
+    {
+        $type = $this->type ?? self::TYPE_OTHER;
+        $key = 'messages.formation_type_' . $type;
+        $label = __($key);
+
+        return $label !== $key ? $label : ucfirst($type);
+    }
+
+    /**
+     * List of available type choices with localized labels.
+     *
+     * @return array<string, string>
+     */
+    public static function typeOptions(): array
+    {
+        $options = [];
+        foreach (self::TYPE_OPTIONS as $value) {
+            $options[$value] = __('messages.formation_type_' . $value);
+        }
+
+        return $options;
     }
 
     /**
@@ -157,15 +182,6 @@ class Formation extends Model
             if ($this->critical_alert_percent !== null && $percent >= $this->critical_alert_percent) {
                 $isCritical = true;
             } elseif ($this->warning_alert_percent !== null && $percent >= $this->warning_alert_percent) {
-                $isWarning = true;
-            }
-        }
-
-        // Check days-based alerts
-        if ($remainingDays !== null) {
-            if ($this->critical_alert_days !== null && $remainingDays <= $this->critical_alert_days) {
-                $isCritical = true;
-            } elseif ($this->warning_alert_days !== null && $remainingDays <= $this->warning_alert_days) {
                 $isWarning = true;
             }
         }

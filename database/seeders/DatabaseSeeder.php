@@ -14,8 +14,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
-            FormationCategorySeeder::class,
-            FormationSeeder::class,
+            // seeders here
         ]);
 
         // User::factory()->create([

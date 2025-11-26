@@ -29,7 +29,7 @@ class DriverFormationAlertsExport implements FromCollection, WithHeadings, WithM
         return [
             __('messages.driver'),
             __('messages.flotte'),
-            __('messages.formation_name'),
+            __('messages.formation_theme'),
             __('messages.formation_code'),
             __('messages.alert_level'),
             __('messages.formation_alert_elapsed_label'),
@@ -71,13 +71,13 @@ class DriverFormationAlertsExport implements FromCollection, WithHeadings, WithM
             ? sprintf('%d %s', $referenceValue, $referenceUnit === 'years' ? __('messages.years') : __('messages.months'))
             : __('messages.not_available');
 
-        $warningThreshold = $formation ? $this->formatThreshold($formation->warning_alert_percent ?? null, $formation->warning_alert_days ?? null) : __('messages.not_available');
-        $criticalThreshold = $formation ? $this->formatThreshold($formation->critical_alert_percent ?? null, $formation->critical_alert_days ?? null) : __('messages.not_available');
+        $warningThreshold = $formation ? $this->formatThreshold($formation->warning_alert_percent ?? null) : __('messages.not_available');
+        $criticalThreshold = $formation ? $this->formatThreshold($formation->critical_alert_percent ?? null) : __('messages.not_available');
 
         return [
             $driverFormation->driver->full_name ?? __('messages.not_available'),
             $driverFormation->driver->flotte->name ?? __('messages.not_available'),
-            $formation->name ?? __('messages.not_available'),
+            $formation->theme ?? __('messages.not_available'),
             $formation->code ?? __('messages.not_available'),
             $state === 'critical' ? __('messages.formation_alert_critical') : __('messages.formation_alert_warning'),
             $elapsed,
@@ -95,14 +95,11 @@ class DriverFormationAlertsExport implements FromCollection, WithHeadings, WithM
         return [];
     }
 
-    private function formatThreshold(?int $percent, ?int $days): string
+    private function formatThreshold(?int $percent): string
     {
         $parts = [];
         if ($percent !== null) {
             $parts[] = $percent . '%';
-        }
-        if ($days !== null) {
-            $parts[] = $days . ' ' . __('messages.days');
         }
 
         return $parts ? implode(' • ', $parts) : __('messages.not_available');

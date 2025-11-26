@@ -20,6 +20,7 @@ class TbtFormation extends Model
         'week_end_date',
         'month',
         'notes',
+        'documents',
     ];
 
     protected $casts = [
@@ -28,6 +29,7 @@ class TbtFormation extends Model
         'week_end_date' => 'date',
         'year' => 'integer',
         'month' => 'integer',
+        'documents' => 'array',
     ];
 
     /**

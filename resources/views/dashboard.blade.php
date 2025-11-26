@@ -134,8 +134,31 @@
                     <small class="text-muted">{{ $currentMonthLabel ?? now()->translatedFormat('F Y') }}</small>
                 </div>
                 <div class="d-flex align-items-center gap-3 flex-wrap">
-                    {{-- add a button for download the calendar as a pdf --}}
+                    <form method="GET" action="{{ route('dashboard') }}" class="d-flex align-items-center">
+                        <input type="hidden" name="month" value="{{ $selectedMonthValue ?? now()->format('Y-m') }}">
+                        <select id="event-type-filter"
+                                name="event_type"
+                                class="form-select form-select-sm"
+                                onchange="this.form.submit()"
+                                style="min-width: 180px;">
+                            <option value="" {{ empty($selectedEventType) ? 'selected' : '' }}>
+                                {{ __('messages.calendar_filter_all_events') }}
+                            </option>
+                            <option value="formation" {{ $selectedEventType === 'formation' ? 'selected' : '' }}>
+                                {{ __('messages.calendar_event_type_formation') }}
+                            </option>
+                            <option value="tbt" {{ $selectedEventType === 'tbt' ? 'selected' : '' }}>
+                                {{ __('messages.calendar_event_type_tbt') }}
+                            </option>
+                            <option value="coaching" {{ $selectedEventType === 'coaching' ? 'selected' : '' }}>
+                                {{ __('messages.calendar_event_type_coaching') }}
+                            </option>
+                        </select>
+                    </form>
                     <form method="GET" action="{{ route('dashboard') }}" class="d-flex align-items-center gap-2">
+                        @if(!empty($selectedEventType))
+                            <input type="hidden" name="event_type" value="{{ $selectedEventType }}">
+                        @endif
                         <select id="month-filter"
                                 name="month"
                                 class="form-select form-select-sm"
@@ -149,7 +172,10 @@
                             @endforeach
                         </select>
                     </form>
-                    <a href="{{ route('dashboard.calendar.pdf', ['month' => $selectedMonthValue ?? now()->format('Y-m')]) }}"
+                    <a href="{{ route('dashboard.calendar.pdf', array_filter([
+                            'month' => $selectedMonthValue ?? now()->format('Y-m'),
+                            'event_type' => $selectedEventType ?? null,
+                        ])) }}"
                        class="btn btn-danger btn-sm">
                         <i class="bi bi-file-earmark-pdf me-1"></i>
                         {{ __('messages.download_calendar_pdf') }}

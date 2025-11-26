@@ -51,6 +51,11 @@ class DashboardController extends Controller
         $currentMonthLabel = $selectedDate->translatedFormat('F Y');
         $selectedMonthValue = $selectedDate->format('Y-m');
 
+        $allowedEventTypes = ['formation', 'tbt', 'coaching'];
+        $selectedEventType = $request->filled('event_type') && in_array($request->input('event_type'), $allowedEventTypes, true)
+            ? $request->input('event_type')
+            : null;
+
         $monthOptions = collect(range(1, 12))->map(function (int $month) use ($currentYear) {
             $date = Carbon::create($currentYear, $month, 1);
             return [
@@ -59,7 +64,7 @@ class DashboardController extends Controller
             ];
         });
 
-        $formationsThisMonth = Formation::with('category')
+        $formationsThisMonth = Formation::query()
             ->whereNotNull('realizing_date')
             ->whereYear('realizing_date', $currentYear)
             ->whereMonth('realizing_date', $currentMonth)
@@ -117,10 +122,11 @@ class DashboardController extends Controller
             ->merge(
                 $formationsThisMonth->map(function (Formation $formation) {
                     return [
+                        'type' => 'formation',
                         'date' => $formation->realizing_date,
-                        'title' => $formation->name,
+                        'title' => $formation->theme,
                         'label' => __('messages.calendar_event_type_formation'),
-                        'details' => $formation->theme ?? optional($formation->category)->name,
+                        'details' => $formation->theme ?? $formation->type_label,
                         'meta' => __('messages.status') . ': ' . ($formation->status === 'planned'
                             ? __('messages.status_planned')
                             : __('messages.status_realized')),
@@ -151,6 +157,7 @@ class DashboardController extends Controller
                     ];
 
                     return [
+                        'type' => 'tbt',
                         'date' => $tbtFormation->week_start_date ?? $tbtFormation->week_end_date,
                         'title' => $tbtFormation->title,
                         'label' => __('messages.calendar_event_type_tbt'),
@@ -181,6 +188,7 @@ class DashboardController extends Controller
                     }
 
                     return [
+                        'type' => 'coaching',
                         'date' => $session->date,
                         'title' => __('messages.calendar_event_type_coaching'),
                         'label' => __('messages.calendar_event_type_coaching'),
@@ -193,6 +201,7 @@ class DashboardController extends Controller
                 })
             )
             ->filter(fn ($event) => !empty($event['date']))
+            ->when($selectedEventType, fn ($events) => $events->where('type', $selectedEventType))
             ->sortBy('date')
             ->values();
 
@@ -235,6 +244,7 @@ class DashboardController extends Controller
             'calendarEvents' => $calendarEvents,
             'currentMonthLabel' => $currentMonthLabel,
             'selectedMonthValue' => $selectedMonthValue,
+            'selectedEventType' => $selectedEventType,
             'monthOptions' => $monthOptions,
             'calendarWeeks' => $calendarWeeks,
             'weekdayLabels' => $weekdayLabels,

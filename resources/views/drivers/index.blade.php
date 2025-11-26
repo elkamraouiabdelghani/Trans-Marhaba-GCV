@@ -158,6 +158,7 @@
                         <thead class="table-light">
                             <tr>
                                 <th class="border-0 py-3 px-4">{{ __('messages.name') }}</th>
+                                <th class="border-0 py-3 px-4">{{ __('messages.age') }}</th>
                                 <th class="border-0 py-3 px-4">{{ __('messages.phone_number') }}</th>
                                 <th class="border-0 py-3 px-4">{{ __('messages.vehicle_assign_matricule') }}</th>
                                 <th class="border-0 py-3 px-4">{{ __('messages.flotte') }}</th>
@@ -170,15 +171,32 @@
                                 <tr class="border-bottom driver-row" data-driver-url="{{ route('drivers.show', $driver) }}" style="cursor: pointer;">
                                     <td class="py-3 px-4">
                                         <div class="d-flex align-items-center">
-                                            <div class="bg-primary bg-opacity-10 rounded-circle px-2 py-1 me-3">
+                                            @if($driver->profile_photo_path)
+                                                <img src="{{ $driver->profile_photo_path ? asset('uploads/' . $driver->profile_photo_path) : asset('images/default-profile.png') }}" alt="{{ $driver->full_name ?? __('messages.profile_photo') }}" class="rounded-circle me-3" style="width: 40px; height: 40px; object-fit: cover;">
+                                            @else
+                                                <div class="bg-primary bg-opacity-10 rounded-circle px-2 py-1 me-3">
                                                 <i class="bi bi-person text-primary"></i>
-                                            </div>
+                                                </div>
+                                            @endif
                                             <div class="flex-grow-1">
                                                 <strong class="text-dark">
                                                     {{ data_get($driver, 'full_name') ?? 'N/A' }}
                                                 </strong>
                                             </div>
                                         </div>
+                                    </td>
+                                    <td class="py-3 px-4">
+                                        @php
+                                            $dateOfBirth = data_get($driver, 'date_of_birth');
+                                            $age = $dateOfBirth ? \Carbon\Carbon::parse($dateOfBirth)->age : null;
+                                        @endphp
+                                        @if($age)
+                                            <span class="badge bg-secondary bg-opacity-10 text-secondary fw-semibold">
+                                                {{ $age }} {{ __('messages.years') ?? 'years' }}
+                                            </span>
+                                        @else
+                                            <span class="text-muted">—</span>
+                                        @endif
                                     </td>
                                     <td class="py-3 px-4">
                                         @php

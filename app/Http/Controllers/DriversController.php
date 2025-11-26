@@ -304,7 +304,7 @@ class DriversController extends Controller
 
         // Get formations for this driver
         $formations = DriverFormation::where('driver_id', $driver->id)
-            ->with(['formation.category', 'formationProcess'])
+            ->with(['formation', 'formationProcess'])
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -329,9 +329,9 @@ class DriversController extends Controller
 
         $currentYear = now()->year;
 
-        $formationsCatalog = Formation::with(['category', 'flotte'])
+        $formationsCatalog = Formation::with(['flotte'])
             ->whereYear('realizing_date', $currentYear)
-            ->orderBy('name')
+            ->orderBy('theme')
             ->get();
 
         $dateFrom = $dateFromInput;
@@ -414,7 +414,7 @@ class DriversController extends Controller
 
     private function getFormationAlerts()
     {
-        $allDriverFormations = DriverFormation::with(['driver.assignedVehicle', 'driver.flotte', 'formation.category'])
+        $allDriverFormations = DriverFormation::with(['driver.assignedVehicle', 'driver.flotte', 'formation'])
             ->get();
 
         // Group by driver_id and formation_id to get latest completion for each combination
@@ -464,11 +464,15 @@ class DriversController extends Controller
 
             $data = $validator->validated();
 
-            $formation = Formation::with('category')->findOrFail($data['formation_id']);
-            $categoryName = optional($formation->category)->name;
-            $normalizedCategory = $categoryName ? Str::of($categoryName)->lower()->trim()->__toString() : null;
+            $formation = Formation::findOrFail($data['formation_id']);
+            $normalizedFormationTheme = Str::of($formation->theme ?? '')
+                ->lower()
+                ->trim()
+                ->__toString();
+            $isTmdFormation = Str::contains($normalizedFormationTheme, 'tmd');
+            $isSixteenModuleFormation = Str::contains($normalizedFormationTheme, '16 module');
 
-            if (!in_array($normalizedCategory, ['tmd', '16 module'], true)) {
+            if (!$isTmdFormation && !$isSixteenModuleFormation) {
                 return back()
                     ->with('error', "Cette formation ne peut pas être traitée via ce formulaire.")
                     ->withInput()
@@ -478,8 +482,8 @@ class DriversController extends Controller
             $driverFlotteName = optional($driver->flotte)->name;
             $normalizedFlotte = $driverFlotteName ? Str::of($driverFlotteName)->lower()->trim()->__toString() : null;
 
-            $isTmdAllowed = $normalizedCategory === 'tmd' && $normalizedFlotte === 'total';
-            $isModuleAllowed = $normalizedCategory === '16 module' && $normalizedFlotte === 'vivo';
+            $isTmdAllowed = $isTmdFormation && $normalizedFlotte === 'total';
+            $isModuleAllowed = $isSixteenModuleFormation && $normalizedFlotte === 'vivo';
 
             if (!$isTmdAllowed && !$isModuleAllowed) {
                 return back()
@@ -509,7 +513,7 @@ class DriversController extends Controller
             Log::info('Quick driver formation stored', [
                 'driver_id' => $driver->id,
                 'formation_id' => $formation->id,
-                'category' => $normalizedCategory,
+                'formation_theme' => $normalizedFormationTheme,
             ]);
 
             return redirect()
@@ -1244,7 +1248,23 @@ class DriversController extends Controller
     {
         try {
             $validated = $request->validated();
-            unset($validated['documents']);
+            unset($validated['documents'], $validated['profile_photo'], $validated['remove_photo']);
+
+            $existingPhotoPath = $driver->profile_photo_path;
+
+            if ($request->hasFile('profile_photo')) {
+                if ($existingPhotoPath && Storage::disk('uploads')->exists($existingPhotoPath)) {
+                    Storage::disk('uploads')->delete($existingPhotoPath);
+                }
+                $validated['profile_photo_path'] = $request->file('profile_photo')->store('profiles/drivers', 'uploads');
+            } elseif ($request->boolean('remove_photo')) {
+                if ($existingPhotoPath && Storage::disk('uploads')->exists($existingPhotoPath)) {
+                    Storage::disk('uploads')->delete($existingPhotoPath);
+                }
+                $validated['profile_photo_path'] = null;
+            } elseif ($existingPhotoPath) {
+                $validated['profile_photo_path'] = $existingPhotoPath;
+            }
 
             $originalVehicleId = $driver->assigned_vehicle_id;
             $newVehicleId = $validated['assigned_vehicle_id'] ?? null;

@@ -5,7 +5,6 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DriversController;
 use App\Http\Controllers\FormationController;
 use App\Http\Controllers\AdministrationRoleController;
-use App\Http\Controllers\FormationCategoryController;
 use App\Http\Controllers\IntegrationController;
 use App\Http\Controllers\FormationProcessController;
 use App\Http\Controllers\TurnoverController;
@@ -21,6 +20,7 @@ use App\Http\Controllers\ViolationTypeController;
 use App\Http\Controllers\DriverViolationController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Storage;
 
 Route::get('/', function () {
     return view('auth/login');
@@ -40,6 +40,21 @@ Route::get('/dashboard', [DashboardController::class, 'index'])
 Route::get('/dashboard/calendar/pdf', [DashboardController::class, 'calendarPdf'])
     ->middleware(['auth', 'verified'])
     ->name('dashboard.calendar.pdf');
+
+Route::get('/uploads/files/{path}', function (string $path) {
+    $disk = Storage::disk('uploads');
+    if (!$disk->exists($path)) {
+        abort(404);
+    }
+
+    $absolutePath = $disk->path($path);
+
+    if (!file_exists($absolutePath)) {
+        abort(404);
+    }
+
+    return response()->file($absolutePath);
+})->where('path', '.*')->name('uploads.serve');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -72,7 +87,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/formations/planning/pdf', [FormationController::class, 'planningPdf'])->name('formations.planning.pdf');
     Route::resource('formations', FormationController::class);
     Route::post('/formations/{formation}/mark-realized', [FormationController::class, 'markAsRealized'])->name('formations.mark-realized');
-    Route::resource('formation-categories', FormationCategoryController::class)->except(['show']);
 
     // Changements
     Route::resource('changement-types', ChangementTypeController::class);
@@ -172,6 +186,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/administration-roles', [AdministrationRoleController::class, 'index'])->name('administration-roles.index');
     Route::get('/administration-roles/export', [AdministrationRoleController::class, 'export'])->name('administration-roles.export');
     Route::get('/administration-roles/terminated', [AdministrationRoleController::class, 'terminated'])->name('administration-roles.terminated');
+    Route::get('/administration-roles/{user}/edit', [AdministrationRoleController::class, 'edit'])->name('administration-roles.edit');
+    Route::put('/administration-roles/{user}', [AdministrationRoleController::class, 'update'])->name('administration-roles.update');
     Route::get('/administration-roles/{user}', [AdministrationRoleController::class, 'show'])->name('administration-roles.show');
     Route::post('/administration-roles/{user}/terminate', [AdministrationRoleController::class, 'terminate'])->name('administration-roles.terminate');
     Route::post('/administration-roles/{user}/update-status', [AdministrationRoleController::class, 'updateStatus'])->name('administration-roles.update-status');

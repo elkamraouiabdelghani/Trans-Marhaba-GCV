@@ -101,13 +101,13 @@
                     <td>{{ $violation->violation_distance_km !== null ? number_format($violation->violation_distance_km, 2) . ' km' : __('messages.not_available') }}</td>
                     <td>{{ $violation->vehicle->license_plate ?? __('messages.not_available') }}</td>
                     <td>{{ $violation->description ?? __('messages.not_available') }}</td>
-                    <td>{{ $violation->actionPlan->analysis ?? __('messages.not_available') }}</td>
-                    <td>{{ $violation->actionPlan->action_plan ?? __('messages.not_available') }}</td>
+                    <td>{{ $violation->analysis ?? __('messages.not_available') }}</td>
+                    <td>{{ $violation->action_plan ?? __('messages.not_available') }}</td>
                     <td>
-                        @if($violation->actionPlan?->evidence_path)
+                        @if($violation->evidence_path)
                             {{ __('messages.yes') }}
-                            @if($violation->actionPlan?->evidence_original_name)
-                                <div class="text-muted small">{{ $violation->actionPlan->evidence_original_name }}</div>
+                            @if($violation->evidence_original_name)
+                                <div class="text-muted small">{{ $violation->evidence_original_name }}</div>
                             @endif
                         @else
                             {{ __('messages.no') }}

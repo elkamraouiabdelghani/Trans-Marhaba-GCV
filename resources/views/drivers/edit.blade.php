@@ -146,6 +146,36 @@
                             @enderror
                         </div>
 
+                        <div class="col-md-6 mb-3">
+                            <label for="profile_photo" class="form-label">{{ __('messages.profile_photo') }}</label>
+                            <input type="file"
+                                   class="form-control @error('profile_photo') is-invalid @enderror"
+                                   id="profile_photo"
+                                   name="profile_photo"
+                                   accept="image/*">
+                            @error('profile_photo')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                            @if($driver->profile_photo_path)
+                                <div class="d-flex align-items-center gap-3 mt-2">
+                                    @if($driver->profile_photo_path)
+                                    <img src="{{ $driver->profile_photo_path ? asset('uploads/' . $driver->profile_photo_path) : asset('images/default-profile.png') }}" 
+                                         alt="{{ $driver->full_name ?? __('messages.profile_photo') }}" 
+                                         class="rounded-circle" 
+                                         style="width: 70px; height: 70px; object-fit: cover;">
+                                    @else
+                                        <i class="bi bi-person-gear text-primary" style="font-size: 4rem;"></i>
+                                    @endif
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="1" id="remove_photo" name="remove_photo">
+                                        <label class="form-check-label" for="remove_photo">
+                                            {{ __('messages.remove_photo') }}
+                                        </label>
+                                    </div>
+                                </div>
+                            @endif
+                        </div>
+
                         <div class="col-12 mb-3">
                             <label for="address" class="form-label">{{ __('messages.address') }}</label>
                             <textarea class="form-control @error('address') is-invalid @enderror" 

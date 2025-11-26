@@ -122,7 +122,7 @@
                                         : __('messages.date_not_defined');
                                 @endphp
                                 <div class="formation-card">
-                                    <div class="formation-title">{{ $formation->name }}</div>
+                                    <div class="formation-title">{{ $formation->theme }}</div>
                                     <div class="meta">
                                         <span>{{ $realizingDate }}</span>
                                         @if($formation->duree)

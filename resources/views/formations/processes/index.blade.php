@@ -120,7 +120,7 @@
                         <thead class="table-light">
                             <tr>
                                 <th class="border-0 py-3 px-4">{{ __('messages.driver') }}</th>
-                                <th class="border-0 py-3 px-4">{{ __('messages.formation_name') }}</th>
+                                <th class="border-0 py-3 px-4">{{ __('messages.formation_theme') }}</th>
                                 <th class="border-0 py-3 px-4">{{ __('messages.current_step') }}</th>
                                 <th class="border-0 py-3 px-4">{{ __('messages.status') }}</th>
                                 <th class="border-0 py-3 px-4">{{ __('messages.started_at') }}</th>
@@ -142,7 +142,7 @@
                                     </td>
                                     <td class="py-3 px-4">
                                         <span class="badge bg-info bg-opacity-25 text-info">
-                                            {{ $formationProcess->formation->name ?? 'N/A' }}
+                                            {{ $formationProcess->formation->theme ?? 'N/A' }}
                                         </span>
                                     </td>
                                     <td class="py-3 px-4">

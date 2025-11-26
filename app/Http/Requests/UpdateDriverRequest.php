@@ -48,6 +48,8 @@ class UpdateDriverRequest extends FormRequest
             'notes' => 'nullable|string',
             'documents' => 'nullable|array',
             'documents.*' => 'file|max:10240', // 10MB max per file
+            'profile_photo' => 'nullable|image|max:2048',
+            'remove_photo' => 'sometimes|boolean',
         ];
     }
 
@@ -86,6 +88,8 @@ class UpdateDriverRequest extends FormRequest
             'documents.array' => 'The documents must be an array.',
             'documents.*.file' => 'Each document must be a valid file.',
             'documents.*.max' => 'Each document may not be greater than 10MB.',
+            'profile_photo.image' => 'The profile photo must be an image.',
+            'profile_photo.max' => 'The profile photo may not be greater than 2MB.',
         ];
     }
 }

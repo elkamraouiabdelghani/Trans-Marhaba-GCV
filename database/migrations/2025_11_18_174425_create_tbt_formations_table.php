@@ -13,21 +13,19 @@ return new class extends Migration
     {
         Schema::create('tbt_formations', function (Blueprint $table) {
             $table->id();
-            // Formation data
             $table->string('title');
             $table->string('participant')->nullable();
             $table->enum('status', ['planned', 'realized'])->default('planned');
             $table->text('description')->nullable();
             $table->boolean('is_active')->default(true);
-            // Planning data
             $table->year('year');
-            $table->unsignedTinyInteger('month'); // 1-12 for quick filtering
-            $table->date('week_start_date'); // Monday of the week
-            $table->date('week_end_date'); // Sunday of the week
+            $table->unsignedTinyInteger('month');
+            $table->date('week_start_date');
+            $table->date('week_end_date'); 
             $table->text('notes')->nullable();
+            $table->json('documents')->nullable();
             $table->timestamps();
             
-            // Indexes for performance
             $table->index(['year', 'month']);
             $table->index(['week_start_date', 'week_end_date']);
         });

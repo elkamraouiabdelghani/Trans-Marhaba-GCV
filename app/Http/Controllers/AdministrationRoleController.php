@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Exports\AdministrationRolesExport;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
@@ -119,6 +121,81 @@ class AdministrationRoleController extends Controller
         return view('administration_roles.show', [
             'user' => $user,
         ]);
+    }
+
+    /**
+     * Show the form for editing the specified user.
+     */
+    public function edit(User $user)
+    {
+        if ($user->role === 'admin') {
+            abort(404);
+        }
+
+        return view('administration_roles.edit', [
+            'user' => $user,
+            'statusOptions' => [
+                'active' => __('messages.status_active'),
+                'inactive' => __('messages.status_inactive'),
+                'on_leave' => __('messages.status_on_leave'),
+                'terminated' => __('messages.terminated'),
+            ],
+        ]);
+    }
+
+    /**
+     * Update the specified administrative user.
+     */
+    public function update(Request $request, User $user)
+    {
+        if ($user->role === 'admin') {
+            abort(404);
+        }
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => [
+                'required',
+                'email',
+                'max:255',
+                Rule::unique('users', 'email')->ignore($user->id),
+            ],
+            'phone' => ['nullable', 'string', 'max:50'],
+            'department' => ['nullable', 'string', 'max:255'],
+            'role' => ['required', 'string', 'max:255', 'not_in:admin'],
+            'status' => ['required', 'in:active,inactive,on_leave,terminated'],
+            'date_of_birth' => ['nullable', 'date'],
+            'profile_photo' => ['nullable', 'image', 'max:2048'],
+            'remove_photo' => ['nullable', 'boolean'],
+        ]);
+
+        $updates = [
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'phone' => $validated['phone'] ?? null,
+            'department' => $validated['department'] ?? null,
+            'role' => $validated['role'],
+            'status' => $validated['status'],
+            'date_of_birth' => $validated['date_of_birth'] ?? null,
+        ];
+
+        $removePhoto = (bool) ($validated['remove_photo'] ?? false);
+
+        if ($request->hasFile('profile_photo')) {
+            if ($user->profile_photo_path) {
+                Storage::disk('uploads')->delete($user->profile_photo_path);
+            }
+            $updates['profile_photo_path'] = $request->file('profile_photo')->store('profiles/users', 'uploads');
+        } elseif ($removePhoto && $user->profile_photo_path) {
+            Storage::disk('uploads')->delete($user->profile_photo_path);
+            $updates['profile_photo_path'] = null;
+        }
+
+        $user->update($updates);
+
+        return redirect()
+            ->route('administration-roles.show', $user)
+            ->with('success', __('messages.user_updated_successfully'));
     }
 
     /**

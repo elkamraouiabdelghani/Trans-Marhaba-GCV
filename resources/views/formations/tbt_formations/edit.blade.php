@@ -36,7 +36,7 @@
                         </div>
                     </div>
                     <div class="card-body">
-                        <form action="{{ route('tbt-formations.update', $tbtFormation) }}" method="POST">
+                        <form action="{{ route('tbt-formations.update', $tbtFormation) }}" method="POST" enctype="multipart/form-data">
                             @csrf
                             @method('PUT')
 
@@ -170,6 +170,51 @@
                                           rows="2">{{ old('notes', $tbtFormation->notes) }}</textarea>
                                 @error('notes')
                                     <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="documents" class="form-label fw-semibold">{{ __('messages.upload_documents') }}</label>
+
+                                @php
+                                    $documents = $tbtFormation->documents ?? [];
+                                    if (!is_array($documents)) {
+                                        $documents = [];
+                                    }
+                                @endphp
+
+                                @if(!empty($documents))
+                                    <div class="mb-2">
+                                        <label class="form-label fw-semibold">{{ __('messages.uploaded_documents') }} ({{ count($documents) }})</label>
+                                        <ul class="list-unstyled small mb-2">
+                                            @foreach($documents as $doc)
+                                                @php
+                                                    $path = $doc['path'] ?? null;
+                                                    $name = $doc['name'] ?? basename($path ?? '');
+                                                @endphp
+                                                @if($path)
+                                                    <li class="d-flex align-items-center mb-1">
+                                                        <a href="{{ route('uploads.serve', ['path' => $path]) }}" target="_blank" class="me-2">
+                                                            <i class="bi bi-file-earmark-text me-1"></i>{{ $name }}
+                                                        </a>
+                                                    </li>
+                                                @endif
+                                            @endforeach
+                                        </ul>
+                                    </div>
+                                @endif
+
+                                <input type="file"
+                                       id="documents"
+                                       name="documents[]"
+                                       class="form-control @error('documents') is-invalid @enderror @error('documents.*') is-invalid @enderror"
+                                       multiple>
+                                <small class="text-muted">{{ __('messages.max_file_size') ?? 'Max file size' }}: 10MB</small>
+                                @error('documents')
+                                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                                @enderror
+                                @error('documents.*')
+                                    <div class="invalid-feedback d-block">{{ $message }}</div>
                                 @enderror
                             </div>
 

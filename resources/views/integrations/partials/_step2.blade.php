@@ -137,6 +137,36 @@
             @endif
 
             <div class="mb-3">
+                <label for="photo" class="form-label">{{ __('messages.profile_photo') }}</label>
+                <input type="file"
+                       class="form-control @error('photo') is-invalid @enderror"
+                       id="photo"
+                       name="photo"
+                       accept="image/*">
+                @error('photo')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+                @if($stepData['photo_path'])
+                    <div class="mt-2 d-flex align-items-center gap-2">
+                        @if($stepData['photo_path'])
+                        <img src="{{ $stepData['photo_path'] ? asset('uploads/' . $stepData['photo_path']) : asset('images/default-profile.png') }}"
+                             alt="{{ $stepData['full_name'] ?? 'Profile photo' }}"
+                             class="rounded-circle"
+                             style="width: 60px; height: 60px; object-fit: cover;">
+                        @else
+                            <i class="bi bi-person-gear text-primary" style="font-size: 4rem;"></i>
+                        @endif
+                    </div>
+                    <div class="form-check mt-2">
+                        <input class="form-check-input" type="checkbox" value="1" id="remove_photo" name="remove_photo">
+                        <label class="form-check-label" for="remove_photo">
+                            {{ __('messages.remove_photo') }}
+                        </label>
+                    </div>
+                @endif
+            </div>
+
+            <div class="mb-3">
                 <label for="address" class="form-label">{{ __('messages.address') }} <span class="text-danger">*</span></label>
                 <textarea class="form-control @error('address') is-invalid @enderror" 
                           id="address" 

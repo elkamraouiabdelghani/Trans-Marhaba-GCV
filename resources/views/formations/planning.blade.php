@@ -72,7 +72,7 @@
                                             <div class="border rounded-3 p-3 mb-3 bg-light-subtle">
                                                 <div class="d-flex justify-content-between align-items-start">
                                                     <div>
-                                                        <h6 class="mb-1 text-primary fw-semibold">{{ $formation->name }}</h6>
+                                                        <h6 class="mb-1 text-primary fw-semibold">{{ $formation->theme }}</h6>
                                                         @if($formation->theme)
                                                             <div class="text-muted small">{{ $formation->theme }}</div>
                                                         @endif

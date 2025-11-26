@@ -27,7 +27,7 @@ class ChangementController extends Controller
     {
         try {
             $query = Changement::query()
-                ->with(['changementType', 'steps', 'subject', 'replacement'])
+                ->with(['changementType', 'steps', 'subject'])
                 ->orderBy('created_at', 'desc');
 
             // Filter by status if provided
@@ -50,7 +50,7 @@ class ChangementController extends Controller
 
             // Get stats before pagination (from base query without status filter)
             $baseQuery = Changement::query()
-                ->with(['changementType', 'steps', 'subject', 'replacement'])
+                ->with(['changementType', 'steps', 'subject'])
                 ->orderBy('created_at', 'desc');
 
             // Apply same filters except status
@@ -123,13 +123,11 @@ class ChangementController extends Controller
             'changement_type_id' => ['required', 'exists:changement_types,id'],
             'subject_type' => ['nullable', 'in:driver,administrative'],
             'subject_id' => ['nullable', 'required_with:subject_type', 'integer'],
-            'replacement_type' => ['nullable', 'in:driver,administrative'],
-            'replacement_id' => ['nullable', 'required_with:replacement_type', 'integer'],
             'date_changement' => ['required', 'date'],
             'description_changement' => ['required', 'string'],
             'responsable_changement' => ['required', 'in:RH,DGA,QHSE'],
             'impact' => ['nullable', 'string'],
-            'action' => ['nullable', 'string'],
+            'action' => ['required', 'string'],
         ]);
 
         try {
@@ -158,62 +156,10 @@ class ChangementController extends Controller
                 $subjectId = $request->subject_id;
             }
 
-            // Determine replacement_type and replacement_id based on selection
-            $replacementType = null;
-            $replacementId = null;
-
-            if ($request->filled('replacement_type') && $request->filled('replacement_id')) {
-                // CRITICAL: Replacement type MUST match subject type
-                if ($request->filled('subject_type') && $request->replacement_type !== $request->subject_type) {
-                    return back()
-                        ->withInput()
-                        ->withErrors(['replacement_type' => __('messages.replacement_must_match_subject')]);
-                }
-
-                if ($request->replacement_type === 'driver') {
-                    $replacementType = Driver::class;
-                    // Validate driver exists
-                    if (!Driver::find($request->replacement_id)) {
-                        return back()
-                            ->withInput()
-                            ->withErrors(['replacement_id' => __('validation.exists', ['attribute' => 'driver'])]);
-                    }
-                    // Ensure replacement is not the same as subject
-                    if ($subjectType === Driver::class && $subjectId == $request->replacement_id) {
-                        return back()
-                            ->withInput()
-                            ->withErrors(['replacement_id' => __('messages.replacement_cannot_be_same_as_subject')]);
-                    }
-                } elseif ($request->replacement_type === 'administrative') {
-                    $replacementType = User::class;
-                    // Validate user exists and is not admin
-                    $replacementUser = User::find($request->replacement_id);
-                    if (!$replacementUser) {
-                        return back()
-                            ->withInput()
-                            ->withErrors(['replacement_id' => __('validation.exists', ['attribute' => 'user'])]);
-                    }
-                    if ($replacementUser->role === 'admin') {
-                        return back()
-                            ->withInput()
-                            ->withErrors(['replacement_id' => __('messages.replacement_cannot_be_admin')]);
-                    }
-                    // Ensure replacement is not the same as subject
-                    if ($subjectType === User::class && $subjectId == $request->replacement_id) {
-                        return back()
-                            ->withInput()
-                            ->withErrors(['replacement_id' => __('messages.replacement_cannot_be_same_as_subject')]);
-                    }
-                }
-                $replacementId = $request->replacement_id;
-            }
-
             $changement = Changement::create([
                 'changement_type_id' => $validated['changement_type_id'],
                 'subject_type' => $subjectType,
                 'subject_id' => $subjectId,
-                'replacement_type' => $replacementType,
-                'replacement_id' => $replacementId,
                 'date_changement' => $validated['date_changement'],
                 'description_changement' => $validated['description_changement'],
                 'responsable_changement' => $validated['responsable_changement'],
@@ -259,7 +205,7 @@ class ChangementController extends Controller
     public function show(Changement $changement): View|RedirectResponse
     {
         try {
-            $changement->load(['steps', 'changementType', 'subject', 'replacement']);
+            $changement->load(['steps', 'changementType', 'subject']);
 
             $stepNumbers = range(1, 6);
 
@@ -305,7 +251,7 @@ class ChangementController extends Controller
                     ->with('error', __('messages.changements_step_rejected'));
             }
 
-            $changement->load(['steps', 'changementType', 'subject', 'replacement']);
+            $changement->load(['steps', 'changementType', 'subject']);
 
             $stepNumbers = range(1, 6);
 
@@ -608,7 +554,7 @@ class ChangementController extends Controller
                     ->with('error', __('messages.changements_checklist_must_validate_step5'));
             }
 
-            $changement->load(['changementType.principaleCretaires.sousCretaires', 'checklistResults', 'subject', 'replacement']);
+            $changement->load(['changementType.principaleCretaires.sousCretaires', 'checklistResults', 'subject']);
 
             // Get all principale cretaire for this changement type
             $principaleCretaires = $changement->changementType->principaleCretaires()

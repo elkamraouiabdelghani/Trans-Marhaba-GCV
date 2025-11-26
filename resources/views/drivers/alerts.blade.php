@@ -87,7 +87,7 @@
                         <thead class="table-light">
                             <tr>
                                 <th class="py-3 px-4">{{ __('messages.driver') }}</th>
-                                <th class="py-3 px-4">{{ __('messages.formation_name') }}</th>
+                                <th class="py-3 px-4">{{ __('messages.formation_theme') }}</th>
                                 <th class="py-3 px-4">{{ __('messages.alert_level') }}</th>
                                 <th class="py-3 px-4">{{ __('messages.formation_alert_elapsed_label') }}</th>
                                 <th class="py-3 px-4">{{ __('messages.formation_alert_days_label') }}</th>
@@ -139,7 +139,7 @@
                                     </td>
                                     <td class="py-3 px-4">
                                         <div class="d-flex flex-column">
-                                            <strong class="text-dark">{{ $driverFormation->formation->name ?? __('messages.not_available') }}</strong>
+                                            <strong class="text-dark">{{ $driverFormation->formation->theme ?? __('messages.not_available') }}</strong>
                                             @if($driverFormation->formation && $driverFormation->formation->code)
                                                 <span class="small text-muted">{{ $driverFormation->formation->code }}</span>
                                             @endif

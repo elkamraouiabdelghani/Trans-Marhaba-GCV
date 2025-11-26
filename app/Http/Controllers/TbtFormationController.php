@@ -113,6 +113,23 @@ class TbtFormationController extends Controller
 
         $validated['is_active'] = $request->has('is_active');
 
+        // Handle documents (multi, unlimited)
+        $documents = [];
+        if ($request->hasFile('documents')) {
+            foreach ($request->file('documents') as $file) {
+                if (!$file) {
+                    continue;
+                }
+                $path = $file->store('tbt_formations/documents', 'uploads');
+                $documents[] = [
+                    'name' => $file->getClientOriginalName(),
+                    'path' => $path,
+                    'uploaded_at' => now()->toDateTimeString(),
+                ];
+            }
+        }
+        $validated['documents'] = $documents;
+
         TbtFormation::create($validated);
 
         // Redirect to planning if coming from planning calendar, otherwise to index
@@ -163,6 +180,29 @@ class TbtFormationController extends Controller
         }
 
         $validated['is_active'] = $request->has('is_active');
+
+        // Handle documents (append new ones, keep existing)
+        $existingDocuments = $tbtFormation->documents ?? [];
+        if (!is_array($existingDocuments)) {
+            $existingDocuments = [];
+        }
+
+        $newDocuments = [];
+        if ($request->hasFile('documents')) {
+            foreach ($request->file('documents') as $file) {
+                if (!$file) {
+                    continue;
+                }
+                $path = $file->store('tbt_formations/documents', 'uploads');
+                $newDocuments[] = [
+                    'name' => $file->getClientOriginalName(),
+                    'path' => $path,
+                    'uploaded_at' => now()->toDateTimeString(),
+                ];
+            }
+        }
+
+        $validated['documents'] = array_values(array_merge($existingDocuments, $newDocuments));
 
         $tbtFormation->update($validated);
 

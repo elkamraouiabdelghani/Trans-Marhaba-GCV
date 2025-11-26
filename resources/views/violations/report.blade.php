@@ -143,14 +143,7 @@
         </div>
     @endif
 
-    @if($violation->notes)
-        <div class="section">
-            <div class="section-title">{{ __('messages.notes') }}</div>
-            <p>{{ $violation->notes }}</p>
-        </div>
-    @endif
-
-    @if($violation->actionPlan)
+    @if($violation->analysis || $violation->action_plan)
         <div class="section">
             <div class="section-title">{{ __('messages.violation_actions') }}</div>
             <p style="margin: 0 0 10px; color:#6b7280;">{{ __('messages.violation_action_plan_subtitle') }}</p>
@@ -158,23 +151,23 @@
                 <tbody>
                     <tr>
                         <th>{{ __('messages.violation_analysis') }}</th>
-                        <td>{{ $violation->actionPlan->analysis ?? __('messages.not_available') }}</td>
+                        <td>{{ $violation->analysis ?? __('messages.not_available') }}</td>
                     </tr>
                     <tr>
                         <th>{{ __('messages.violation_action_plan') }}</th>
-                        <td>{{ $violation->actionPlan->action_plan ?? __('messages.not_available') }}</td>
+                        <td>{{ $violation->action_plan ?? __('messages.not_available') }}</td>
                     </tr>
                     <tr>
                         <th>{{ __('messages.violation_evidence') }}</th>
                         <td>
-                            @if($violation->actionPlan->evidence_path)
+                            @if($violation->evidence_path)
                                 {{ __('messages.yes') }}
-                                @if($violation->actionPlan->evidence_original_name)
-                                    – {{ $violation->actionPlan->evidence_original_name }}
+                                @if($violation->evidence_original_name)
+                                    – {{ $violation->evidence_original_name }}
                                 @endif
                                 @php
                                     $evidenceUrl = route('violations.action-plan.evidence', $violation);
-                                    $extension = strtolower(pathinfo($violation->actionPlan->evidence_original_name ?? '', PATHINFO_EXTENSION));
+                                    $extension = strtolower(pathinfo($violation->evidence_original_name ?? '', PATHINFO_EXTENSION));
                                     $imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'];
                                 @endphp
                                 <div style="margin-top:4px;">
@@ -189,14 +182,6 @@
                                 {{ __('messages.no') }}
                             @endif
                         </td>
-                    </tr>
-                    <tr>
-                        <th>{{ __('messages.created_at') }}</th>
-                        <td>{{ $violation->actionPlan->created_at?->format('d/m/Y H:i') ?? __('messages.not_available') }}</td>
-                    </tr>
-                    <tr>
-                        <th>{{ __('messages.updated_at') }}</th>
-                        <td>{{ $violation->actionPlan->updated_at?->format('d/m/Y H:i') ?? __('messages.not_available') }}</td>
                     </tr>
                 </tbody>
             </table>

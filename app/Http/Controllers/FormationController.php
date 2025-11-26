@@ -4,11 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\FormationRequest;
 use App\Models\Formation;
-use App\Models\FormationCategory;
 use App\Models\DriverFormation;
 use App\Models\Flotte;
 use App\Models\Driver;
 use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Response;
@@ -23,7 +23,7 @@ class FormationController extends Controller
     public function index(Request $request): View
     {
         try {
-            $categories = FormationCategory::orderBy('name')->get();
+            $typeOptions = Formation::typeOptions();
 
             // Get filter options
             $integratedDrivers = Driver::where('is_integrated', 1)
@@ -37,7 +37,7 @@ class FormationController extends Controller
         $selectedDriver = $request->input('driver');
         $selectedFlotte = $request->input('flotte');
         $selectedStatus = $request->input('status');
-        $selectedFormationCategory = $request->input('formation_category');
+        $selectedFormationType = $request->input('type');
         $requestedYear = $request->input('year');
         $selectedYear = $requestedYear ?: $currentYear;
         $yearFilterApplied = $requestedYear !== null && $requestedYear !== '';
@@ -79,13 +79,13 @@ class FormationController extends Controller
             }
 
             // Determine if filters are applied
-        $hasFilters = $selectedDriver || $selectedFlotte || $selectedStatus || $selectedFormationCategory || $yearFilterApplied;
+        $hasFilters = $selectedDriver || $selectedFlotte || $selectedStatus || $selectedFormationType || $yearFilterApplied;
             
             // Rule: If only status is selected, show nothing
-        $onlyStatus = $selectedStatus && !$selectedDriver && !$selectedFlotte && !$selectedFormationCategory && !$yearFilterApplied;
+        $onlyStatus = $selectedStatus && !$selectedDriver && !$selectedFlotte && !$selectedFormationType && !$yearFilterApplied;
 
         // Build base query for formations
-        $formationsQuery = Formation::with(['category', 'flotte']);
+        $formationsQuery = Formation::with(['flotte']);
 
         if ($selectedYear) {
             $formationsQuery->whereYear('realizing_date', $selectedYear);
@@ -112,9 +112,9 @@ class FormationController extends Controller
                 $formationsQuery->whereRaw('1 = 0'); // Force empty result
             } else {
 
-                // Filter by formation category (type)
-                if ($selectedFormationCategory) {
-                    $formationsQuery->where('formation_category_id', $selectedFormationCategory);
+                // Filter by formation type
+                if ($selectedFormationType) {
+                    $formationsQuery->where('type', $selectedFormationType);
                 }
 
                 // Filter by realizing_date year if year is selected and no driver/flotte filters
@@ -228,7 +228,7 @@ class FormationController extends Controller
                 }
             }
 
-            $formations = $formationsQuery->orderBy('name')->get();
+        $formations = $formationsQuery->orderBy('theme')->get();
 
             // Build graph data (always show when filters are applied, even with 0 counts)
             $graphData = null;
@@ -265,9 +265,9 @@ class FormationController extends Controller
                     }
                 }
 
-                if ($selectedFormationCategory) {
-                    $query->whereHas('formation', function ($q) use ($selectedFormationCategory) {
-                        $q->where('formation_category_id', $selectedFormationCategory);
+                if ($selectedFormationType) {
+                    $query->whereHas('formation', function ($q) use ($selectedFormationType) {
+                        $q->where('type', $selectedFormationType);
                     });
                 }
 
@@ -301,7 +301,7 @@ class FormationController extends Controller
                             }
                             
                             return [
-                                'name' => $formation->name,
+                                'theme' => $formation->theme,
                                 'count' => $matchingFormations->count(),
                             ];
                         })
@@ -328,13 +328,13 @@ class FormationController extends Controller
 
             return view('formations.index', compact(
                 'formations',
-                'categories',
+                'typeOptions',
                 'integratedDrivers',
                 'flottes',
                 'selectedDriver',
                 'selectedFlotte',
                 'selectedStatus',
-                'selectedFormationCategory',
+                'selectedFormationType',
                 'selectedYear',
                 'years',
                 'graphData',
@@ -349,7 +349,7 @@ class FormationController extends Controller
 
             return view('formations.index', [
                 'formations' => collect(),
-                'categories' => collect(),
+                'typeOptions' => Formation::typeOptions(),
                 'integratedDrivers' => collect(),
                 'flottes' => collect(),
                 'graphData' => null,
@@ -366,7 +366,7 @@ class FormationController extends Controller
                 'selectedDriver' => null,
                 'selectedFlotte' => null,
                 'selectedStatus' => null,
-                'selectedFormationCategory' => null,
+                'selectedFormationType' => null,
             ])->with('error', __('messages.formation_create_error'));
         }
     }
@@ -376,10 +376,10 @@ class FormationController extends Controller
      */
     public function create(): View
     {
-        $categories = FormationCategory::orderBy('name')->get();
         $flottes = \App\Models\Flotte::orderBy('name')->get();
+        $typeOptions = Formation::typeOptions();
 
-        return view('formations.create', compact('categories', 'flottes'));
+        return view('formations.create', compact('typeOptions', 'flottes'));
     }
 
     /**
@@ -412,10 +412,19 @@ class FormationController extends Controller
      */
     public function edit(Formation $formation): View
     {
-        $categories = FormationCategory::orderBy('name')->get();
         $flottes = \App\Models\Flotte::orderBy('name')->get();
+        $typeOptions = Formation::typeOptions();
 
-        return view('formations.edit', compact('formation', 'categories', 'flottes'));
+        return view('formations.edit', compact('formation', 'typeOptions', 'flottes'));
+    }
+
+    /**
+     * Display the specified formation.
+     * Redirects to edit form since detailed read-only view is not implemented.
+     */
+    public function show(Formation $formation): RedirectResponse
+    {
+        return redirect()->route('formations.edit', $formation);
     }
 
     /**
@@ -468,7 +477,7 @@ class FormationController extends Controller
             $selectedYear = $availableYears->first();
         }
 
-        $formations = Formation::with(['category'])
+        $formations = Formation::query()
             ->where(function ($query) use ($selectedYear) {
                 $query->whereYear('realizing_date', $selectedYear)
                     ->orWhere(function ($subQuery) use ($selectedYear) {

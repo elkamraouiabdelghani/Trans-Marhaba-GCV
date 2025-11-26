@@ -78,7 +78,7 @@
                     </div>
 
                     <div class="col-md-6 mb-3">
-                        <label for="formation_id" class="form-label">{{ __('messages.formation_name') }} <span class="text-danger">*</span></label>
+                        <label for="formation_id" class="form-label">{{ __('messages.formation_theme') }} <span class="text-danger">*</span></label>
                         <select class="form-select @error('formation_id') is-invalid @enderror" 
                                 id="formation_id" 
                                 name="formation_id" 
@@ -187,8 +187,8 @@
 
             <div class="row mb-3">
                 <div class="col-md-6">
-                    <label class="form-label fw-bold">{{ __('messages.formation_name') }}</label>
-                    <p class="text-muted">{{ $formationProcess->formation->name ?? 'N/A' }}</p>
+                    <label class="form-label fw-bold">{{ __('messages.formation_theme') }}</label>
+                    <p class="text-muted">{{ $formationProcess->formation->theme ?? 'N/A' }}</p>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label fw-bold">{{ __('messages.driver') }}</label>

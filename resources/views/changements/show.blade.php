@@ -57,14 +57,6 @@
                                 @elseif($changement->isForAdministrative())
                                     <i class="bi bi-person-gear text-warning"></i> {{ __('messages.administrative_user') }}: {{ $changement->getSubjectName() }}
                                 @endif
-                                @if($changement->replacement)
-                                    → 
-                                    @if($changement->isReplacementDriver())
-                                        <i class="bi bi-person-badge text-info"></i> {{ __('messages.replacement') }}: {{ $changement->getReplacementName() }}
-                                    @elseif($changement->isReplacementAdministrative())
-                                        <i class="bi bi-person-gear text-warning"></i> {{ __('messages.replacement') }}: {{ $changement->getReplacementName() }}
-                                    @endif
-                                @endif
                             @endif
                         </small>
                     </div>
@@ -173,71 +165,22 @@
         </div>
         @endif
 
-        <!-- Replacement Information Card -->
-        @if($changement->replacement)
+        <!-- Action Information Card -->
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-white border-0 py-3">
                 <h6 class="mb-0 fw-bold">
-                    <i class="bi bi-person-plus-circle me-2 text-success"></i>
-                    {{ __('messages.replacement_information') }}
+                    <i class="bi bi-clipboard-check text-success me-2"></i>
+                    {{ __('messages.action') }}
                 </h6>
             </div>
             <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="d-flex align-items-center mb-3">
-                            @if($changement->isReplacementDriver())
-                                <div class="bg-info bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
-                                    <i class="bi bi-person-badge text-info fs-5"></i>
-                                </div>
-                                <div>
-                                    <strong class="text-dark d-block">{{ __('messages.driver') }}</strong>
-                                    <span class="text-muted">{{ $changement->getReplacementName() }}</span>
-                                </div>
-                            @elseif($changement->isReplacementAdministrative())
-                                <div class="bg-warning bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
-                                    <i class="bi bi-person-gear text-warning fs-5"></i>
-                                </div>
-                                <div>
-                                    <strong class="text-dark d-block">{{ __('messages.administrative_user') }}</strong>
-                                    <span class="text-muted">{{ $changement->getReplacementName() }}</span>
-                                </div>
-                            @endif
-                        </div>
-                    </div>
-                    @if($changement->isReplacementDriver() && $changement->replacement)
-                        <div class="col-md-6">
-                            <div class="mb-2">
-                                <small class="text-muted d-block">{{ __('messages.license_number') }}</small>
-                                <strong>{{ $changement->replacement->license_number ?? __('messages.not_available') }}</strong>
-                            </div>
-                            @if($changement->replacement->email)
-                            <div class="mb-2">
-                                <small class="text-muted d-block">{{ __('messages.email') }}</small>
-                                <strong>{{ $changement->replacement->email }}</strong>
-                            </div>
-                            @endif
-                        </div>
-                    @elseif($changement->isReplacementAdministrative() && $changement->replacement)
-                        <div class="col-md-6">
-                            @if($changement->replacement->email)
-                            <div class="mb-2">
-                                <small class="text-muted d-block">{{ __('messages.email') }}</small>
-                                <strong>{{ $changement->replacement->email }}</strong>
-                            </div>
-                            @endif
-                            @if($changement->replacement->department)
-                            <div class="mb-2">
-                                <small class="text-muted d-block">{{ __('messages.department') }}</small>
-                                <strong>{{ $changement->replacement->department }}</strong>
-                            </div>
-                            @endif
-                        </div>
-                    @endif
-                </div>
+                @if($changement->action)
+                    <p class="mb-0 text-muted">{{ $changement->action }}</p>
+                @else
+                    <span class="text-muted">{{ __('messages.not_specified') }}</span>
+                @endif
             </div>
         </div>
-        @endif
 
         <div class="row">
             <!-- Steps Sidebar -->

@@ -129,18 +129,45 @@
 
                                 <div class="col-md-6">
                                     <label for="location" class="form-label fw-semibold">{{ __('messages.location') }}</label>
-                                    <input
-                                        type="text"
-                                        id="location"
-                                        name="location"
-                                        class="form-control @error('location') is-invalid @enderror"
-                                        value="{{ old('location') }}"
-                                    >
+                                    <div class="input-group">
+                                        <input
+                                            type="text"
+                                            id="location"
+                                            name="location"
+                                            class="form-control @error('location') is-invalid @enderror"
+                                            value="{{ old('location') }}"
+                                            placeholder="{{ __('messages.location_area_placeholder') ?? __('messages.location') }}"
+                                        >
+                                        <button
+                                            type="button"
+                                            class="btn btn-outline-secondary"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#violationLocationMapModal"
+                                            id="open-location-map-btn"
+                                        >
+                                            <i class="bi bi-geo-alt"></i>
+                                        </button>
+                                    </div>
                                     @error('location')
-                                        <div class="invalid-feedback">{{ $message }}</div>
+                                        <div class="invalid-feedback d-block">{{ $message }}</div>
                                     @enderror
-                                </div>
 
+                                    <input type="hidden" name="location_lat" id="location_lat" value="{{ old('location_lat') }}">
+                                    <input type="hidden" name="location_lng" id="location_lng" value="{{ old('location_lng') }}">
+
+                                    <small class="text-muted d-block mt-1" id="location-coordinates-label">
+                                        @php
+                                            $lat = old('location_lat');
+                                            $lng = old('location_lng');
+                                        @endphp
+                                        @if($lat && $lng)
+                                            {{ __('messages.location_coords_label') ?? 'Coordinates' }}:
+                                            <span class="fw-semibold">{{ $lat }}, {{ $lng }}</span>
+                                        @else
+                                            {{ __('messages.location_help') ?? 'You can type an area name or pick a point on the map.' }}
+                                        @endif
+                                    </small>
+                                </div>
 
                                 <div class="col-md-6">
                                     <label for="vehicle_id" class="form-label fw-semibold">{{ __('messages.vehicle') }}</label>
@@ -174,6 +201,7 @@
                                         name="speed"
                                         class="form-control @error('speed') is-invalid @enderror"
                                         value="{{ old('speed') }}"
+                                        placeholder="{{ __('messages.violation_speed_hint') }}"
                                     >
                                     @error('speed')
                                         <div class="invalid-feedback">{{ $message }}</div>
@@ -190,6 +218,7 @@
                                         name="speed_limit"
                                         class="form-control @error('speed_limit') is-invalid @enderror"
                                         value="{{ old('speed_limit') }}"
+                                        placeholder="{{ __('messages.violation_speed_limit_hint') }}"
                                     >
                                     @error('speed_limit')
                                         <div class="invalid-feedback">{{ $message }}</div>
@@ -206,6 +235,7 @@
                                         name="violation_duration_seconds"
                                         class="form-control @error('violation_duration_seconds') is-invalid @enderror"
                                         value="{{ old('violation_duration_seconds') }}"
+                                        placeholder="{{ __('messages.violation_duration_hint') }}"
                                     >
                                     @error('violation_duration_seconds')
                                         <div class="invalid-feedback">{{ $message }}</div>
@@ -222,6 +252,7 @@
                                         name="violation_distance_km"
                                         class="form-control @error('violation_distance_km') is-invalid @enderror"
                                         value="{{ old('violation_distance_km') }}"
+                                        placeholder="{{ __('messages.violation_distance_hint') }}"
                                     >
                                     @error('violation_distance_km')
                                         <div class="invalid-feedback">{{ $message }}</div>
@@ -251,21 +282,9 @@
                                         name="description"
                                         rows="4"
                                         class="form-control @error('description') is-invalid @enderror"
+                                        placeholder="{{ __('messages.violation_description_hint') }}"
                                     >{{ old('description') }}</textarea>
                                     @error('description')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-
-                                <div class="col-12">
-                                    <label for="notes" class="form-label fw-semibold">{{ __('messages.notes') }}</label>
-                                    <textarea
-                                        id="notes"
-                                        name="notes"
-                                        rows="3"
-                                        class="form-control @error('notes') is-invalid @enderror"
-                                    >{{ old('notes') }}</textarea>
-                                    @error('notes')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
@@ -279,9 +298,9 @@
                                         name="analysis"
                                         rows="3"
                                         class="form-control @error('analysis') is-invalid @enderror"
+                                        placeholder="{{ __('messages.violation_analysis_hint') }}"
                                         required
                                     >{{ old('analysis') }}</textarea>
-                                    <small class="text-muted d-block">{{ __('messages.violation_analysis_hint') }}</small>
                                     @error('analysis')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
@@ -296,9 +315,9 @@
                                         name="action_plan"
                                         rows="4"
                                         class="form-control @error('action_plan') is-invalid @enderror"
+                                        placeholder="{{ __('messages.violation_action_plan_hint') }}"
                                         required
                                     >{{ old('action_plan') }}</textarea>
-                                    <small class="text-muted d-block">{{ __('messages.violation_action_plan_hint') }}</small>
                                     @error('action_plan')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
@@ -324,16 +343,22 @@
                                     <input
                                         type="file"
                                         id="document"
-                                        name="document"
-                                        class="form-control @error('document') is-invalid @enderror"
+                                        name="document[]"
+                                        class="form-control @error('document') is-invalid @enderror @error('document.*') is-invalid @enderror"
                                         accept=".pdf,.jpg,.jpeg,.png"
+                                        multiple
                                     >
                                     <small class="text-muted">{{ __('messages.max_file_size') }}: 10MB</small>
                                     @error('document')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
+                                    @error('document.*')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
                                 </div>
                             </div>
+
+                            <hr class="my-4">
 
                             <div class="d-flex justify-content-end mt-4">
                                 <button type="submit" class="btn btn-dark">
@@ -348,6 +373,42 @@
     </div>
 </x-app-layout>
 
+<!-- Location Map Modal -->
+<div class="modal fade" id="violationLocationMapModal" tabindex="-1" aria-labelledby="violationLocationMapModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="violationLocationMapModalLabel">
+                    <i class="bi bi-geo-alt me-2"></i>{{ __('messages.select_location_on_map') ?? 'Select location on map' }}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="violation-location-map" style="width: 100%; height: 400px; border-radius: 0.5rem; border: 1px solid #dee2e6;"></div>
+                <small class="text-muted d-block mt-2">
+                    {{ __('messages.location_map_help') ?? 'Click on the map to set the violation coordinates.' }}
+                </small>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('messages.close') }}</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Leaflet (simple inline usage for this form) -->
+<link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+/>
+<script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+></script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const driverSelect = document.getElementById('driver_id');
@@ -361,6 +422,77 @@ document.addEventListener('DOMContentLoaded', function () {
             if (assignedVehicleId) {
                 vehicleSelect.value = assignedVehicleId;
             }
+        });
+    }
+
+    // Map handling for location
+    let violationMap = null;
+    let violationMarker = null;
+
+    function initViolationMap() {
+        if (!window.L) {
+            return;
+        }
+
+        const mapContainer = document.getElementById('violation-location-map');
+        if (!mapContainer) return;
+
+        if (!violationMap) {
+            violationMap = L.map(mapContainer).setView([33.5731, -7.5898], 7); // Default center: Morocco
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; OpenStreetMap contributors',
+            }).addTo(violationMap);
+
+            const latInput = document.getElementById('location_lat');
+            const lngInput = document.getElementById('location_lng');
+            const coordsLabel = document.getElementById('location-coordinates-label');
+
+            function updateMarkerAndInputs(lat, lng) {
+                if (violationMarker) {
+                    violationMarker.setLatLng([lat, lng]);
+                } else {
+                    violationMarker = L.marker([lat, lng]).addTo(violationMap);
+                }
+
+                if (latInput) latInput.value = lat.toFixed(6);
+                if (lngInput) lngInput.value = lng.toFixed(6);
+                if (coordsLabel) {
+                    const label = @json(__('messages.location_coords_label') ?? 'Coordinates');
+                    coordsLabel.innerHTML = label + ': ' +
+                        '<span class="fw-semibold">' + lat.toFixed(6) + ', ' + lng.toFixed(6) + '</span>';
+                }
+            }
+
+            // Initialize from existing values if any
+            if (latInput && lngInput && latInput.value && lngInput.value) {
+                const lat = parseFloat(latInput.value);
+                const lng = parseFloat(lngInput.value);
+                if (!isNaN(lat) && !isNaN(lng)) {
+                    updateMarkerAndInputs(lat, lng);
+                    violationMap.setView([lat, lng], 13);
+                }
+            }
+
+            violationMap.on('click', function (e) {
+                updateMarkerAndInputs(e.latlng.lat, e.latlng.lng);
+            });
+        } else {
+            violationMap.invalidateSize();
+        }
+    }
+
+    const mapModal = document.getElementById('violationLocationMapModal');
+    if (mapModal) {
+        mapModal.addEventListener('shown.bs.modal', function () {
+            initViolationMap();
+            // Small delay to ensure proper sizing once modal is fully visible
+            setTimeout(function () {
+                if (violationMap) {
+                    violationMap.invalidateSize();
+                }
+            }, 150);
         });
     }
 });

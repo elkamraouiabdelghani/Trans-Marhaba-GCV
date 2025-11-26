@@ -35,22 +35,16 @@
             </a>
         </li>
         <li class="mb-2">
-            <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ (request()->routeIs('formations.*') || request()->routeIs('formation-processes.*') || request()->routeIs('formation-categories.*')) ? 'active' : '' }}" 
+            <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ (request()->routeIs('formations.*') || request()->routeIs('formation-processes.*')) ? 'active' : '' }}" 
                data-bs-toggle="collapse" 
                data-bs-target="#formationsSubmenu" 
-               aria-expanded="{{ (request()->routeIs('formations.*') || request()->routeIs('formation-processes.*') || request()->routeIs('formation-categories.*')) ? 'true' : 'false' }}"
+               aria-expanded="{{ (request()->routeIs('formations.*') || request()->routeIs('formation-processes.*')) ? 'true' : 'false' }}"
                aria-controls="formationsSubmenu">
                 <i class="bi bi-book me-2 text-gray-600 sidebar-icon"></i>
                 <span class="sidebar-text">{{ __('messages.formations') }}</span>
                 <i class="bi bi-chevron-down ms-auto sidebar-icon"></i>
             </a>
-            <ul class="collapse list-unstyled ms-3 {{ (request()->routeIs('formations.*') || request()->routeIs('formation-processes.*') || request()->routeIs('formation-categories.*')) ? 'show' : '' }}" id="formationsSubmenu">
-                <li class="mb-1">
-                    <a href="{{ route('formation-categories.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('formation-categories.*') ? 'active' : '' }}">
-                        <i class="bi bi-collection me-2 text-gray-600 sidebar-icon"></i>
-                        <span class="sidebar-text">{{ __('messages.formation_categories_title') }}</span>
-                    </a>
-                </li>
+            <ul class="collapse list-unstyled ms-3 {{ (request()->routeIs('formations.*') || request()->routeIs('formation-processes.*')) ? 'show' : '' }}" id="formationsSubmenu">
                 <li class="mb-1">
                     <a href="{{ route('formations.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('formations.*') ? 'active' : '' }}">
                         <i class="bi bi-book me-2 text-gray-600 sidebar-icon"></i>
@@ -193,7 +187,7 @@
                         {{ __('messages.drivers') }}
                     @elseif(request()->routeIs('integrations.*'))
                         {{ __('messages.driver_integrations') }}
-                    @elseif(request()->routeIs('formations.*') || request()->routeIs('formation-processes.*') || request()->routeIs('formation-categories.*'))
+                    @elseif(request()->routeIs('formations.*') || request()->routeIs('formation-processes.*'))
                         {{ __('messages.formations') }}
                     @elseif(request()->routeIs('violations.*') || request()->routeIs('violations.index') || request()->routeIs('violations.create') || request()->routeIs('violations.edit') || request()->routeIs('violations.show'))
                         {{ __('messages.violations') }}
@@ -209,7 +203,7 @@
                         {{ __('messages.members') }}
                     @elseif(request()->routeIs('changement-types.*') || request()->routeIs('changements.*') || request()->routeIs('changement-types.index') || request()->routeIs('changement-types.create') || request()->routeIs('changement-types.edit') || request()->routeIs('changement-types.show') || request()->routeIs('changements.index') || request()->routeIs('changements.create') || request()->routeIs('changements.edit') || request()->routeIs('changements.show'))
                         {{ __('messages.changements') }}
-                    @elseif(request()->routeIs('tbt-formations.*') || request()->routeIs('tbt-formations.index') || request()->routeIs('tbt-formations.create') || request()->routeIs('tbt-formations.edit') || request()->routeIs('tbt-formations.show') || request()->routeIs('formation-processes.*') || request()->routeIs('formation-processes.index') || request()->routeIs('formation-processes.create') || request()->routeIs('formation-processes.edit') || request()->routeIs('formation-processes.show') || request()->routeIs('formation-categories.*') || request()->routeIs('formation-categories.index') || request()->routeIs('formation-categories.create') || request()->routeIs('formation-categories.edit') || request()->routeIs('formation-categories.show'))
+                    @elseif(request()->routeIs('tbt-formations.*') || request()->routeIs('tbt-formations.index') || request()->routeIs('tbt-formations.create') || request()->routeIs('tbt-formations.edit') || request()->routeIs('tbt-formations.show') || request()->routeIs('formation-processes.*') || request()->routeIs('formation-processes.index') || request()->routeIs('formation-processes.create') || request()->routeIs('formation-processes.edit') || request()->routeIs('formation-processes.show'))
                         {{ __('messages.tbt_formations') }}
                     @elseif(request()->routeIs('reports.*') || request()->routeIs('reports.index') || request()->routeIs('reports.create') || request()->routeIs('reports.edit') || request()->routeIs('reports.show'))
                         {{ __('messages.reports') }}
@@ -264,22 +258,16 @@
                 </a>
             </li>
             <li class="mb-2">
-                <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ (request()->routeIs('formations.*') || request()->routeIs('formation-processes.*') || request()->routeIs('formation-categories.*')) ? 'active' : '' }}" 
+                <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ (request()->routeIs('formations.*') || request()->routeIs('formation-processes.*')) ? 'active' : '' }}" 
                    data-bs-toggle="collapse" 
                    data-bs-target="#formationsSubmenu" 
-                   aria-expanded="{{ (request()->routeIs('formations.*') || request()->routeIs('formation-processes.*') || request()->routeIs('formation-categories.*')) ? 'true' : 'false' }}"
+                   aria-expanded="{{ (request()->routeIs('formations.*') || request()->routeIs('formation-processes.*')) ? 'true' : 'false' }}"
                    aria-controls="formationsSubmenu">
                     <i class="bi bi-book me-2 text-gray-600 sidebar-icon"></i>
                     <span class="sidebar-text">{{ __('messages.formations') }}</span>
                     <i class="bi bi-chevron-down ms-auto sidebar-icon"></i>
                 </a>
-                <ul class="collapse list-unstyled ms-3 {{ (request()->routeIs('formations.*') || request()->routeIs('formation-processes.*') || request()->routeIs('formation-categories.*')) ? 'show' : '' }}" id="formationsSubmenu">
-                    <li class="mb-1">
-                        <a href="{{ route('formation-categories.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('formation-categories.*') ? 'active' : '' }}">
-                            <i class="bi bi-collection me-2 text-gray-600 sidebar-icon"></i>
-                            <span class="sidebar-text">{{ __('messages.formation_categories_title') }}</span>
-                        </a>
-                    </li>
+                <ul class="collapse list-unstyled ms-3 {{ (request()->routeIs('formations.*') || request()->routeIs('formation-processes.*')) ? 'show' : '' }}" id="formationsSubmenu">
                     <li class="mb-1">
                         <a href="{{ route('formations.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('formations.*') ? 'active' : '' }}">
                             <i class="bi bi-book me-2 text-gray-600 sidebar-icon"></i>

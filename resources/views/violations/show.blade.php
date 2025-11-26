@@ -98,6 +98,22 @@
                                 </div>
                             </div>
 
+                            @if($violation->location_lat && $violation->location_lng)
+                            <div class="col-12 mt-3">
+                                <div class="border rounded-3 p-3">
+                                    <h6 class="text-uppercase text-muted small fw-semibold mb-2">
+                                        <i class="bi bi-geo-alt me-1"></i>{{ __('messages.location') }} — {{ __('messages.location_coords_label') }}
+                                    </h6>
+                                    <p class="small text-muted mb-2">
+                                        {{ __('messages.location_coords_label') }}:
+                                        <span class="fw-semibold">{{ $violation->location_lat }}, {{ $violation->location_lng }}</span>
+                                    </p>
+                                    <div id="violation-location-map"
+                                         style="width: 100%; height: 260px; border-radius: 0.5rem; border: 1px solid #dee2e6;"></div>
+                                </div>
+                            </div>
+                            @endif
+
                             <div class="col-md-6">
                                 <div class="border rounded-3 p-3 h-100 d-flex justify-content-start align-items-center">
                                     <div class="me-3">
@@ -164,16 +180,7 @@
                             </div>
                             @endif
 
-                            @if($violation->notes)
-                            <div class="col-12">
-                                <div class="border rounded-3 p-3 bg-light">
-                                    <h6 class="text-uppercase text-muted small fw-semibold">{{ __('messages.notes') }}</h6>
-                                    <p class="mb-0">{{ $violation->notes }}</p>
-                                </div>
-                            </div>
-                            @endif
-
-                            @if($violation->actionPlan)
+                            @if($violation->analysis || $violation->action_plan)
                             <div class="col-12">
                                 <div class="border rounded-3 p-3">
                                     <div class="d-flex justify-content-between align-items-start mb-3">
@@ -181,7 +188,7 @@
                                             <h6 class="text-uppercase text-muted small fw-semibold mb-1">{{ __('messages.violation_action_plan_section') }}</h6>
                                             <p class="text-muted mb-0">{{ __('messages.violation_action_plan_subtitle') }}</p>
                                         </div>
-                                        @if($violation->actionPlan->evidence_path)
+                                        @if($violation->evidence_path)
                                             <a href="{{ route('violations.action-plan.evidence', $violation) }}" class="btn btn-outline-primary btn-sm">
                                                 <i class="bi bi-paperclip me-1"></i>{{ __('messages.download_evidence') }}
                                             </a>
@@ -190,11 +197,11 @@
                                     <div class="row g-3">
                                         <div class="col-md-6">
                                             <h6 class="fw-semibold text-dark">{{ __('messages.violation_analysis') }}</h6>
-                                            <p class="mb-0">{{ $violation->actionPlan->analysis }}</p>
+                                            <p class="mb-0">{{ $violation->analysis }}</p>
                                         </div>
                                         <div class="col-md-6">
                                             <h6 class="fw-semibold text-dark">{{ __('messages.violation_action_plan') }}</h6>
-                                            <p class="mb-0">{{ $violation->actionPlan->action_plan }}</p>
+                                            <p class="mb-0">{{ $violation->action_plan }}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -212,24 +219,53 @@
                             </div>
                             @endif
                         </div>
-
-                        <hr class="my-4">
-
-                        <div class="row g-4">
-                            <div class="col-md-6">
-                                <div class="border rounded-3 p-3 h-100">
-                                    <h6 class="text-uppercase text-muted small fw-semibold">{{ __('messages.created_at') }}</h6>
-                                    <p class="mb-0">{{ $violation->created_at?->format('d/m/Y H:i') }}</p>
-                                    @if($violation->createdBy)
-                                        <small class="text-muted">{{ __('messages.created_by') }}: {{ $violation->createdBy->name }}</small>
-                                    @endif
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+    </div>
 </x-app-layout>
 
+@if($violation->location_lat && $violation->location_lng)
+<link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+/>
+<script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    if (!window.L) {
+        return;
+    }
+
+    const mapContainer = document.getElementById('violation-location-map');
+    if (!mapContainer) {
+        return;
+    }
+
+    const lat = parseFloat(@json($violation->location_lat));
+    const lng = parseFloat(@json($violation->location_lng));
+
+    if (isNaN(lat) || isNaN(lng)) {
+        return;
+    }
+
+    const map = L.map(mapContainer).setView([lat, lng], 13);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors',
+    }).addTo(map);
+
+    L.marker([lat, lng]).addTo(map);
+});
+</script>
+@endif

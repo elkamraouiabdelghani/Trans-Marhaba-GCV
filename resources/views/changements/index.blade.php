@@ -196,9 +196,9 @@
                             <tr>
                                 <th class="border-0 py-3 px-4">{{ __('messages.changement_type') }}</th>
                                 <th class="border-0 py-3 px-4">{{ __('messages.subject') }}</th>
-                                <th class="border-0 py-3 px-4">{{ __('messages.remplaçant') }}</th>
                                 <th class="border-0 py-3 px-4">{{ __('messages.responsable') }}</th>
                                 <th class="border-0 py-3 px-4">{{ __('messages.date_changement') }}</th>
+                                <th class="border-0 py-3 px-4">{{ __('messages.action') }}</th>
                                 <th class="border-0 py-3 px-4">{{ __('messages.current_step') }}</th>
                                 <th class="border-0 py-3 px-4">{{ __('messages.status') }}</th>
                                 <th class="border-0 py-3 px-4 text-center">{{ __('messages.actions') }}</th>
@@ -241,38 +241,24 @@
                                         @endif
                                     </td>
                                     <td class="py-3 px-4">
-                                        @if($changement->replacement)
-                                            <div class="d-flex align-items-center">
-                                                @if($changement->isReplacementDriver())
-                                                    <i class="bi bi-person-badge text-info me-2"></i>
-                                                    <div>
-                                                        <strong class="text-dark">{{ $changement->getReplacementName() }}</strong>
-                                                        <br>
-                                                        <small class="text-muted">{{ __('messages.driver') }}</small>
-                                                    </div>
-                                                @elseif($changement->isReplacementAdministrative())
-                                                    <i class="bi bi-person-gear text-warning me-2"></i>
-                                                    <div>
-                                                        <strong class="text-dark">{{ $changement->getReplacementName() }}</strong>
-                                                        <br>
-                                                        <small class="text-muted">{{ __('messages.administrative_user') }}</small>
-                                                    </div>
-                                                @endif
-                                            </div>
-                                        @else
-                                            <span class="text-muted">
-                                                <i class="bi bi-dash-circle me-1"></i>
-                                                {{ __('messages.not_specified') }}
-                                            </span>
-                                        @endif
-                                    </td>
-                                    <td class="py-3 px-4">
                                         <span class="badge bg-secondary bg-opacity-10 text-secondary">
                                             {{ $changement->responsable_changement }}
                                         </span>
                                     </td>
                                     <td class="py-3 px-4">
                                         <span class="text-muted">{{ $changement->date_changement->format('d/m/Y') }}</span>
+                                    </td>
+                                    <td class="py-3 px-4">
+                                        @if($changement->action)
+                                            <span class="text-dark">
+                                                {{ \Illuminate\Support\Str::limit($changement->action, 80) }}
+                                            </span>
+                                        @else
+                                            <span class="text-muted">
+                                                <i class="bi bi-dash-circle me-1"></i>
+                                                {{ __('messages.not_specified') }}
+                                            </span>
+                                        @endif
                                     </td>
                                     <td class="py-3 px-4">
                                         @php

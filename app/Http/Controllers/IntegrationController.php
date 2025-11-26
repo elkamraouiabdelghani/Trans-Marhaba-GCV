@@ -14,6 +14,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 
 class IntegrationController extends Controller
 {
@@ -281,10 +282,8 @@ class IntegrationController extends Controller
             }
 
             // Check if integration is already validated (read-only)
-            if ($integration->isValidated()) {
-                return redirect()->route('integrations.show', $integration->id)
-                    ->with('error', __('messages.integration_already_finalized'));
-            }
+        // Allow edits even if integration is already validated (finalized),
+        // so admins can adjust stored data without re-running the workflow.
 
             // Get the step
             $step = $integration->getStep($stepNumber);
@@ -337,12 +336,16 @@ class IntegrationController extends Controller
             $existingStep3Documents = [];
             $existingDocuments = [];
             $existingContracts = [];
+            $existingPhotoPath = null;
 
             if ($stepNumber === 2) {
                 $stepData = $step->step_data ?? [];
                 $existingStep2Documents = is_array($stepData) ? ($stepData['documents'] ?? []) : [];
                 if (!is_array($existingStep2Documents)) {
                     $existingStep2Documents = [];
+                }
+                if (is_array($stepData) && !empty($stepData['photo_path'])) {
+                    $existingPhotoPath = $stepData['photo_path'];
                 }
             }
 
@@ -457,6 +460,28 @@ class IntegrationController extends Controller
                 }
             }
 
+            if ($stepNumber === 2) {
+                $removePhoto = $request->boolean('remove_photo');
+
+                if ($request->hasFile('photo')) {
+                    if ($existingPhotoPath) {
+                        Storage::disk('uploads')->delete($existingPhotoPath);
+                    }
+                    $directory = $integration->type === 'driver' ? 'profiles/drivers' : 'profiles/users';
+                    $photoPath = $request->file('photo')->store($directory, 'uploads');
+                    $validated['photo_path'] = $photoPath;
+                } elseif ($removePhoto) {
+                    if ($existingPhotoPath) {
+                        Storage::disk('uploads')->delete($existingPhotoPath);
+                    }
+                    $validated['photo_path'] = null;
+                } elseif (!empty($existingPhotoPath)) {
+                    $validated['photo_path'] = $existingPhotoPath;
+                }
+
+                unset($validated['photo'], $validated['remove_photo']);
+            }
+
             // Update step data
             $step->setStepDataArray($validated);
             $step->save();
@@ -496,6 +521,18 @@ class IntegrationController extends Controller
                         'trace' => $e->getTraceAsString(),
                     ]);
                     // Continue - step is saved, driver creation can be retried
+                }
+            } elseif ($stepNumber === 2 && $integration->type === 'administration') {
+                try {
+                    $this->updateUserFromStep2($integration);
+                } catch (\Throwable $e) {
+                    Log::error('Failed to update user from step 2', [
+                        'integration_id' => $integration->id,
+                        'error' => $e->getMessage(),
+                        'file' => $e->getFile(),
+                        'line' => $e->getLine(),
+                        'trace' => $e->getTraceAsString(),
+                    ]);
                 }
             }
 
@@ -1246,12 +1283,24 @@ class IntegrationController extends Controller
             'visite_medical', 'visite_yeux', 'formation_imd', 'formation_16_module',
             'attestation_travail', 'carte_profession', 'n_cnss', 'rib',
             'license_type', 'license_issue_date', 'license_class',
-            'assigned_vehicle_id', 'notes', 'documents', 'flotte_id'
+            'assigned_vehicle_id', 'notes', 'documents', 'flotte_id',
+            'photo_path',
         ];
         
         foreach ($fields as $field) {
-            if (isset($step2Data[$field]) && $step2Data[$field] !== null && $step2Data[$field] !== '') {
-                $driverData[$field] = $step2Data[$field];
+            if (!array_key_exists($field, $step2Data)) {
+                continue;
+            }
+
+            $value = $step2Data[$field];
+
+            if ($field === 'photo_path') {
+                $driverData['profile_photo_path'] = $value ?: null;
+                continue;
+            }
+
+            if ($value !== null && $value !== '') {
+                $driverData[$field] = $value;
             }
         }
         
@@ -1358,12 +1407,24 @@ class IntegrationController extends Controller
             'visite_medical', 'visite_yeux', 'formation_imd', 'formation_16_module',
             'attestation_travail', 'carte_profession', 'n_cnss', 'rib',
             'license_type', 'license_issue_date', 'license_class',
-            'assigned_vehicle_id', 'notes', 'documents', 'flotte_id'
+            'assigned_vehicle_id', 'notes', 'documents', 'flotte_id',
+            'photo_path',
         ];
         
         foreach ($fields as $field) {
-            if (isset($step2Data[$field]) && $step2Data[$field] !== null && $step2Data[$field] !== '') {
-                $driverData[$field] = $step2Data[$field];
+            if (!array_key_exists($field, $step2Data)) {
+                continue;
+            }
+
+            $value = $step2Data[$field];
+
+            if ($field === 'photo_path') {
+                $driverData['profile_photo_path'] = $value ?: null;
+                continue;
+            }
+
+            if ($value !== null && $value !== '') {
+                $driverData[$field] = $value;
             }
         }
         
@@ -1519,10 +1580,11 @@ class IntegrationController extends Controller
                 throw new \RuntimeException('integration_email_exists');
             }
 
-            $user = User::create([
+            User::create([
                 'name' => $step2Data['full_name'] ?? '',
                 'email' => $email,
                 'email_verified_at' => now(),
+                'date_of_birth' => $step2Data['date_of_birth'] ?? null,
                 'password' => $tempPassword,
                 'phone' => $step2Data['phone'] ?? null,
                 'department' => 'other',
@@ -1530,6 +1592,7 @@ class IntegrationController extends Controller
                 'status' => 'active',
                 'date_integration' => now()->format('Y-m-d'),
                 'is_integrated' => 1,
+                'profile_photo_path' => $step2Data['photo_path'] ?? null,
             ]);
             
         } catch (\Throwable $e) {
@@ -1537,6 +1600,58 @@ class IntegrationController extends Controller
                 'error' => $e->getMessage(),
             ]);
             throw $e;
+        }
+    }
+    
+    /**
+     * Update administrative user data from step 2 when the user already exists.
+     */
+    private function updateUserFromStep2(IntegrationCandidate $integration): void
+    {
+        $step2 = $integration->getStep(2);
+        if (!$step2) {
+            return;
+        }
+
+        $step2Data = $step2->step_data;
+        if (is_string($step2Data)) {
+            $step2Data = json_decode($step2Data, true) ?? [];
+        }
+
+        if (!is_array($step2Data)) {
+            return;
+        }
+
+        $email = isset($step2Data['email']) ? strtolower(trim((string) $step2Data['email'])) : null;
+        if (!$email) {
+            return;
+        }
+
+        $user = User::whereRaw('LOWER(email) = ?', [$email])->first();
+        if (!$user) {
+            return;
+        }
+
+        $updates = [];
+
+        if (!empty($step2Data['date_of_birth'])) {
+            $updates['date_of_birth'] = $step2Data['date_of_birth'];
+        }
+
+        if (!empty($step2Data['full_name'])) {
+            $updates['name'] = $step2Data['full_name'];
+        }
+
+        if (array_key_exists('phone', $step2Data) && $step2Data['phone'] !== null && $step2Data['phone'] !== '') {
+            $updates['phone'] = $step2Data['phone'];
+        }
+
+        if (array_key_exists('photo_path', $step2Data)) {
+            $updates['profile_photo_path'] = $step2Data['photo_path'] ?: null;
+        }
+
+        if (!empty($updates)) {
+            $user->update($updates);
         }
     }
 }

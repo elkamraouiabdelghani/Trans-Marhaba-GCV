@@ -137,12 +137,12 @@
                             </select>
                         </div>
                         <div class="col-md-2">
-                            <label for="formation_category" class="form-label small">{{ __('messages.formation_category_name') }}</label>
-                            <select name="formation_category" id="formation_category" class="form-select form-select-sm">
-                                <option value="">{{ __('messages.all_formations') }}</option>
-                                @foreach($categories ?? [] as $category)
-                                    <option value="{{ $category->id }}" {{ request('formation_category') == $category->id ? 'selected' : '' }}>
-                                        {{ $category->name }}
+                            <label for="type" class="form-label small">{{ __('messages.formation_type_label') }}</label>
+                            <select name="type" id="type" class="form-select form-select-sm">
+                                <option value="">{{ __('messages.all_formation_types') }}</option>
+                                @foreach($typeOptions ?? [] as $value => $label)
+                                    <option value="{{ $value }}" {{ request('type', $selectedFormationType ?? '') === $value ? 'selected' : '' }}>
+                                        {{ $label }}
                                     </option>
                                 @endforeach
                             </select>
@@ -257,15 +257,14 @@
                     <table class="table table-hover mb-0 align-middle" id="formationsTable">
                         <thead class="table-light">
                             <tr>
-                                <th class="ps-3">{{ __('messages.formation_name') }}</th>
-                                <th>{{ __('messages.formation_category_name') }}</th>
+                                <th class="ps-3">{{ __('messages.formation_theme') }}</th>
+                                <th>{{ __('messages.formation_type_label') }}</th>
                                 <th>{{ __('messages.flotte') }}</th>
                                 <th>{{ __('messages.formation_delivery_type') }}</th>
                                 <th>{{ __('messages.formation_progress_status') }}</th>
                                 <th>{{ __('messages.formation_realizing_date') }}</th>
                                 <th>{{ __('messages.formation_duration') }}</th>
                                 <th>{{ __('messages.formation_status') }}</th>
-                                <th>{{ __('messages.obligatoire') }}</th>
                                 <th class="text-end pe-3">{{ __('messages.formation_actions') }}</th>
                             </tr>
                         </thead>
@@ -273,11 +272,11 @@
                             @forelse($formations as $formation)
                                 <tr>
                                     <td class="ps-3">
-                                        <strong>{{ $formation->name }}</strong>
+                                        <strong>{{ $formation->theme }}</strong>
                                     </td>
                                     <td>
                                         <span class="badge bg-light text-dark">
-                                            {{ $formation->category?->name ?? __('messages.not_available') }}
+                                            {{ $formation->type_label ?? __('messages.not_available') }}
                                         </span>
                                     </td>
                                     <td>
@@ -328,13 +327,6 @@
                                             <span class="badge bg-secondary bg-opacity-25 text-secondary">{{ __('messages.formation_inactive') }}</span>
                                         @endif
                                     </td>
-                                    <td>
-                                        @if($formation->obligatoire)
-                                            <span class="badge bg-danger bg-opacity-25 text-danger">{{ __('messages.obligatoire') }}</span>
-                                        @else
-                                            <span class="badge bg-info bg-opacity-25 text-info">{{ __('messages.optional') }}</span>
-                                        @endif
-                                    </td>
                                     <td class="text-end pe-3">
                                         <div class="btn-group" role="group">
                                             @if($formation->status !== 'realized')
@@ -344,7 +336,7 @@
                                                         data-bs-toggle="modal" 
                                                         data-bs-target="#confirmRealizedModal"
                                                         data-formation-id="{{ $formation->id }}"
-                                                        data-formation-name="{{ $formation->name }}">
+                                                        data-formation-theme="{{ $formation->theme }}">
                                                     <i class="bi bi-check-circle"></i>
                                                 </button>
                                             @endif
@@ -414,12 +406,12 @@
                 
                 // If no graph data but filters are applied, show empty graph with formation names
                 if (!graphData || graphData.length === 0) {
-                    const formationNames = formations.map(f => f.name);
+                    const formationThemes = formations.map(f => f.theme);
                     new Chart(ctx, {
                         type: 'bar',
                         data: {
                             labels: ['No Data'],
-                            datasets: formationNames.map((name, index) => {
+                            datasets: formationThemes.map((theme, index) => {
                                 const colors = [
                                     'rgba(54, 162, 235, 0.8)',
                                     'rgba(255, 99, 132, 0.8)',
@@ -433,7 +425,7 @@
                                     'rgba(99, 255, 132, 0.8)',
                                 ];
                                 return {
-                                    label: name,
+                                    label: theme,
                                     data: [0],
                                     backgroundColor: colors[index % colors.length],
                                     borderColor: colors[index % colors.length].replace('0.8', '1'),
@@ -468,11 +460,11 @@
                 
                 // Prepare data for Chart.js
                 const drivers = graphData.map(item => item.driver);
-                // Get all unique formation names from graph data
-                const allFormationNames = [...new Set(graphData.flatMap(item => item.formations.map(f => f.name)))];
+                // Get all unique formation themes from graph data
+                const allFormationThemes = [...new Set(graphData.flatMap(item => item.formations.map(f => f.theme)))];
                 
                 // Create datasets for each formation
-                const datasets = allFormationNames.map((formationName, index) => {
+                const datasets = allFormationThemes.map((formationTheme, index) => {
                     const colors = [
                         'rgba(54, 162, 235, 0.8)',
                         'rgba(255, 99, 132, 0.8)',
@@ -489,12 +481,12 @@
                     const data = drivers.map(driver => {
                         const driverData = graphData.find(d => d.driver === driver);
                         if (!driverData) return 0;
-                        const formation = driverData.formations.find(f => f.name === formationName);
+                        const formation = driverData.formations.find(f => f.theme === formationTheme);
                         return formation ? formation.count : 0;
                     });
 
                     return {
-                        label: formationName,
+                        label: formationTheme,
                         data: data,
                         backgroundColor: colors[index % colors.length],
                         borderColor: colors[index % colors.length].replace('0.8', '1'),
@@ -668,8 +660,8 @@
                 for (let i = 1; i < rows.length; i++) {
                     const cells = rows[i].getElementsByTagName('td');
                     if (!cells.length) continue;
-                    const name = (cells[0].innerText || '').toLowerCase();
-                    const match = name.includes(filter);
+                    const theme = (cells[0].innerText || '').toLowerCase();
+                    const match = theme.includes(filter);
                     rows[i].style.display = match ? '' : 'none';
                     if (match) visible++;
                 }
@@ -690,12 +682,12 @@
                     realizedModal.addEventListener('show.bs.modal', function (event) {
                         const triggerButton = event.relatedTarget;
                         const formationId = triggerButton ? triggerButton.getAttribute('data-formation-id') : null;
-                        const formationName = triggerButton ? triggerButton.getAttribute('data-formation-name') : null;
+                        const formationTheme = triggerButton ? triggerButton.getAttribute('data-formation-theme') : null;
 
                         if (formationId) {
                             realizedForm.action = `/formations/${formationId}/mark-realized`;
-                            if (realizedMessage && formationName) {
-                                realizedMessage.textContent = realizedMessageTemplate.replace(':name', formationName);
+                            if (realizedMessage && formationTheme) {
+                                realizedMessage.textContent = realizedMessageTemplate.replace(':name', formationTheme);
                             }
                         }
                     });

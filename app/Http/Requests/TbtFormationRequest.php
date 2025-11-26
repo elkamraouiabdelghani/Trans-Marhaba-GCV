@@ -83,6 +83,14 @@ class TbtFormationRequest extends FormRequest
             'is_active' => [
                 'boolean',
             ],
+            'documents' => [
+                'nullable',
+                'array',
+            ],
+            'documents.*' => [
+                'file',
+                'max:10240', // 10MB per file
+            ],
         ];
     }
 

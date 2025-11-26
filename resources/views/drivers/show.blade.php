@@ -40,7 +40,11 @@
                             <div class="col-md-2 text-center mb-3 mb-md-0">
                                 <div class="position-relative d-inline-block">
                                     <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style="width: 120px; height: 120px;">
-                                        <i class="bi bi-person-fill text-primary" style="font-size: 4rem;"></i>
+                                        @if($driver->profile_photo_path)
+                                            <img src="{{ $driver->profile_photo_path ? asset('uploads/' . $driver->profile_photo_path) : asset('images/default-profile.png') }}" alt="{{ $driver->full_name ?? __('messages.profile_photo') }}" class="rounded-circle" style="width: 100%; height: 100%; object-fit: cover;">
+                                        @else
+                                            <i class="bi bi-person-fill text-primary" style="font-size: 4rem;"></i>
+                                        @endif
                                     </div>
                                     @if(method_exists($driver, 'isActive') && $driver->isActive())
                                         <span class="badge bg-success position-absolute top-0 end-0 rounded-circle d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; padding: 0;">
@@ -313,40 +317,39 @@
                                 @php
                                     $status = $violation->status ?? 'pending';
                                     $badgeColor = $statusBadges[$status] ?? 'secondary';
-                                    $actionPlan = $violation->actionPlan;
+                                    $actionPlan = null; // action plan now stored directly on violation
                                     $violationTime = optional($violation->violation_time)->format('H:i');
                                     $speedLabel = $violation->speed !== null ? number_format($violation->speed, 2) . ' km/h' : null;
                                     $speedLimitLabel = $violation->speed_limit !== null ? number_format($violation->speed_limit, 2) . ' km/h' : null;
                                     $durationSeconds = $violation->violation_duration_seconds;
                                     $durationLabel = $durationSeconds ? sprintf('%02dm %02ds', intdiv($durationSeconds, 60), $durationSeconds % 60) : null;
                                     $distanceLabel = $violation->violation_distance_km !== null ? number_format($violation->violation_distance_km, 2) . ' km' : null;
-                                    $violationPayload = [
-                                        'id' => $violation->id,
-                                        'date' => optional($violation->violation_date)->format('d/m/Y'),
-                                        'type' => $violation->violationType->name ?? __('messages.not_specified'),
-                                        'status' => $status,
-                                        'status_label' => $statusLabels[$status] ?? ucfirst($status),
-                                        'location' => $violation->location ?? __('messages.not_available'),
-                                        'description' => $violation->description ?? null,
-                                        'notes' => $violation->notes ?? null,
-                                        'analysis' => $actionPlan?->analysis,
-                                        'action_plan' => $actionPlan?->action_plan,
-                                        'vehicle' => $violation->vehicle->license_plate ?? null,
-                                        'document_url' => $violation->document_path
-                                            ? route('violations.document', $violation)
-                                            : null,
-                                        'evidence_url' => $actionPlan && $actionPlan->evidence_path
-                                            ? route('violations.action-plan.evidence', $violation)
-                                            : null,
-                                        'evidence_name' => $actionPlan?->evidence_original_name,
-                                        'show_url' => route('violations.show', $violation),
-                                        'violation_time' => $violationTime,
-                                        'speed_label' => $speedLabel,
-                                        'speed_limit_label' => $speedLimitLabel,
-                                        'duration_seconds' => $durationSeconds,
-                                        'duration_label' => $durationLabel,
-                                        'distance_label' => $distanceLabel,
-                                    ];
+                                        $violationPayload = [
+                                            'id' => $violation->id,
+                                            'date' => optional($violation->violation_date)->format('d/m/Y'),
+                                            'type' => $violation->violationType->name ?? __('messages.not_specified'),
+                                            'status' => $status,
+                                            'status_label' => $statusLabels[$status] ?? ucfirst($status),
+                                            'location' => $violation->location ?? __('messages.not_available'),
+                                            'description' => $violation->description ?? null,
+                                        'analysis' => $violation->analysis,
+                                        'action_plan' => $violation->action_plan,
+                                            'vehicle' => $violation->vehicle->license_plate ?? null,
+                                            'document_url' => $violation->document_path
+                                                ? route('violations.document', $violation)
+                                                : null,
+                                        'evidence_url' => $violation->evidence_path
+                                                ? route('violations.action-plan.evidence', $violation)
+                                                : null,
+                                        'evidence_name' => $violation->evidence_original_name,
+                                            'show_url' => route('violations.show', $violation),
+                                            'violation_time' => $violationTime,
+                                            'speed_label' => $speedLabel,
+                                            'speed_limit_label' => $speedLimitLabel,
+                                            'duration_seconds' => $durationSeconds,
+                                            'duration_label' => $durationLabel,
+                                            'distance_label' => $distanceLabel,
+                                        ];
                                 @endphp
                                 <tr class="border-bottom violation-row" data-violation-id="{{ $violation->id }}">
                                     <td class="py-3 px-4">
@@ -383,9 +386,9 @@
                                     </td>
                                     <td class="py-3 px-4">
                                         <div class="text-dark text-truncate" style="max-width: 220px;"
-                                            title="{{ $actionPlan?->action_plan ? strip_tags($actionPlan->action_plan) : __('messages.not_available') }}">
-                                            {{ $actionPlan?->action_plan
-                                                ? strip_tags($actionPlan->action_plan)
+                                            title="{{ $violation->action_plan ? strip_tags($violation->action_plan) : __('messages.not_available') }}">
+                                            {{ $violation->action_plan
+                                                ? strip_tags($violation->action_plan)
                                                 : __('messages.not_available') }}
                                         </div>
                                     </td>
@@ -398,7 +401,7 @@
                                                     <i class="bi bi-download"></i>
                                                 </a>
                                             @endif
-                                            @if($actionPlan && $actionPlan->evidence_path)
+                                            @if($violation->evidence_path)
                                                 <a href="{{ route('violations.action-plan.evidence', $violation) }}"
                                                    class="btn btn-outline-info"
                                                    title="{{ __('messages.download_evidence') }}">
@@ -454,7 +457,7 @@
                     <table class="table table-hover mb-0 align-middle">
                         <thead class="table-light">
                             <tr>
-                                <th class="border-0 py-3 px-4">{{ __('messages.formation_name') }}</th>
+                                <th class="border-0 py-3 px-4">{{ __('messages.formation_theme') }}</th>
                                 <th class="border-0 py-3 px-4">{{ __('messages.last_realized_date') }}</th>
                                 <th class="border-0 py-3 px-4">{{ __('messages.status') }}</th>
                                 <th class="border-0 py-3 px-4">{{ __('messages.next_realizing_date') }}</th>
@@ -504,9 +507,10 @@
                                         return $formation->formationProcess !== null;
                                     });
                                     $currentProcess = $currentProcessFormation?->formationProcess;
-                                    $categoryName = optional($formationItem->category)->name;
-                                    $normalizedCategoryName = $categoryName ? \Illuminate\Support\Str::of($categoryName)->lower()->trim()->__toString() : null;
-                                    $isQuickFormation = in_array($normalizedCategoryName, ['tmd', '16 module'], true);
+                                    $normalizedFormationTheme = $formationItem->theme
+                                        ? \Illuminate\Support\Str::of($formationItem->theme)->lower()->trim()->__toString()
+                                        : '';
+                                    $isQuickFormation = str_contains($normalizedFormationTheme, 'tmd') || str_contains($normalizedFormationTheme, '16 module');
                                     
                                     // Calculate alert using Formation model with latest completion date
                                     $latestCompletionDate = $lastDone?->done_at;
@@ -539,7 +543,7 @@
                                                 <i class="bi bi-book text-primary"></i>
                                             </div>
                                             <div>
-                                                <strong class="text-dark">{{ $formationItem->name ?? __('messages.not_available') }}</strong>
+                                                <strong class="text-dark">{{ $formationItem->theme ?? __('messages.not_available') }}</strong>
                                             </div>
                                         </div>
                                     </td>
@@ -612,7 +616,7 @@
                                                         <button type="button"
                                                                 class="btn btn-dark btn-sm btn-quick-formation-start"
                                                                 data-formation-id="{{ $formationItem->id }}"
-                                                                data-formation-name="{{ $formationItem->name ?? '' }}"
+                                                                data-formation-theme="{{ $formationItem->theme ?? '' }}"
                                                                 data-next-date="{{ $nextDateValue }}">
                                                             <i class="bi bi-play-circle me-1"></i>
                                                             {{ __('messages.start') }}
@@ -670,7 +674,7 @@
                     <div class="modal-header">
                         <h5 class="modal-title" id="quickFormationModalLabel">
                             {{ __('messages.start') }} {{ 'Formation' }}
-                            <small class="d-block text-muted" id="quick-formation-name"></small>
+                            <small class="d-block text-muted" id="quick-formation-theme"></small>
                         </h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('messages.close') }}"></button>
                     </div>
@@ -857,22 +861,22 @@
 
             const quickModal = new bootstrap.Modal(quickModalEl);
             const formationIdInput = document.getElementById('quick-formation-id');
-            const formationNameEl = document.getElementById('quick-formation-name');
+            const formationThemeEl = document.getElementById('quick-formation-theme');
             const dueAtInput = document.getElementById('quick-due-at');
             const fileInput = document.getElementById('quick-report-file');
-            const formationLookup = @json($formationsCatalog->pluck('name', 'id'));
+            const formationLookup = @json($formationsCatalog->pluck('theme', 'id'));
 
             document.querySelectorAll('.btn-quick-formation-start').forEach(function(button) {
                 button.addEventListener('click', function() {
                     const formationId = this.dataset.formationId;
-                    const formationName = this.dataset.formationName || formationLookup[formationId] || '';
+                    const formationTheme = this.dataset.formationTheme || formationLookup[formationId] || '';
                     const nextDate = this.dataset.nextDate || '';
 
                     if (formationIdInput) {
                         formationIdInput.value = formationId;
                     }
-                    if (formationNameEl) {
-                        formationNameEl.textContent = formationName;
+                    if (formationThemeEl) {
+                        formationThemeEl.textContent = formationTheme;
                     }
                     if (dueAtInput) {
                         dueAtInput.value = nextDate;
@@ -891,9 +895,9 @@
                 if (oldFormationId && formationIdInput) {
                     formationIdInput.value = oldFormationId;
                 }
-                if (formationNameEl) {
-                    const oldName = oldFormationId ? (formationLookup[oldFormationId] || '') : '';
-                    formationNameEl.textContent = oldName;
+                if (formationThemeEl) {
+                    const oldTheme = oldFormationId ? (formationLookup[oldFormationId] || '') : '';
+                    formationThemeEl.textContent = oldTheme;
                 }
                 const oldDueAt = @json(old('due_at'));
                 if (oldDueAt && dueAtInput) {

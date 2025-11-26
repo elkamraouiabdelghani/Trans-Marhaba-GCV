@@ -22,10 +22,15 @@ return new class extends Migration
             $table->unsignedInteger('violation_duration_seconds')->nullable();
             $table->decimal('violation_distance_km', 8, 2)->nullable();
             $table->string('location')->nullable();
+            $table->decimal('location_lat', 10, 7)->nullable();
+            $table->decimal('location_lng', 10, 7)->nullable();
             $table->enum('status', ['pending', 'rejected', 'confirmed'])->default('pending');
             $table->foreignId('vehicle_id')->nullable()->constrained('vehicles')->onDelete('set null');
             $table->text('description')->nullable();
-            $table->text('notes')->nullable();
+            $table->text('analysis')->nullable();
+            $table->text('action_plan')->nullable();
+            $table->string('evidence_path')->nullable();
+            $table->string('evidence_original_name')->nullable();
             $table->string('document_path')->nullable();
             $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null');
             $table->timestamps();

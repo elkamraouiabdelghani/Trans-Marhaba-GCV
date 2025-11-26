@@ -128,6 +128,7 @@
                         <thead class="table-light">
                             <tr>
                                 <th class="px-4">{{ __('messages.name') }}</th>
+                                <th>{{ __('messages.age') }}</th>
                                 <th>{{ __('messages.phone') }}</th>
                                 <th>{{ __('messages.department') }}</th>
                                 <th>{{ __('messages.role') }}</th>
@@ -140,14 +141,30 @@
                                 <tr class="administration-row" data-admin-url="{{ route('administration-roles.show', $user) }}" style="cursor: pointer;">
                                     <td class="px-4">
                                         <div class="d-flex align-items-center">
-                                            <div class="bg-primary bg-opacity-10 rounded-circle px-2 py-1 me-3">
-                                                <i class="bi bi-person text-primary"></i>
-                                            </div>
+                                            @if($user->profile_photo_path)
+                                                <img src="{{ $user->profile_photo_path ? asset('uploads/' . $user->profile_photo_path) : asset('images/default-profile.png') }}" alt="{{ $user->name }}" class="rounded-circle me-3" style="width: 40px; height: 40px; object-fit: cover;">
+                                            @else
+                                                <div class="bg-primary bg-opacity-10 rounded-circle px-2 py-1 me-3">
+                                                    <i class="bi bi-person text-primary"></i>
+                                                </div>
+                                            @endif
                                             <div>
                                                 <div class="fw-semibold text-dark">{{ $user->name }}</div>
                                                 <small class="text-muted">{{ $user->email }}</small>
                                             </div>
                                         </div>
+                                    </td>
+                                    <td>
+                                        @php
+                                            $age = $user->date_of_birth ? \Carbon\Carbon::parse($user->date_of_birth)->age : null;
+                                        @endphp
+                                        @if($age)
+                                            <span class="badge bg-primary bg-opacity-10 text-primary fw-semibold">
+                                                {{ $age }} {{ __('messages.years') ?? 'years' }}
+                                            </span>
+                                        @else
+                                            <span class="text-muted">—</span>
+                                        @endif
                                     </td>
                                     <td>{{ $user->phone ?? __('messages.not_available') }}</td>
                                     <td>

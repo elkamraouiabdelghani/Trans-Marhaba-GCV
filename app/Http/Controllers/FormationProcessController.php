@@ -62,7 +62,7 @@ class FormationProcessController extends Controller
 
             // Get filter options
             $drivers = Driver::orderBy('full_name')->get();
-            $formations = Formation::active()->orderBy('name')->get();
+            $formations = Formation::active()->orderBy('theme')->get();
             $flottes = Flotte::orderBy('name')->get();
 
             return view('formations.processes.index', compact(
@@ -93,7 +93,7 @@ class FormationProcessController extends Controller
         $drivers = Driver::orderBy('full_name')->get();
         $formations = Formation::active()
             ->whereNull('flotte_id')
-            ->orderBy('name')
+            ->orderBy('theme')
             ->get();
         $flottes = Flotte::orderBy('name')->get();
 

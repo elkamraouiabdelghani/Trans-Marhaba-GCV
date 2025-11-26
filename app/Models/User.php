@@ -32,6 +32,8 @@ class User extends Authenticatable
         'email',
         'password',
         'email_verified_at',
+        'date_of_birth',
+        'profile_photo_path',
     ];
 
     /**
@@ -57,6 +59,7 @@ class User extends Authenticatable
             'date_integration' => 'date',
             'terminated_date' => 'date',
             'is_integrated' => 'boolean',
+            'date_of_birth' => 'date',
         ];
     }
 

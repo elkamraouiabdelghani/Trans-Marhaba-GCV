@@ -109,7 +109,7 @@
 
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label for="formation_id" class="form-label">{{ __('messages.formation_name') }} <span class="text-danger">*</span></label>
+                                    <label for="formation_id" class="form-label">{{ __('messages.formation_theme') }} <span class="text-danger">*</span></label>
                                     <select class="form-select @error('formation_id') is-invalid @enderror" 
                                             id="formation_id" 
                                             name="formation_id" 
@@ -118,10 +118,10 @@
                                         @foreach($formations as $formationItem)
                                             <option 
                                                 value="{{ $formationItem->id }}" 
-                                                data-category-name="{{ $formationItem->category->name ?? __('messages.not_available') }}"
+                                                data-type-label="{{ $formationItem->type_label ?? __('messages.not_available') }}"
                                                 data-theme="{{ $formationItem->theme ?? '' }}"
                                                 {{ old('formation_id', request('formation_id', $selectedFormationId ?? null)) == $formationItem->id ? 'selected' : '' }}>
-                                                {{ $formationItem->name }}
+                                                {{ $formationItem->theme }}
                                             </option>
                                         @endforeach
                                     </select>
@@ -131,8 +131,8 @@
                                 </div>
 
                                 <div class="col-md-6 mb-3">
-                                    <label for="formation_category_id" class="form-label">{{ __('messages.formation_category_name') }}</label>
-                                    <span id="formation-category-name" class="form-control-plaintext rounded px-3 py-2" style="background: linear-gradient(90deg, #f5f6fa 0%, #e9ecef 100%); max-width: max-content;">
+                                    <label class="form-label">{{ __('messages.formation_type_label') }}</label>
+                                    <span id="formation-type-label" class="form-control-plaintext rounded px-3 py-2" style="background: linear-gradient(90deg, #f5f6fa 0%, #e9ecef 100%); max-width: max-content;">
                                         {{ __('messages.not_available') }}
                                     </span>
                                 </div>
@@ -197,21 +197,21 @@
             });
 
             const formationSelect = document.getElementById('formation_id');
-            const formationCategoryName = document.getElementById('formation-category-name');
+            const formationTypeLabel = document.getElementById('formation-type-label');
             const themeInput = document.getElementById('theme');
             const hasOldTheme = @json((bool) old('theme'));
 
-            if (formationSelect && formationCategoryName) {
-                const updateCategoryName = () => {
+            if (formationSelect && formationTypeLabel) {
+                const updateTypeLabel = () => {
                     const selectedOption = formationSelect.options[formationSelect.selectedIndex];
-                    const categoryName = selectedOption ? selectedOption.dataset.categoryName : null;
-                    formationCategoryName.textContent = categoryName && categoryName.trim()
-                        ? categoryName
+                    const typeLabel = selectedOption ? selectedOption.dataset.typeLabel : null;
+                    formationTypeLabel.textContent = typeLabel && typeLabel.trim()
+                        ? typeLabel
                         : '{{ __('messages.not_available') }}';
                 };
 
-                formationSelect.addEventListener('change', updateCategoryName);
-                updateCategoryName();
+                formationSelect.addEventListener('change', updateTypeLabel);
+                updateTypeLabel();
             }
 
             const updateThemeField = (force = false) => {

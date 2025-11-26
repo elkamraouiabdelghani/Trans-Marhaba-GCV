@@ -30,7 +30,11 @@
                             <div class="col-md-2 text-center mb-3 mb-md-0">
                                 <div class="position-relative d-inline-block">
                                     <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style="width: 120px; height: 120px;">
-                                        <i class="bi bi-person-gear text-primary" style="font-size: 4rem;"></i>
+                                        @if($user->profile_photo_path)
+                                            <img src="{{ $user->profile_photo_path ? asset('uploads/' . $user->profile_photo_path) : asset('images/default-profile.png') }}" alt="{{ $user->name }}" class="rounded-circle" style="width: 100%; height: 100%; object-fit: cover;">
+                                        @else
+                                            <i class="bi bi-person-gear text-primary" style="font-size: 4rem;"></i>
+                                        @endif
                                     </div>
                                     @if($user->status === 'active')
                                         <span class="badge bg-success position-absolute top-0 end-0 rounded-circle d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; padding: 0;">
@@ -97,6 +101,9 @@
                             </h6>
                         </div>
                         <div class="card-body d-grid gap-2">
+                            <a href="{{ route('administration-roles.edit', $user) }}" class="btn btn-warning btn-sm d-flex align-items-center justify-content-center">
+                                <i class="bi bi-pencil me-2"></i>{{ __('messages.edit') }}
+                            </a>
                             @if($user->status !== 'terminated')
                                 <button type="button" class="btn btn-primary btn-sm d-flex align-items-center justify-content-center" data-bs-toggle="modal" data-bs-target="#updateStatusModal">
                                     <i class="bi bi-arrow-repeat me-2"></i>{{ __('messages.update_status') }}

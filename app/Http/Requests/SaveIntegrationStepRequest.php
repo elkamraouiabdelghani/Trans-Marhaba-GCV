@@ -33,7 +33,12 @@ class SaveIntegrationStepRequest extends FormRequest
 
         $emailRules = ['nullable', 'email', 'max:255'];
         if ($stepNumber === 2 && $integration && $integration->type === 'administration') {
+            $existingEmail = $this->getIntegrationStepEmail($integration);
+            $inputEmail = strtolower(trim((string) $this->input('email')));
+
+            if ($inputEmail === '' || $existingEmail === null || $existingEmail !== $inputEmail) {
             $emailRules[] = Rule::unique('users', 'email');
+            }
         }
 
         return match ($stepNumber) {
@@ -141,6 +146,33 @@ class SaveIntegrationStepRequest extends FormRequest
             'sold_permis',
             'rib',
         ];
+    }
+
+    /**
+     * Retrieve the email saved in step 2 (if any) for the given integration.
+     */
+    private function getIntegrationStepEmail($integration): ?string
+    {
+        $step = $integration->getStep(2);
+        if (!$step) {
+            return null;
+        }
+
+        $stepData = $step->step_data;
+        if (is_string($stepData)) {
+            $decoded = json_decode($stepData, true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $stepData = $decoded;
+            } else {
+                $stepData = [];
+            }
+        }
+
+        if (!is_array($stepData)) {
+            return null;
+        }
+
+        return isset($stepData['email']) ? strtolower(trim((string) $stepData['email'])) : null;
     }
 }
 

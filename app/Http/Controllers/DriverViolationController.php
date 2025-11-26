@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Http\Requests\DriverViolationRequest;
 use App\Models\Driver;
 use App\Models\DriverViolation;
-use App\Models\DriverViolationAction;
 use App\Models\ViolationType;
 use App\Models\Vehicle;
 use Illuminate\Http\RedirectResponse;
@@ -26,7 +25,7 @@ class DriverViolationController extends Controller
     {
         try {
             $violationsQuery = DriverViolation::query()
-                ->with(['driver', 'violationType', 'vehicle', 'actionPlan'])
+                ->with(['driver', 'violationType', 'vehicle'])
                 ->orderByDesc('violation_date')
                 ->orderByDesc('id'); // ensure stable ordering when dates are identical
 
@@ -194,23 +193,31 @@ class DriverViolationController extends Controller
         $validated = $request->validated();
 
         try {
-            // Handle document upload
+            // Handle document upload (multi-file input, store first file for now)
             if ($request->hasFile('document')) {
-                $documentPath = $request->file('document')->store('violations/documents', 'uploads');
-                $validated['document_path'] = $documentPath;
+                $files = $request->file('document');
+                $file = is_array($files) ? reset($files) : $files;
+                if ($file) {
+                    $documentPath = $file->store('violations/documents', 'uploads');
+                    $validated['document_path'] = $documentPath;
+                }
             }
 
             // Set default status if not provided
             $validated['status'] = $validated['status'] ?? 'pending';
             $validated['created_by'] = Auth::id();
 
-            $actionAnalysis = $validated['analysis'];
-            $actionPlan = $validated['action_plan'];
+            // Handle evidence upload for inline action-plan fields
+            if ($request->hasFile('evidence')) {
+                $file = $request->file('evidence');
+                $path = $file->store('violations/evidence', 'uploads');
+                $validated['evidence_path'] = $path;
+                $validated['evidence_original_name'] = $file->getClientOriginalName();
+            }
 
-            unset($validated['document'], $validated['analysis'], $validated['action_plan'], $validated['evidence']);
+            unset($validated['document'], $validated['evidence']);
 
             $driverViolation = DriverViolation::create($validated);
-            $this->persistActionPlan($request, $driverViolation, $actionAnalysis, $actionPlan);
 
             return redirect()
                 ->route('violations.index')
@@ -227,7 +234,7 @@ class DriverViolationController extends Controller
     public function show(DriverViolation $driverViolation): View|RedirectResponse
     {
         try {
-            $driverViolation->load(['driver', 'violationType', 'vehicle', 'createdBy', 'actionPlan']);
+            $driverViolation->load(['driver', 'violationType', 'vehicle', 'createdBy']);
 
             return view('violations.show', [
                 'violation' => $driverViolation,
@@ -247,7 +254,7 @@ class DriverViolationController extends Controller
     public function downloadReport(DriverViolation $driverViolation)
     {
         try {
-            $driverViolation->load(['driver', 'violationType', 'vehicle', 'createdBy', 'actionPlan']);
+            $driverViolation->load(['driver', 'violationType', 'vehicle', 'createdBy']);
 
             $driverName = $driverViolation->driver?->full_name ?? 'driver';
             $fileName = sprintf(
@@ -310,7 +317,7 @@ class DriverViolationController extends Controller
             }
 
             return view('violations.edit', [
-                'violation' => $driverViolation->load(['driver', 'violationType', 'vehicle', 'actionPlan']),
+                'violation' => $driverViolation->load(['driver', 'violationType', 'vehicle']),
                 'drivers' => $drivers,
                 'violationTypes' => $violationTypes,
                 'vehicles' => $vehicles,
@@ -340,24 +347,34 @@ class DriverViolationController extends Controller
         $validated = $request->validated();
 
         try {
-            // Handle document upload
+            // Handle document upload (multi-file input, store first file)
             if ($request->hasFile('document')) {
-                // Delete old document if exists
-                if ($driverViolation->document_path && Storage::disk('uploads')->exists($driverViolation->document_path)) {
-                    Storage::disk('uploads')->delete($driverViolation->document_path);
+                $files = $request->file('document');
+                $file = is_array($files) ? reset($files) : $files;
+                if ($file) {
+                    if ($driverViolation->document_path && Storage::disk('uploads')->exists($driverViolation->document_path)) {
+                        Storage::disk('uploads')->delete($driverViolation->document_path);
+                    }
+                    $documentPath = $file->store('violations/documents', 'uploads');
+                    $validated['document_path'] = $documentPath;
                 }
-
-                $documentPath = $request->file('document')->store('violations/documents', 'uploads');
-                $validated['document_path'] = $documentPath;
             }
 
-            $actionAnalysis = $validated['analysis'];
-            $actionPlan = $validated['action_plan'];
+            // Handle evidence upload/update
+            if ($request->hasFile('evidence')) {
+                if ($driverViolation->evidence_path && Storage::disk('uploads')->exists($driverViolation->evidence_path)) {
+                    Storage::disk('uploads')->delete($driverViolation->evidence_path);
+                }
 
-            unset($validated['document'], $validated['analysis'], $validated['action_plan'], $validated['evidence']);
+                $file = $request->file('evidence');
+                $path = $file->store('violations/evidence', 'uploads');
+                $validated['evidence_path'] = $path;
+                $validated['evidence_original_name'] = $file->getClientOriginalName();
+            }
+
+            unset($validated['document'], $validated['evidence']);
 
             $driverViolation->update($validated);
-            $this->persistActionPlan($request, $driverViolation, $actionAnalysis, $actionPlan, $driverViolation->actionPlan);
 
             return redirect()
                 ->route('violations.index')
@@ -374,13 +391,14 @@ class DriverViolationController extends Controller
     public function destroy(DriverViolation $driverViolation): RedirectResponse
     {
         try {
-            $driverViolation->loadMissing('actionPlan');
             // Delete document if exists
             if ($driverViolation->document_path && Storage::disk('uploads')->exists($driverViolation->document_path)) {
                 Storage::disk('uploads')->delete($driverViolation->document_path);
             }
 
-            $this->deleteEvidenceFile($driverViolation->actionPlan);
+            if ($driverViolation->evidence_path && Storage::disk('uploads')->exists($driverViolation->evidence_path)) {
+                Storage::disk('uploads')->delete($driverViolation->evidence_path);
+            }
 
             $driverViolation->delete();
 
@@ -486,24 +504,21 @@ class DriverViolationController extends Controller
     public function downloadActionEvidence(DriverViolation $driverViolation)
     {
         try {
-            $driverViolation->loadMissing('actionPlan');
-            $actionPlan = $driverViolation->actionPlan;
-
-            if (!$actionPlan || !$actionPlan->evidence_path || !Storage::disk('uploads')->exists($actionPlan->evidence_path)) {
+            if (!$driverViolation->evidence_path || !Storage::disk('uploads')->exists($driverViolation->evidence_path)) {
                 return redirect()
                     ->route('violations.show', $driverViolation)
                     ->with('error', __('messages.violation_evidence_not_found'));
             }
 
-            $downloadName = $actionPlan->evidence_original_name
-                ? $actionPlan->evidence_original_name
+            $downloadName = $driverViolation->evidence_original_name
+                ? $driverViolation->evidence_original_name
                 : sprintf('violation-action-%d-%s.%s',
                     $driverViolation->id,
                     now()->format('YmdHis'),
-                    pathinfo($actionPlan->evidence_path, PATHINFO_EXTENSION)
+                    pathinfo($driverViolation->evidence_path, PATHINFO_EXTENSION)
                 );
 
-            return response()->download(Storage::disk('uploads')->path($actionPlan->evidence_path), $downloadName);
+            return response()->download(Storage::disk('uploads')->path($driverViolation->evidence_path), $downloadName);
         } catch (Throwable $exception) {
             report($exception);
 
@@ -513,37 +528,4 @@ class DriverViolationController extends Controller
         }
     }
 
-    private function persistActionPlan(Request $request, DriverViolation $driverViolation, string $analysis, string $actionPlan, ?DriverViolationAction $existingActionPlan = null): void
-    {
-        $actionData = [
-            'analysis' => $analysis,
-            'action_plan' => $actionPlan,
-        ];
-
-        if ($request->hasFile('evidence')) {
-            $this->deleteEvidenceFile($existingActionPlan);
-
-            $file = $request->file('evidence');
-            $path = $file->store('violations/evidence', 'uploads');
-            $actionData['evidence_path'] = $path;
-            $actionData['evidence_original_name'] = $file->getClientOriginalName();
-        }
-
-        if ($existingActionPlan) {
-            $existingActionPlan->update($actionData);
-        } else {
-            $driverViolation->actionPlan()->create($actionData);
-        }
-    }
-
-    private function deleteEvidenceFile(?DriverViolationAction $actionPlan): void
-    {
-        if (!$actionPlan || !$actionPlan->evidence_path) {
-            return;
-        }
-
-        if (Storage::disk('uploads')->exists($actionPlan->evidence_path)) {
-            Storage::disk('uploads')->delete($actionPlan->evidence_path);
-        }
-    }
 }

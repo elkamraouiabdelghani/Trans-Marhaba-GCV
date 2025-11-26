@@ -58,6 +58,7 @@ class Driver extends Model
         'assigned_vehicle_id',
         'notes',
         'documents',
+        'profile_photo_path',
         'flotte_id',
         'is_integrated',
     ];

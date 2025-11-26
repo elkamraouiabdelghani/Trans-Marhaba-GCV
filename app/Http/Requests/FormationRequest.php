@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Formation;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -25,30 +26,26 @@ class FormationRequest extends FormRequest
         $formationId = $this->route('formation')?->id;
 
         return [
-            'name' => [
+            'participant' => ['nullable', 'string'],
+            'theme' => [
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('formations', 'name')->ignore($formationId),
+                Rule::unique('formations', 'theme')->ignore($formationId),
             ],
-            'participant' => ['nullable', 'string'],
-            'theme' => ['nullable', 'string', 'max:255'],
             'duree' => ['nullable', 'integer', 'min:0'],
             'realizing_date' => ['nullable', 'date'],
             'status' => ['required', 'in:planned,realized'],
             'organisme' => ['nullable', 'string'],
             'description' => ['nullable', 'string'],
-            'formation_category_id' => ['nullable', 'exists:formation_categories,id'],
+            'type' => ['required', Rule::in(Formation::TYPE_OPTIONS)],
             'flotte_id' => ['nullable', 'exists:flottes,id'],
             'delivery_type' => ['required', 'in:interne,externe'],
             'is_active' => ['sometimes', 'boolean'],
-            'obligatoire' => ['sometimes', 'boolean'],
             'reference_value' => ['nullable', 'integer', 'min:1'],
             'reference_unit' => ['nullable', 'in:months,years'],
             'warning_alert_percent' => ['nullable', 'integer', 'min:0', 'max:100'],
-            'warning_alert_days' => ['nullable', 'integer', 'min:0'],
             'critical_alert_percent' => ['nullable', 'integer', 'min:0', 'max:100'],
-            'critical_alert_days' => ['nullable', 'integer', 'min:0'],
         ];
     }
 
@@ -70,7 +67,6 @@ class FormationRequest extends FormRequest
         $validated = parent::validated($key, $default);
 
         $validated['is_active'] = $this->boolean('is_active');
-        $validated['obligatoire'] = $this->boolean('obligatoire');
         $validated['status'] = $validated['status'] ?? 'planned';
 
         return $validated;

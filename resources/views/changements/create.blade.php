@@ -147,58 +147,6 @@
                                     @enderror
                                 </div>
 
-                                <!-- Hidden input for replacement_type (auto-set based on subject_type) -->
-                                <input type="hidden" name="replacement_type" id="replacement_type" value="{{ old('replacement_type') }}">
-
-                                <!-- Hidden input for replacement_id -->
-                                <input type="hidden" name="replacement_id" id="replacement_id" value="{{ old('replacement_id') }}">
-
-                                <!-- Replacement Selection (Driver) -->
-                                <div class="col-md-6" id="replacement_driver_select_container" style="display: none;">
-                                    <label for="replacement_id_driver" class="form-label">
-                                        {{ __('messages.select_replacement_driver') }}
-                                    </label>
-                                    <select class="form-select @error('replacement_id') is-invalid @enderror" 
-                                            id="replacement_id_driver">
-                                        <option value="">{{ __('messages.select_option') }}</option>
-                                        @foreach($drivers as $driver)
-                                            <option value="{{ $driver->id }}" {{ old('replacement_id') == $driver->id && old('replacement_type') === 'driver' ? 'selected' : '' }}>
-                                                {{ $driver->full_name }} 
-                                                @if($driver->license_number)
-                                                    ({{ $driver->license_number }})
-                                                @endif
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                    @error('replacement_id')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                    <small class="form-text text-muted">{{ __('messages.replacement_help') }}</small>
-                                </div>
-
-                                <!-- Replacement Selection (Administrative User) -->
-                                <div class="col-md-6" id="replacement_administrative_select_container" style="display: none;">
-                                    <label for="replacement_id_administrative" class="form-label">
-                                        {{ __('messages.select_replacement_administrative') }}
-                                    </label>
-                                    <select class="form-select @error('replacement_id') is-invalid @enderror" 
-                                            id="replacement_id_administrative">
-                                        <option value="">{{ __('messages.select_option') }}</option>
-                                        @foreach($users as $user)
-                                            <option value="{{ $user->id }}" {{ old('replacement_id') == $user->id && old('replacement_type') === 'administrative' ? 'selected' : '' }}>
-                                                {{ $user->name }} 
-                                                @if($user->email)
-                                                    ({{ $user->email }})
-                                                @endif
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                    @error('replacement_id')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                    <small class="form-text text-muted">{{ __('messages.replacement_help') }}</small>
-                                </div>
-
                                 <!-- Date Changement -->
                                 <div class="col-md-6">
                                     <label for="date_changement" class="form-label">
@@ -268,12 +216,13 @@
                                 <!-- Action -->
                                 <div class="col-12">
                                     <label for="action" class="form-label">
-                                        {{ __('messages.action') }}
+                                        {{ __('messages.action') }} <span class="text-danger">*</span>
                                     </label>
                                     <textarea class="form-control @error('action') is-invalid @enderror" 
                                               id="action" 
                                               name="action" 
-                                              rows="3">{{ old('action') }}</textarea>
+                                              rows="3"
+                                              required>{{ old('action') }}</textarea>
                                     @error('action')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
@@ -363,8 +312,6 @@
                     if (subjectIdHidden) {
                         subjectIdHidden.value = this.value;
                     }
-                    // Update replacement options to exclude selected subject
-                    updateReplacementSelectors();
                 });
             }
 
@@ -374,15 +321,12 @@
                     if (subjectIdHidden) {
                         subjectIdHidden.value = this.value;
                     }
-                    // Update replacement options to exclude selected subject
-                    updateReplacementSelectors();
                 });
             }
 
             if (subjectTypeSelect) {
                 subjectTypeSelect.addEventListener('change', function() {
                     updateSubjectSelectors();
-                    updateReplacementSelectors(); // Update replacement when subject changes
                 });
                 // Initialize on page load
                 updateSubjectSelectors();
@@ -396,105 +340,6 @@
                 }
             }
 
-            // Handle replacement selection
-            const replacementTypeHidden = document.getElementById('replacement_type');
-            const replacementIdHidden = document.getElementById('replacement_id');
-            const replacementDriverContainer = document.getElementById('replacement_driver_select_container');
-            const replacementAdministrativeContainer = document.getElementById('replacement_administrative_select_container');
-            const replacementDriverSelect = document.getElementById('replacement_id_driver');
-            const replacementAdministrativeSelect = document.getElementById('replacement_id_administrative');
-
-            function updateReplacementSelectors() {
-                const subjectType = subjectTypeSelect ? subjectTypeSelect.value : '';
-                const subjectId = subjectIdHidden ? subjectIdHidden.value : '';
-                
-                // Hide both replacement containers first
-                replacementDriverContainer.style.display = 'none';
-                replacementAdministrativeContainer.style.display = 'none';
-                
-                // Clear replacement selects and hidden input
-                if (replacementDriverSelect) replacementDriverSelect.value = '';
-                if (replacementAdministrativeSelect) replacementAdministrativeSelect.value = '';
-                if (replacementIdHidden) replacementIdHidden.value = '';
-                
-                // Auto-set replacement_type to match subject_type
-                if (replacementTypeHidden) {
-                    replacementTypeHidden.value = subjectType;
-                }
-                
-                // Show appropriate replacement container based on subject type
-                if (subjectType === 'driver') {
-                    replacementDriverContainer.style.display = 'block';
-                    // Filter out the selected subject from replacement options
-                    if (replacementDriverSelect) {
-                        Array.from(replacementDriverSelect.options).forEach(option => {
-                            if (option.value === '' || option.value === '0') {
-                                // Keep the empty option visible
-                                option.style.display = 'block';
-                            } else if (subjectId && option.value === subjectId) {
-                                // Hide the selected subject
-                                option.style.display = 'none';
-                            } else {
-                                // Show all other options
-                                option.style.display = 'block';
-                            }
-                        });
-                    }
-                } else if (subjectType === 'administrative') {
-                    replacementAdministrativeContainer.style.display = 'block';
-                    // Filter out the selected subject from replacement options
-                    if (replacementAdministrativeSelect) {
-                        Array.from(replacementAdministrativeSelect.options).forEach(option => {
-                            if (option.value === '' || option.value === '0') {
-                                // Keep the empty option visible
-                                option.style.display = 'block';
-                            } else if (subjectId && option.value === subjectId) {
-                                // Hide the selected subject
-                                option.style.display = 'none';
-                            } else {
-                                // Show all other options
-                                option.style.display = 'block';
-                            }
-                        });
-                    }
-                }
-            }
-
-            // Update hidden input when replacement driver is selected
-            if (replacementDriverSelect) {
-                replacementDriverSelect.addEventListener('change', function() {
-                    if (replacementIdHidden) {
-                        replacementIdHidden.value = this.value;
-                    }
-                });
-            }
-
-            // Update hidden input when replacement administrative user is selected
-            if (replacementAdministrativeSelect) {
-                replacementAdministrativeSelect.addEventListener('change', function() {
-                    if (replacementIdHidden) {
-                        replacementIdHidden.value = this.value;
-                    }
-                });
-            }
-
-            // Update replacement when subject changes
-            if (subjectIdHidden) {
-                subjectIdHidden.addEventListener('change', function() {
-                    updateReplacementSelectors();
-                });
-            }
-
-            // Initialize replacement selectors on page load
-            updateReplacementSelectors();
-            
-            // Set initial replacement value if old input exists
-            const oldReplacementType = replacementTypeHidden ? replacementTypeHidden.value : '';
-            if (oldReplacementType === 'driver' && replacementDriverSelect && replacementDriverSelect.value) {
-                if (replacementIdHidden) replacementIdHidden.value = replacementDriverSelect.value;
-            } else if (oldReplacementType === 'administrative' && replacementAdministrativeSelect && replacementAdministrativeSelect.value) {
-                if (replacementIdHidden) replacementIdHidden.value = replacementAdministrativeSelect.value;
-            }
         });
     </script>
 </x-app-layout>
