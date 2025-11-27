@@ -27,7 +27,7 @@ class SaveIntegrationStepRequest extends FormRequest
         $integration = $this->route('integration');
         $isDriverIntegration = $integration && $integration->type === 'driver';
 
-        if (!$isDriverIntegration && in_array($stepNumber, [5, 6, 8], true)) {
+        if (!$isDriverIntegration && in_array($stepNumber, [6, 8], true)) {
             return [];
         }
 
@@ -46,6 +46,9 @@ class SaveIntegrationStepRequest extends FormRequest
                 'full_name' => ['required', 'string', 'max:255'],
                 'email' => $emailRules,
                 'phone' => ['required', 'string', 'max:20'],
+                'second_tel_number' => ['nullable', 'string', 'max:20'],
+                'person_name' => ['nullable', 'string', 'max:255'],
+                'relation' => ['nullable', 'string', 'max:255'],
                 'cin' => ['required', 'string', 'max:50'],
                 'date_of_birth' => ['required', 'date'],
                 'address' => ['required', 'string'],
@@ -96,12 +99,9 @@ class SaveIntegrationStepRequest extends FormRequest
             7 => [
                 'validation_date' => ['required', 'date'],
                 'validated_by' => ['required', 'string', 'max:255'],
-                'induction_date' => ['nullable', 'date'],
+                'induction_date_from' => ['nullable', 'date'],
+                'induction_date_to' => ['nullable', 'date', 'after_or_equal:induction_date_from'],
                 'induction_conducted_by' => ['nullable', 'string', 'max:255'],
-                'contract_signed_date' => ['nullable', 'date'],
-                'contract_path' => ['nullable', 'string'],
-                'contract' => ['nullable', 'array'],
-                'contract.*' => ['file', 'mimes:pdf,doc,docx', 'max:5120'],
                 'notes' => ['nullable', 'string'],
             ],
             8 => [
@@ -116,6 +116,10 @@ class SaveIntegrationStepRequest extends FormRequest
             9 => [
                 'final_validation_date' => ['required', 'date'],
                 'validated_by' => ['required', 'string', 'max:255'],
+                'contract_signed_date' => ['nullable', 'date'],
+                'contract_path' => ['nullable', 'string'],
+                'contract' => ['nullable', 'array'],
+                'contract.*' => ['file', 'mimes:pdf,doc,docx', 'max:5120'],
                 'documents' => ['nullable', 'array'],
                 'documents.*' => ['file', 'max:5120'],
                 'notes' => ['nullable', 'string'],

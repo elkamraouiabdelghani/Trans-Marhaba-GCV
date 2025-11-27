@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Storage;
 
 class IntegrationController extends Controller
 {
-    private const DRIVER_ONLY_STEPS = [5, 6, 8];
+    private const DRIVER_ONLY_STEPS = [6, 8];
 
     /**
      * Display a listing of all integrations.
@@ -366,8 +366,8 @@ class IntegrationController extends Controller
                 }
             }
 
-            // Get existing contracts for step 7
-            if ($stepNumber === 7) {
+            // Get existing contracts for step 9
+            if ($stepNumber === 9) {
                 $stepData = $step->step_data ?? [];
                 $existingContracts = is_array($stepData) ? ($stepData['contract_paths'] ?? []) : [];
                 if (!is_array($existingContracts)) {
@@ -394,12 +394,26 @@ class IntegrationController extends Controller
                 $validated = $this->handleStep5Uploads($request, $validated);
             } elseif ($stepNumber === 6) {
                 $validated = $this->handleStep6Uploads($request, $validated);
-            } elseif ($stepNumber === 7) {
-                $validated = $this->handleStep7Uploads($request, $validated);
             } elseif ($stepNumber === 8) {
                 $validated = $this->handleStep8Uploads($request, $validated);
             } elseif ($stepNumber === 9) {
                 $validated = $this->handleStep9Uploads($request, $validated);
+                // Handle contract uploads for step 9
+                if ($request->hasFile('contract')) {
+                    $contracts = [];
+                    foreach ($request->file('contract') as $file) {
+                        $path = $file->store('integration/contracts', 'uploads');
+                        $contracts[] = [
+                            'name' => $file->getClientOriginalName(),
+                            'path' => $path,
+                        ];
+                    }
+                    $validated['contract_paths'] = $contracts;
+                    // Keep backward compatibility with single contract_path
+                    if (count($contracts) === 1) {
+                        $validated['contract_path'] = $contracts[0]['path'];
+                    }
+                }
             }
 
             if ($stepNumber === 2 && isset($validated['documents']) && is_array($validated['documents'])) {
@@ -439,8 +453,8 @@ class IntegrationController extends Controller
                 $validated['documents'] = $existingDocuments;
             }
 
-            // Merge contracts for step 7
-            if ($stepNumber === 7 && isset($validated['contract_paths']) && is_array($validated['contract_paths'])) {
+            // Merge contracts for step 9
+            if ($stepNumber === 9 && isset($validated['contract_paths']) && is_array($validated['contract_paths'])) {
                 $mergedContracts = array_merge($existingContracts, $validated['contract_paths']);
                 $uniqueContracts = collect($mergedContracts)
                     ->filter(fn($contract) => is_array($contract) && !empty($contract['path'] ?? null))
@@ -452,7 +466,7 @@ class IntegrationController extends Controller
                 if (count($uniqueContracts) === 1) {
                     $validated['contract_path'] = $uniqueContracts[0]['path'];
                 }
-            } elseif ($stepNumber === 7 && !empty($existingContracts)) {
+            } elseif ($stepNumber === 9 && !empty($existingContracts)) {
                 // Preserve existing contracts if no new files uploaded
                 $validated['contract_paths'] = $existingContracts;
                 if (count($existingContracts) === 1) {
@@ -717,7 +731,7 @@ class IntegrationController extends Controller
                 }
             }
 
-            // Step 7: All sub-steps (validation, induction, contract) required
+            // Step 7: All sub-steps (validation, induction) required
             if ($stepNumber === 7) {
                 $stepData = $step->step_data ?? [];
                 if (empty($stepData)) {
@@ -728,9 +742,9 @@ class IntegrationController extends Controller
                 $requiredFields = [
                     'validation_date',
                     'validated_by',
-                    'induction_date',
+                    'induction_date_from',
+                    'induction_date_to',
                     'induction_conducted_by',
-                    'contract_signed_date',
                 ];
                 foreach ($requiredFields as $field) {
                     if (empty($stepData[$field])) {
@@ -937,7 +951,7 @@ class IntegrationController extends Controller
     {
         return $integration->type === 'driver'
             ? range(1, 9)
-            : array_merge(range(1, 4), [7, 9]);
+            : array_merge(range(1, 5), [7, 9]);
     }
 
     /**
@@ -1084,29 +1098,6 @@ class IntegrationController extends Controller
         return $validated;
     }
 
-    /**
-     * Handle file uploads for Step 7 (Contract).
-     */
-    private function handleStep7Uploads(Request $request, array $validated): array
-    {
-        if ($request->hasFile('contract')) {
-            $contracts = [];
-            foreach ($request->file('contract') as $file) {
-                $path = $file->store('integration/contracts', 'uploads');
-                $contracts[] = [
-                    'name' => $file->getClientOriginalName(),
-                    'path' => $path,
-                ];
-            }
-            $validated['contract_paths'] = $contracts;
-            // Keep backward compatibility with single contract_path
-            if (count($contracts) === 1) {
-                $validated['contract_path'] = $contracts[0]['path'];
-            }
-        }
-
-        return $validated;
-    }
 
     /**
      * Handle file uploads for Step 8 (Accompaniment).
@@ -1150,7 +1141,7 @@ class IntegrationController extends Controller
 
     /**
      * Synchronize driver documents from all integration step data.
-     * Collects documents from steps 2, 3, 4, 5, 6, 7 (contracts), 8, 9.
+     * Collects documents from steps 2, 3, 4, 5, 6, 8, 9 (contracts in step 9).
      */
     private function syncDriverDocuments(IntegrationCandidate $integration): void
     {
@@ -1177,11 +1168,11 @@ class IntegrationController extends Controller
                 $stepData = [];
             }
 
-            // Step 3 uses 'documents_files', Step 7 uses 'contract_paths', all others use 'documents'
+            // Step 3 uses 'documents_files', Step 9 uses 'contract_paths', all others use 'documents'
             if ($stepNumber === 3) {
                 $key = 'documents_files';
-            } elseif ($stepNumber === 7) {
-                // Handle contracts from step 7
+            } elseif ($stepNumber === 9) {
+                // Handle contracts from step 9
                 if (!empty($stepData['contract_paths']) && is_array($stepData['contract_paths'])) {
                     $documents = $documents->merge($stepData['contract_paths']);
                 }
@@ -1191,6 +1182,10 @@ class IntegrationController extends Controller
                         'name' => basename($stepData['contract_path']),
                         'path' => $stepData['contract_path'],
                     ]);
+                }
+                // Also handle regular documents from step 9
+                if (!empty($stepData['documents']) && is_array($stepData['documents'])) {
+                    $documents = $documents->merge($stepData['documents']);
                 }
                 continue;
             } else {
@@ -1279,7 +1274,8 @@ class IntegrationController extends Controller
         
         // Add fields only if they have values (based on Driver model fillable fields)
         $fields = [
-            'full_name', 'email', 'phone', 'address', 'city', 'date_of_birth', 'cin',
+            'full_name', 'email', 'phone', 'second_tel_number', 'person_name', 'relation',
+            'address', 'city', 'date_of_birth', 'cin',
             'visite_medical', 'visite_yeux', 'formation_imd', 'formation_16_module',
             'attestation_travail', 'carte_profession', 'n_cnss', 'rib',
             'license_type', 'license_issue_date', 'license_class',
@@ -1403,7 +1399,8 @@ class IntegrationController extends Controller
         
         // List of fields that can be updated (based on Driver model fillable fields)
         $fields = [
-            'full_name', 'email', 'phone', 'address', 'city', 'date_of_birth', 'cin',
+            'full_name', 'email', 'phone', 'second_tel_number', 'person_name', 'relation',
+            'address', 'city', 'date_of_birth', 'cin',
             'visite_medical', 'visite_yeux', 'formation_imd', 'formation_16_module',
             'attestation_travail', 'carte_profession', 'n_cnss', 'rib',
             'license_type', 'license_issue_date', 'license_class',
@@ -1587,6 +1584,9 @@ class IntegrationController extends Controller
                 'date_of_birth' => $step2Data['date_of_birth'] ?? null,
                 'password' => $tempPassword,
                 'phone' => $step2Data['phone'] ?? null,
+                'second_tel_number' => $step2Data['second_tel_number'] ?? null,
+                'person_name' => $step2Data['person_name'] ?? null,
+                'relation' => $step2Data['relation'] ?? null,
                 'department' => 'other',
                 'role' => 'other',
                 'status' => 'active',
@@ -1644,6 +1644,18 @@ class IntegrationController extends Controller
 
         if (array_key_exists('phone', $step2Data) && $step2Data['phone'] !== null && $step2Data['phone'] !== '') {
             $updates['phone'] = $step2Data['phone'];
+        }
+
+        if (array_key_exists('second_tel_number', $step2Data)) {
+            $updates['second_tel_number'] = $step2Data['second_tel_number'] ?: null;
+        }
+
+        if (array_key_exists('person_name', $step2Data)) {
+            $updates['person_name'] = $step2Data['person_name'] ?: null;
+        }
+
+        if (array_key_exists('relation', $step2Data)) {
+            $updates['relation'] = $step2Data['relation'] ?: null;
         }
 
         if (array_key_exists('photo_path', $step2Data)) {

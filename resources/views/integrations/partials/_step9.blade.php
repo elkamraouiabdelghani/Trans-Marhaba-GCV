@@ -2,7 +2,7 @@
     <div class="card-header bg-white border-0 py-3">
         <h5 class="mb-0 text-dark fw-bold">
             <i class="bi bi-9-circle me-2 text-primary"></i>
-            {{ __('messages.validation_finale') }}
+            {{ __('messages.validation_finale') }} + {{ __('messages.signature_contrat') }}
         </h5>
     </div>
     <div class="card-body">
@@ -45,6 +45,47 @@
                     @error('validated_by')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
+                </div>
+            </div>
+
+            <h6 class="fw-bold mb-3">{{ __('messages.signature_contrat') }}</h6>
+            <div class="row mb-4">
+                <div class="col-md-6 mb-3">
+                    <label for="contract_signed_date" class="form-label">{{ __('messages.contract_signed_date') }}</label>
+                    <input type="date" 
+                           class="form-control @error('contract_signed_date') is-invalid @enderror" 
+                           id="contract_signed_date" 
+                           name="contract_signed_date" 
+                           value="{{ old('contract_signed_date', $stepData['contract_signed_date'] ?? '') }}">
+                    @error('contract_signed_date')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label for="contract" class="form-label">{{ __('messages.contract_path') }}</label>
+                    <input type="file" 
+                           class="form-control @error('contract') is-invalid @enderror @error('contract.*') is-invalid @enderror" 
+                           id="contract" 
+                           name="contract[]" 
+                           accept=".pdf,.doc,.docx"
+                           multiple>
+                    @error('contract')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                    @error('contract.*')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                    <small class="form-text text-muted">{{ __('messages.multiple_files_allowed') }}</small>
+                    @if(!empty($stepData['contract_paths']) && is_array($stepData['contract_paths']))
+                        <div class="mt-2">
+                            @foreach($stepData['contract_paths'] as $contract)
+                                <small class="d-block text-muted">{{ __('messages.file_uploaded') }}: {{ $contract['name'] ?? basename($contract['path']) }}</small>
+                            @endforeach
+                        </div>
+                    @elseif(isset($stepData['contract_path']))
+                        <small class="text-muted d-block mt-2">{{ __('messages.file_uploaded') }}: {{ basename($stepData['contract_path']) }}</small>
+                    @endif
                 </div>
             </div>
 

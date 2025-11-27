@@ -1,8 +1,8 @@
 <div class="card border-0 shadow-sm">
     <div class="card-header bg-white border-0 py-3">
-        <h5 class="mb-0 text-dark fw-bold">
+            <h5 class="mb-0 text-dark fw-bold">
             <i class="bi bi-7-circle me-2 text-primary"></i>
-            {{ __('messages.validation') }} + {{ __('messages.induction') }} + {{ __('messages.signature_contrat') }}
+            {{ __('messages.validation') }} + {{ __('messages.induction') }}
         </h5>
     </div>
     <div class="card-body">
@@ -47,19 +47,51 @@
 
             <h6 class="fw-bold mb-3">{{ __('messages.induction') }}</h6>
             <div class="row mb-4">
-                <div class="col-md-6 mb-3">
-                    <label for="induction_date" class="form-label">{{ __('messages.induction_date') }}</label>
-                    <input type="date" 
-                           class="form-control @error('induction_date') is-invalid @enderror" 
-                           id="induction_date" 
-                           name="induction_date" 
-                           value="{{ old('induction_date', $stepData['induction_date'] ?? '') }}">
-                    @error('induction_date')
+                <div class="col-md-4 mb-3">
+                    <label for="induction_date_from" class="form-label">{{ __('messages.induction_date_from') }}</label>
+                    @php
+                        $inductionFromValue = old('induction_date_from', $stepData['induction_date_from'] ?? '');
+                        if ($inductionFromValue) {
+                            try {
+                                $inductionFromValue = \Carbon\Carbon::parse($inductionFromValue)->format('Y-m-d\TH:i');
+                            } catch (\Exception $e) {
+                                $inductionFromValue = '';
+                            }
+                        }
+                    @endphp
+                    <input type="datetime-local" 
+                           class="form-control @error('induction_date_from') is-invalid @enderror" 
+                           id="induction_date_from" 
+                           name="induction_date_from" 
+                           value="{{ $inductionFromValue }}">
+                    @error('induction_date_from')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
 
-                <div class="col-md-6 mb-3">
+                <div class="col-md-4 mb-3">
+                    <label for="induction_date_to" class="form-label">{{ __('messages.induction_date_to') }}</label>
+                    @php
+                        $inductionToValue = old('induction_date_to', $stepData['induction_date_to'] ?? '');
+                        if ($inductionToValue) {
+                            try {
+                                $inductionToValue = \Carbon\Carbon::parse($inductionToValue)->format('Y-m-d\TH:i');
+                            } catch (\Exception $e) {
+                                $inductionToValue = '';
+                            }
+                        }
+                    @endphp
+                    <input type="datetime-local" 
+                           class="form-control @error('induction_date_to') is-invalid @enderror" 
+                           id="induction_date_to" 
+                           name="induction_date_to" 
+                           value="{{ $inductionToValue }}">
+                    @error('induction_date_to')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <div class="col-md-4 mb-3">
                     <label for="induction_conducted_by" class="form-label">{{ __('messages.conducted_by') }}</label>
                     <input type="text" 
                            class="form-control @error('induction_conducted_by') is-invalid @enderror" 
@@ -69,47 +101,6 @@
                     @error('induction_conducted_by')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
-                </div>
-            </div>
-
-            <h6 class="fw-bold mb-3">{{ __('messages.signature_contrat') }}</h6>
-            <div class="row mb-4">
-                <div class="col-md-6 mb-3">
-                    <label for="contract_signed_date" class="form-label">{{ __('messages.contract_signed_date') }}</label>
-                    <input type="date" 
-                           class="form-control @error('contract_signed_date') is-invalid @enderror" 
-                           id="contract_signed_date" 
-                           name="contract_signed_date" 
-                           value="{{ old('contract_signed_date', $stepData['contract_signed_date'] ?? '') }}">
-                    @error('contract_signed_date')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
-                </div>
-
-                <div class="col-md-6 mb-3">
-                    <label for="contract" class="form-label">{{ __('messages.contract_path') }}</label>
-                    <input type="file" 
-                           class="form-control @error('contract') is-invalid @enderror @error('contract.*') is-invalid @enderror" 
-                           id="contract" 
-                           name="contract[]" 
-                           accept=".pdf,.doc,.docx"
-                           multiple>
-                    @error('contract')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
-                    @error('contract.*')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
-                    <small class="form-text text-muted">{{ __('messages.multiple_files_allowed') }}</small>
-                    @if(!empty($stepData['contract_paths']) && is_array($stepData['contract_paths']))
-                        <div class="mt-2">
-                            @foreach($stepData['contract_paths'] as $contract)
-                                <small class="d-block text-muted">{{ __('messages.file_uploaded') }}: {{ $contract['name'] ?? basename($contract['path']) }}</small>
-                            @endforeach
-                        </div>
-                    @elseif(isset($stepData['contract_path']))
-                        <small class="text-muted d-block mt-2">{{ __('messages.file_uploaded') }}: {{ basename($stepData['contract_path']) }}</small>
-                    @endif
                 </div>
             </div>
 

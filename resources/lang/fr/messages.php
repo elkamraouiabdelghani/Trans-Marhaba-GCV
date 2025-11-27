@@ -91,6 +91,9 @@ return [
     'this_week' => 'Cette semaine',
     'total_violations' => 'Total violations',
     'phone' => 'Téléphone',
+    'second_tel_number' => 'Deuxième numéro de téléphone',
+    'person_name' => 'Nom de la personne (deuxième téléphone)',
+    'relation' => 'Relation',
     'assigned_vehicle' => 'Véhicule assigné',
     'not_assigned' => 'Non assigné',
     'filters' => 'Filtres',
@@ -549,6 +552,8 @@ return [
     'validated' => 'Validé',
     // Step 10 - Induction
     'induction_date' => 'Date d\'induction',
+    'induction_date_from' => 'Du',
+    'induction_date_to' => 'Au',
     'conducted_by' => 'Conduit par',
     'induction_completed' => 'Induction terminée',
     // Step 11 - Signature de contrat

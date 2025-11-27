@@ -177,15 +177,21 @@
                                     </td>
                                     <td class="py-3 px-4">
                                         @php
-                                            // Calculate progress
+                                            // Get applicable step numbers based on integration type
+                                            $stepNumbers = $integration->type === 'driver'
+                                                ? range(1, 9)
+                                                : array_merge(range(1, 5), [7, 9]);
+                                            
+                                            // Calculate progress based on applicable steps only
                                             $completedSteps = 0;
-                                            for ($i = 1; $i <= 9; $i++) {
-                                                $step = $integration->getStep($i);
+                                            foreach ($stepNumbers as $stepIndex) {
+                                                $step = $integration->getStep($stepIndex);
                                                 if ($step && $step->isValidated()) {
                                                     $completedSteps++;
                                                 }
                                             }
-                                            $progressPercentage = ($completedSteps / 9) * 100;
+                                            $totalSteps = count($stepNumbers);
+                                            $progressPercentage = $totalSteps > 0 ? ($completedSteps / $totalSteps) * 100 : 0;
                                             
                                             // Get current step label
                                             $stepLabels = [
@@ -195,9 +201,9 @@
                                                 4 => __('messages.test_oral'),
                                                 5 => __('messages.test_ecrit'),
                                                 6 => __('messages.test_conduite'),
-                                                7 => __('messages.validation') . ' + ' . __('messages.induction') . ' + ' . __('messages.signature_contrat'),
+                                                7 => __('messages.validation') . ' + ' . __('messages.induction'),
                                                 8 => __('messages.accompagnement'),
-                                                9 => __('messages.validation_finale'),
+                                                9 => __('messages.validation_finale') . ' + ' . __('messages.signature_contrat'),
                                             ];
                                             $currentStepLabel = $stepLabels[$integration->current_step] ?? __('messages.step') . ' ' . $integration->current_step;
                                         @endphp
@@ -210,7 +216,7 @@
                                                     aria-valuenow="{{ $progressPercentage }}" 
                                                     aria-valuemin="0" 
                                                     aria-valuemax="100">
-                                                    <small class="text-white fw-bold">{{ $integration->current_step }}/9</small>
+                                                    <small class="text-white fw-bold">{{ $completedSteps }}/{{ $totalSteps }}</small>
                                                 </div>
                                             </div>
                                             <div class="text-muted small">

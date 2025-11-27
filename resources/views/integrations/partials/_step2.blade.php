@@ -74,6 +74,44 @@
             </div>
 
             <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label for="second_tel_number" class="form-label">{{ __('messages.second_tel_number') }}</label>
+                    <input type="text" 
+                           class="form-control @error('second_tel_number') is-invalid @enderror" 
+                           id="second_tel_number" 
+                           name="second_tel_number" 
+                           value="{{ old('second_tel_number', $stepData['second_tel_number'] ?? '') }}">
+                    @error('second_tel_number')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <div class="col-md-4 mb-3">
+                    <label for="person_name" class="form-label">{{ __('messages.person_name') }}</label>
+                    <input type="text" 
+                           class="form-control @error('second_tel_number_person_name') is-invalid @enderror" 
+                           id="person_name" 
+                           name="person_name" 
+                           value="{{ old('person_name', $stepData['person_name'] ?? '') }}">
+                    @error('second_tel_number_person_name')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <div class="col-md-4 mb-3">
+                    <label for="relation" class="form-label">{{ __('messages.relation') }}</label>
+                    <input type="text" 
+                           class="form-control @error('relation') is-invalid @enderror" 
+                           id="relation" 
+                           name="relation" 
+                           value="{{ old('relation', $stepData['relation'] ?? '') }}">
+                    @error('relation')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+            </div>
+
+            <div class="row">
                 <div class="col-md-6 mb-3">
                     <label for="date_of_birth" class="form-label">{{ __('messages.date_of_birth') }} <span class="text-danger">*</span></label>
                     <input type="date" 
@@ -146,7 +184,7 @@
                 @error('photo')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
-                @if($stepData['photo_path'])
+                @if(isset($stepData['photo_path']) && $stepData['photo_path'])
                     <div class="mt-2 d-flex align-items-center gap-2">
                         @if($stepData['photo_path'])
                         <img src="{{ $stepData['photo_path'] ? asset('uploads/' . $stepData['photo_path']) : asset('images/default-profile.png') }}"

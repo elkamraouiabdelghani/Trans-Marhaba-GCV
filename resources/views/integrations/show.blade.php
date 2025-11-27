@@ -49,7 +49,7 @@
         @php
             $stepNumbers = $stepNumbers ?? ($integration->type === 'driver'
                 ? range(1, 9)
-                : array_merge(range(1, 4), [7, 9]));
+                : array_merge(range(1, 5), [7, 9]));
         @endphp
 
         <!-- Header -->
