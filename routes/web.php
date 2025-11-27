@@ -65,9 +65,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/drivers', [DriversController::class, 'index'])->name('drivers.index');
     Route::get('/drivers/export', [DriversController::class, 'export'])->name('drivers.export');
     Route::get('/drivers/terminated', [DriversController::class, 'terminated'])->name('drivers.terminated');
+    Route::get('/drivers/activities', [DriversController::class, 'activitiesIndex'])->name('drivers.activities.index');
+    Route::post('/drivers/activities/import', [DriversController::class, 'importActivities'])->name('drivers.activities.import');
     Route::get('/drivers/alerts', [DriversController::class, 'alerts'])->name('drivers.alerts');
     Route::get('/drivers/alerts/export', [DriversController::class, 'exportAlerts'])->name('drivers.alerts.export');
-    Route::post('/drivers/{driver}/terminate', [DriversController::class, 'terminate'])->name('drivers.terminate');
     Route::get('/drivers/{driver}', [DriversController::class, 'show'])->name('drivers.show');
     Route::get('/drivers/{driver}/edit', [DriversController::class, 'edit'])->name('drivers.edit');
     Route::patch('/drivers/{driver}', [DriversController::class, 'update'])->name('drivers.update');

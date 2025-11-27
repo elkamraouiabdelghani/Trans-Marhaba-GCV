@@ -117,7 +117,7 @@
             </a>
         </li>
         <li class="mb-2">
-            <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2">
+            <a href="{{ route('drivers.activities.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2">
                 <i class="bi bi-clock-history me-2 text-gray-600 sidebar-icon"></i>
                 <span class="sidebar-text">{{ __('messages.driving_time_reports') }}</span>
             </a>
@@ -346,7 +346,7 @@
                 </a>
             </li>
             <li class="mb-2">
-                <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2">
+                <a href="{{ route('drivers.activities.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2">
                     <i class="bi bi-clock-history me-2 text-gray-600 sidebar-icon"></i>
                     <span class="sidebar-text">{{ __('messages.driving_time_reports') }}</span>
                 </a>

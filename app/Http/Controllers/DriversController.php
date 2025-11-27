@@ -28,6 +28,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
 use Barryvdh\DomPDF\Facade\Pdf;
+use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 
 class DriversController extends Controller
 {
@@ -111,7 +112,7 @@ class DriversController extends Controller
         return Excel::download(new DriversExport($driversCollection->values()), $fileName);
     }
 
-    public function terminated(): View
+    public function terminated()
     {
         $drivers = $this->driversQuery()
             ->get()
@@ -121,40 +122,7 @@ class DriversController extends Controller
         return view('drivers.terminated', compact('drivers'));
     }
 
-    public function terminate(Request $request, Driver $driver): RedirectResponse
-    {
-        $validated = $request->validate([
-            'terminated_at' => ['required', 'date'],
-            'terminated_cause' => ['required', 'string', 'max:500'],
-        ]);
-
-        try {
-            DB::transaction(function () use ($driver, $validated) {
-                $driver->assigned_vehicle_id = null;
-                $driver->flotte_id = null;
-                $driver->is_integrated = false;
-                $driver->status = 'terminated';
-                $driver->terminated_date = Carbon::parse($validated['terminated_at'])->toDateString();
-                $driver->terminated_cause = trim($validated['terminated_cause']);
-                $driver->save();
-            });
-
-            return redirect()
-                ->route('drivers.show', $driver)
-                ->with('success', __('messages.driver_terminated_successfully'));
-        } catch (\Throwable $e) {
-            Log::error('Failed to terminate driver', [
-                'driver_id' => $driver->id,
-                'error' => $e->getMessage(),
-            ]);
-
-            return redirect()
-                ->route('drivers.show', $driver)
-                ->with('error', __('messages.driver_terminated_error'));
-        }
-    }
-
-    public function show(Request $request, Driver $driver): View
+    public function show(Request $request, Driver $driver)
     {
         // Load relationships
         $driver->load([
@@ -284,7 +252,181 @@ class DriversController extends Controller
         ));
     }
 
-    public function alerts(): View
+    public function activitiesIndex(Request $request)
+    {
+        $driverId = $request->get('driver_id');
+        $dateFrom = $request->get('date_from');
+        $dateTo = $request->get('date_to');
+        $search = trim((string) $request->get('search'));
+
+        $driversList = Driver::select('id', 'full_name')
+            ->orderByRaw("CASE WHEN (full_name IS NULL OR full_name = '') THEN 1 ELSE 0 END")
+            ->orderBy('full_name')
+            ->orderBy('id')
+            ->get();
+
+        $activitiesQuery = DriverActivity::query()
+            ->with(['driver:id,full_name,flotte_id,status', 'driver.flotte:id,name'])
+            ->orderByDesc('activity_date')
+            ->orderBy('start_time');
+
+        if ($driverId) {
+            $activitiesQuery->where('driver_id', $driverId);
+        }
+
+        if ($dateFrom) {
+            try {
+                $fromDate = Carbon::createFromFormat('Y-m-d', $dateFrom)->startOfDay();
+                $activitiesQuery->whereDate('activity_date', '>=', $fromDate);
+            } catch (\Throwable $e) {
+                // Ignore invalid input
+            }
+        }
+
+        if ($dateTo) {
+            try {
+                $toDate = Carbon::createFromFormat('Y-m-d', $dateTo)->endOfDay();
+                $activitiesQuery->whereDate('activity_date', '<=', $toDate);
+            } catch (\Throwable $e) {
+                // Ignore invalid input
+            }
+        }
+
+        if ($search !== '') {
+            $activitiesQuery->where(function ($query) use ($search) {
+                $query->where('driver_name', 'like', "%{$search}%")
+                    ->orWhere('flotte', 'like', "%{$search}%")
+                    ->orWhere('asset_description', 'like', "%{$search}%")
+                    ->orWhere('raison', 'like', "%{$search}%")
+                    ->orWhere('start_location', 'like', "%{$search}%")
+                    ->orWhere('overnight_location', 'like', "%{$search}%");
+            });
+        }
+
+        $statsQuery = (clone $activitiesQuery)->reorder();
+
+        $totalActivities = (clone $statsQuery)->count();
+        $uniqueDrivers = (clone $statsQuery)->select('driver_id')->distinct()->count('driver_id');
+
+        $durationTotals = (clone $statsQuery)
+            ->selectRaw('
+                COALESCE(SUM(TIME_TO_SEC(driving_time)), 0) as driving_seconds,
+                COALESCE(SUM(TIME_TO_SEC(work_time)), 0) as work_seconds,
+                COALESCE(SUM(TIME_TO_SEC(rest_time)), 0) as rest_seconds,
+                COALESCE(SUM(TIME_TO_SEC(rest_daily)), 0) as rest_daily_seconds
+            ')
+            ->first();
+
+        $stats = [
+            'totalActivities' => $totalActivities,
+            'uniqueDrivers' => $uniqueDrivers,
+            'totalDriving' => $this->formatSecondsToDuration((int) ($durationTotals->driving_seconds ?? 0)),
+            'totalWork' => $this->formatSecondsToDuration((int) ($durationTotals->work_seconds ?? 0)),
+            'totalRest' => $this->formatSecondsToDuration((int) ($durationTotals->rest_seconds ?? 0)),
+            'totalRestDaily' => $this->formatSecondsToDuration((int) ($durationTotals->rest_daily_seconds ?? 0)),
+        ];
+
+        $activities = $activitiesQuery->paginate(25)->withQueryString();
+
+        return view('drivers.activities', [
+            'activities' => $activities,
+            'driversList' => $driversList,
+            'filters' => [
+                'driver_id' => $driverId,
+                'date_from' => $dateFrom,
+                'date_to' => $dateTo,
+                'search' => $search,
+            ],
+            'stats' => $stats,
+        ]);
+    }
+
+    public function importActivities(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'activities_file' => ['required', 'file', 'mimes:xlsx,xls,csv', 'max:10240'],
+        ]);
+
+        try {
+            $collections = Excel::toArray([], $request->file('activities_file'));
+            $sheetRows = $collections[0] ?? [];
+
+            if (empty($sheetRows)) {
+                return back()->with('error', __('messages.import_no_rows') ?? 'No data rows found in the file.');
+            }
+
+            [$headerIndex, $sheetRows, $missingColumn] = $this->resolveHeaderIndex($sheetRows);
+            if (!$headerIndex) {
+                [$headerIndex, $sheetRows] = $this->fallbackHeaderIndex($sheetRows);
+                if (!$headerIndex) {
+                    $columnName = $missingColumn ?? __('messages.import_required_headers') ?? 'required headers';
+                    return back()->with('error', __('messages.import_missing_column', ['column' => $columnName]) ?? 'Unable to detect required columns.');
+                }
+            }
+
+            $driverLookup = $this->buildDriverLookup();
+
+            $rowsToInsert = [];
+            $errors = [];
+            $processed = 0;
+
+            foreach ($sheetRows as $rowIndex => $rawRow) {
+                if ($this->isRowEmpty($rawRow)) {
+                    continue;
+                }
+
+                $processed++;
+                $rowNumber = $rowIndex + 2;
+
+                try {
+                    $mappedRow = $this->mapActivityRow($rawRow, $headerIndex);
+                    $transformed = $this->transformActivityRow($mappedRow, $driverLookup, $rowNumber);
+
+                    if ($transformed === null) {
+                        continue;
+                    }
+
+                    $rowsToInsert[] = $transformed;
+                } catch (\Throwable $e) {
+                    $errors[] = "Row {$rowNumber}: {$e->getMessage()}";
+                }
+            }
+
+            $inserted = 0;
+            if (!empty($rowsToInsert)) {
+                foreach (array_chunk($rowsToInsert, 500) as $chunk) {
+                    DriverActivity::insert($chunk);
+                    $inserted += count($chunk);
+                }
+            }
+
+            $summary = [
+                'processed' => $processed,
+                'inserted' => $inserted,
+                'skipped' => count($errors),
+                'errors' => array_slice($errors, 0, 20),
+            ];
+
+            Log::info('Driver activities import completed', [
+                'user_id' => $request->user()->id ?? null,
+                'summary' => $summary,
+            ]);
+
+            return redirect()
+                ->route('drivers.activities.index')
+                ->with('activity_import', $summary)
+                ->with('success', __('messages.import_success') ?? 'Activities imported successfully.');
+        } catch (\Throwable $e) {
+            Log::error('Driver activities import failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return back()->with('error', __('messages.import_failed') ?? 'Import failed. Please verify the file and try again.');
+        }
+    }
+
+    public function alerts()
     {
         $alerts = $this->getFormationAlerts();
         
@@ -371,7 +513,7 @@ class DriversController extends Controller
     /**
      * Store a simplified driver formation for TMD and 16 Module categories.
      */
-    public function storeQuickFormation(Request $request, Driver $driver): RedirectResponse
+    public function storeQuickFormation(Request $request, Driver $driver)
     {
         try {
             $validator = Validator::make($request->all(), [
@@ -460,7 +602,7 @@ class DriversController extends Controller
     /**
      * Store a new driver activity.
      */
-    public function storeActivity(Request $request, Driver $driver): RedirectResponse
+    public function storeActivity(Request $request, Driver $driver)
     {
         try {
             $timeRule = ['required', 'regex:/^\d{2}:\d{2}(:\d{2})?$/'];
@@ -1000,7 +1142,7 @@ class DriversController extends Controller
             })
             ->sum(fn($activity) => $this->timeToDecimal($activity->driving_time ?? null));
 
-        return round($hours, 1);
+        return $hours;
     }
 
     private function normalizeTimeInput(?string $time): ?string
@@ -1033,6 +1175,420 @@ class DriversController extends Controller
         } catch (\Exception $e) {
             return null;
         }
+    }
+
+    private function formatSecondsToDuration(int $seconds): string
+    {
+        $seconds = max(0, $seconds);
+        $hours = intdiv($seconds, 3600);
+        $minutes = intdiv($seconds % 3600, 60);
+
+        return sprintf('%02d:%02d', $hours, $minutes);
+    }
+
+    private function timeStringToSeconds($time): int
+    {
+        if (!$time) {
+            return 0;
+        }
+
+        if ($time instanceof Carbon) {
+            return ((int) $time->format('H') * 3600) + ((int) $time->format('i') * 60) + (int) $time->format('s');
+        }
+
+        $parts = explode(':', (string) $time);
+        $hours = (int) ($parts[0] ?? 0);
+        $minutes = (int) ($parts[1] ?? 0);
+        $seconds = (int) ($parts[2] ?? 0);
+
+        return ($hours * 3600) + ($minutes * 60) + $seconds;
+    }
+
+    private function normalizeImportHeader(?string $value): string
+    {
+        return Str::of((string) $value)
+            ->lower()
+            ->replaceMatches('/[^a-z0-9]/', '')
+            ->__toString();
+    }
+
+    private function buildHeaderIndex(array $headerRow): array
+    {
+        $headerIndex = [];
+        foreach ($headerRow as $index => $normalizedHeader) {
+            if ($normalizedHeader === '') {
+                continue;
+            }
+            $headerIndex[$normalizedHeader] = $index;
+        }
+
+        return $headerIndex;
+    }
+
+    private function resolveHeaderIndex(array $rows): array
+    {
+        $required = $this->requiredActivityColumns();
+        $lastMissing = null;
+
+        while (!empty($rows)) {
+            $potentialHeader = array_shift($rows);
+            $normalized = array_map(fn ($value) => $this->normalizeImportHeader($value), $potentialHeader);
+            $headerIndex = $this->buildHeaderIndex($normalized);
+
+            $allPresent = true;
+            foreach ($required as $columnKey => $columnLabel) {
+                if (!array_key_exists($columnLabel, $headerIndex)) {
+                    $lastMissing = $columnKey;
+                    $allPresent = false;
+                    break;
+                }
+            }
+
+            if ($allPresent) {
+                return [$headerIndex, $rows, null];
+            }
+        }
+
+        return [null, $rows, $lastMissing];
+    }
+
+    private function fallbackHeaderIndex(array $rows): ?array
+    {
+        while (!empty($rows) && $this->isRowEmpty($rows[0])) {
+            array_shift($rows);
+        }
+
+        if (empty($rows)) {
+            return null;
+        }
+
+        $columnOrder = [
+            'date',
+            'assetdescription',
+            'firsttripstarttime',
+            'lasttripendtime',
+            null, // Driving Time vs Standing Time (ignored)
+            'drivingtimehhmmss',
+            'standingtimehhmmss',
+            'durationhhmmss',
+            'idletimehhmmss',
+        ];
+
+        $headerIndex = [];
+        foreach ($columnOrder as $position => $label) {
+            if (!$label) {
+                continue;
+            }
+            $headerIndex[$label] = $position;
+        }
+
+        return [$headerIndex, $rows];
+    }
+
+    private function requiredActivityColumns(): array
+    {
+        return [
+            'date' => 'date',
+            'asset_description' => 'assetdescription',
+            'first_trip_start_time' => 'firsttripstarttime',
+            'last_trip_end_time' => 'lasttripendtime',
+            'driving_time' => 'drivingtimehhmmss',
+            'standing_time' => 'standingtimehhmmss',
+            'duration' => 'durationhhmmss',
+            'idle_time' => 'idletimehhmmss',
+        ];
+    }
+
+    private function mapActivityRow(array $row, array $headerIndex): array
+    {
+        $map = $this->requiredActivityColumns();
+        $mapped = [];
+
+        foreach ($map as $key => $normalizedColumn) {
+            $columnPosition = $headerIndex[$normalizedColumn] ?? null;
+            $mapped[$key] = $columnPosition !== null ? ($row[$columnPosition] ?? null) : null;
+        }
+
+        return $mapped;
+    }
+
+    private function transformActivityRow(array $row, array $driverLookup, int $rowNumber): array
+    {
+        $date = $this->parseImportDate($row['date'] ?? null);
+        if (!$date) {
+            throw new \InvalidArgumentException(__('messages.import_invalid_date') ?? 'Invalid date value provided.');
+        }
+
+        $assetDescription = trim((string) ($row['asset_description'] ?? ''));
+        if ($assetDescription === '') {
+            throw new \InvalidArgumentException(__('messages.import_missing_asset_description') ?? 'Asset Description is required.');
+        }
+
+        [$vehicleLabel, $driverLabel] = $this->extractVehicleAndDriver($assetDescription);
+        if (!$driverLabel) {
+            throw new \InvalidArgumentException(__('messages.import_missing_driver_name') ?? 'Driver name missing in Asset Description.');
+        }
+
+        // Try multiple variations of the driver name for matching
+        $driverKeys = [
+            $this->normalizeDriverName($driverLabel),
+        ];
+
+        // Try reversed name order
+        $nameParts = preg_split('/\s+/', trim($driverLabel), 2);
+        if (count($nameParts) === 2) {
+            $driverKeys[] = $this->normalizeDriverName($nameParts[1] . ' ' . $nameParts[0]);
+        }
+
+        // Try partial matching as fallback
+        $driver = null;
+        foreach ($driverKeys as $key) {
+            if ($key !== '' && isset($driverLookup[$key])) {
+                $driver = $driverLookup[$key];
+                break;
+            }
+        }
+
+        // If still not found, try fuzzy matching (contains check and word matching)
+        if (!$driver) {
+            $normalizedSearch = $this->normalizeDriverName($driverLabel);
+            $searchWords = array_filter(explode(' ', $normalizedSearch), fn($w) => strlen($w) >= 2);
+            
+            $bestMatch = null;
+            $bestScore = 0;
+            
+            foreach ($driverLookup as $lookupKey => $lookupDriver) {
+                $normalizedLookup = $this->normalizeDriverName($lookupDriver['original_name']);
+                $lookupWords = array_filter(explode(' ', $normalizedLookup), fn($w) => strlen($w) >= 2);
+                
+                // Count matching words
+                $commonWords = array_intersect($searchWords, $lookupWords);
+                $matchScore = count($commonWords);
+                
+                // Also check if one name contains the other (for partial matches)
+                if (str_contains($normalizedSearch, $normalizedLookup) || str_contains($normalizedLookup, $normalizedSearch)) {
+                    $matchScore += 2; // Boost score for substring matches
+                }
+                
+                // Check if last names match (usually the most important part)
+                $searchLast = end($searchWords);
+                $lookupLast = end($lookupWords);
+                if ($searchLast && $lookupLast && $searchLast === $lookupLast) {
+                    $matchScore += 3; // Strong boost for matching last name
+                }
+                
+                if ($matchScore > $bestScore && $matchScore >= 1) {
+                    $bestScore = $matchScore;
+                    $bestMatch = $lookupDriver;
+                }
+            }
+            
+            if ($bestMatch) {
+                $driver = $bestMatch;
+            }
+        }
+
+        if (!$driver) {
+            // Log available driver names for debugging (first 10 only to avoid spam)
+            $availableNames = array_slice(array_map(fn($d) => $d['original_name'], $driverLookup), 0, 10);
+            Log::warning('Driver not found during import', [
+                'searched_name' => $driverLabel,
+                'normalized_search' => $this->normalizeDriverName($driverLabel),
+                'available_drivers_sample' => $availableNames,
+                'total_drivers' => count($driverLookup),
+            ]);
+            
+            throw new \InvalidArgumentException(__('messages.import_driver_not_found', ['driver' => $driverLabel]) ?? "Driver '{$driverLabel}' not found.");
+        }
+
+        $startTime = $this->normalizeImportTime($row['first_trip_start_time'] ?? null);
+        $endTime = $this->normalizeImportTime($row['last_trip_end_time'] ?? null);
+
+        if (!$startTime || !$endTime) {
+            throw new \InvalidArgumentException(__('messages.import_missing_time_values') ?? 'Start time and end time are required.');
+        }
+
+        $workTime = $this->normalizeImportTime($row['duration'] ?? null, allowNull: true);
+        $drivingTime = $this->normalizeImportTime($row['driving_time'] ?? null, allowNull: true);
+        $standingTime = $this->normalizeImportTime($row['standing_time'] ?? null, allowNull: true);
+        $idleTime = $this->normalizeImportTime($row['idle_time'] ?? null, allowNull: true);
+
+        return [
+            'driver_id' => $driver['id'],
+            'activity_date' => $date->toDateString(),
+            'flotte' => $driver['flotte'],
+            'asset_description' => $assetDescription,
+            'driver_name' => $driver['original_name'] ?? $driverLabel,
+            'start_time' => $startTime,
+            'end_time' => $endTime,
+            'work_time' => $workTime,
+            'driving_time' => $drivingTime,
+            'rest_time' => $standingTime,
+            'rest_daily' => $idleTime,
+            'raison' => null,
+            'start_location' => null,
+            'overnight_location' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ];
+    }
+
+    private function parseImportDate($value): ?Carbon
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (is_numeric($value)) {
+            try {
+                $dateTime = ExcelDate::excelToDateTimeObject($value);
+                return Carbon::instance($dateTime);
+            } catch (\Throwable $e) {
+                return null;
+            }
+        }
+
+        $value = trim((string) $value);
+        $formats = ['d/m/Y', 'd-m-Y', 'Y-m-d', 'm/d/Y'];
+        foreach ($formats as $format) {
+            try {
+                $date = Carbon::createFromFormat($format, $value);
+                if ($date !== false) {
+                    return $date;
+                }
+            } catch (\Throwable $e) {
+                continue;
+            }
+        }
+
+        return null;
+    }
+
+    private function normalizeImportTime($value, bool $allowNull = false): ?string
+    {
+        if ($value === null || $value === '') {
+            return $allowNull ? null : null;
+        }
+
+        if (is_numeric($value)) {
+            $floatValue = (float) $value;
+            $fraction = $floatValue - floor($floatValue);
+            if ($fraction < 0) {
+                $fraction = 0;
+            }
+            $totalSeconds = (int) round($fraction * 86400);
+            $hours = intdiv($totalSeconds, 3600);
+            $minutes = intdiv($totalSeconds % 3600, 60);
+            $seconds = $totalSeconds % 60;
+
+            return sprintf('%02d:%02d:%02d', $hours, $minutes, $seconds);
+        }
+
+        $value = trim((string) $value);
+        if (preg_match('/^\d{1,2}:\d{2}(?::\d{2})?$/', $value)) {
+            $parts = explode(':', $value);
+            $hours = (int) ($parts[0] ?? 0);
+            $minutes = (int) ($parts[1] ?? 0);
+            $seconds = (int) ($parts[2] ?? 0);
+
+            return sprintf('%02d:%02d:%02d', $hours, $minutes, $seconds);
+        }
+
+        return $allowNull ? null : null;
+    }
+
+    private function extractVehicleAndDriver(string $assetDescription): array
+    {
+        if (!str_contains($assetDescription, '//')) {
+            return [trim($assetDescription), null];
+        }
+
+        [$vehicle, $driver] = array_map('trim', explode('//', $assetDescription, 2));
+
+        return [$vehicle, $driver ?: null];
+    }
+
+    private function normalizeDriverName(?string $name): string
+    {
+        if (empty($name)) {
+            return '';
+        }
+
+        // Remove accents/diacritics, lowercase, trim, normalize spaces
+        $normalized = Str::of((string) $name)
+            ->lower()
+            ->trim()
+            ->replace(['à', 'á', 'â', 'ã', 'ä', 'å'], 'a')
+            ->replace(['è', 'é', 'ê', 'ë'], 'e')
+            ->replace(['ì', 'í', 'î', 'ï'], 'i')
+            ->replace(['ò', 'ó', 'ô', 'õ', 'ö'], 'o')
+            ->replace(['ù', 'ú', 'û', 'ü'], 'u')
+            ->replace(['ç'], 'c')
+            ->replace(['ñ'], 'n')
+            ->replace(['ý', 'ÿ'], 'y')
+            ->replace(['ï'], 'i')
+            ->replaceMatches('/\s+/', ' ') // Normalize multiple spaces to single space
+            ->trim();
+
+        return $normalized->__toString();
+    }
+
+    private function buildDriverLookup(): array
+    {
+        $drivers = Driver::with('flotte:id,name')->get();
+        $lookup = [];
+
+        foreach ($drivers as $driver) {
+            $fullName = trim((string) ($driver->full_name ?? ''));
+            if ($fullName === '') {
+                continue;
+            }
+
+            // Create multiple keys for flexible matching
+            $keys = [
+                $this->normalizeDriverName($fullName),
+            ];
+
+            // Try reversed name order (Last First -> First Last)
+            $nameParts = preg_split('/\s+/', $fullName, 2);
+            if (count($nameParts) === 2) {
+                $keys[] = $this->normalizeDriverName($nameParts[1] . ' ' . $nameParts[0]);
+            }
+
+            // Try just first name + last name (in case of middle names)
+            if (count($nameParts) > 2) {
+                $keys[] = $this->normalizeDriverName($nameParts[0] . ' ' . end($nameParts));
+            }
+
+            // Store driver info under all possible keys
+            $driverInfo = [
+                'id' => $driver->id,
+                'flotte' => $driver->flotte->name ?? null,
+                'original_name' => $fullName,
+            ];
+
+            foreach ($keys as $key) {
+                if ($key !== '') {
+                    // If key already exists, prefer the one with more complete name
+                    if (!isset($lookup[$key]) || strlen($fullName) > strlen($lookup[$key]['original_name'])) {
+                        $lookup[$key] = $driverInfo;
+                    }
+                }
+            }
+        }
+
+        return $lookup;
+    }
+
+    private function isRowEmpty(array $row): bool
+    {
+        foreach ($row as $value) {
+            if ($value !== null && trim((string) $value) !== '') {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -1120,7 +1676,7 @@ class DriversController extends Controller
     private function buildDriverViolationsQuery(Driver $driver, array $filters = [])
     {
         $query = DriverViolation::query()
-            ->with(['violationType', 'vehicle', 'actionPlan'])
+            ->with(['violationType', 'vehicle'])
             ->where('driver_id', $driver->id)
             ->latest('violation_date');
 

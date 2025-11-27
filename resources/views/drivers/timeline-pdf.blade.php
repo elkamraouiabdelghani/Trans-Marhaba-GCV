@@ -105,6 +105,16 @@
         </div>
     </div>
 
+    @php
+        $formatDuration = function ($decimalHours) {
+            $decimalHours = $decimalHours ?? 0;
+            $totalMinutes = (int) round($decimalHours * 60);
+            $hours = intdiv($totalMinutes, 60);
+            $minutes = $totalMinutes % 60;
+            return sprintf('%02d:%02d', $hours, $minutes);
+        };
+    @endphp
+
     <table>
         <thead>
             <tr>
@@ -140,10 +150,10 @@
                     <td>{{ $day['driver_name'] ?? ($driver->full_name ?? '-') }}</td>
                     <td>{{ $day['start_time'] ?? '-' }}</td>
                     <td>{{ $day['end_time'] ?? '-' }}</td>
-                    <td>{{ number_format($day['work_hours'] ?? 0, 2) }}h</td>
-                    <td>{{ number_format($day['driving_hours'] ?? 0, 2) }}h</td>
-                    <td>{{ number_format($day['rest_hours'] ?? 0, 2) }}h</td>
-                    <td>{{ number_format($day['rest_daily_hours'] ?? 0, 2) }}h</td>
+                    <td>{{ $formatDuration($day['work_hours'] ?? 0) }}</td>
+                    <td>{{ $formatDuration($day['driving_hours'] ?? 0) }}</td>
+                    <td>{{ $formatDuration($day['rest_hours'] ?? 0) }}</td>
+                    <td>{{ $formatDuration($day['rest_daily_hours'] ?? 0) }}</td>
                     <td>{{ $day['raison'] ?? '-' }}</td>
                     <td>{{ $day['start_location'] ?? '-' }}</td>
                     <td>{{ $day['overnight_location'] ?? '-' }}</td>
@@ -178,7 +188,7 @@
     <div class="summary">
         <div class="summary-title">{{ __('messages.summary') ?? 'Summary' }}</div>
         <div class="summary-item">
-            <strong>{{ __('messages.total_driving_hours') ?? 'Total Driving Hours' }}:</strong> {{ number_format($totalDrivingHours, 1) }}h
+            <strong>{{ __('messages.total_driving_hours') ?? 'Total Driving Hours' }}:</strong> {{ $formatDuration($totalDrivingHours) }}
         </div>
         <div class="summary-item">
             <strong>{{ __('messages.total_violations') }}:</strong> {{ count($violations) }}

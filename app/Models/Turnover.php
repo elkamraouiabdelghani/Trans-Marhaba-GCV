@@ -7,6 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Carbon\Carbon;
+use App\Models\Driver;
 
 class Turnover extends Model
 {
@@ -81,20 +84,40 @@ class Turnover extends Model
                 'confirmed_by' => Auth::id(),
             ]);
 
-            // If this turnover is for a driver (position = 'Chauffeur')
-            if ($this->position === 'Chauffeur' && $this->driver_id) {
-                $driver = $this->driver;
-                if ($driver) {
-                    $driver->update([
-                        'is_integrated' => 0,
-                        'status' => 'terminated',
-                        'terminated_date' => $confirmedAt->toDateString(),
-                        'assigned_vehicle_id' => null,
-                        'flotte_id' => null,
-                    ]);
+            // Handle driver turnover
+            if (!empty($this->driver_id)) {
+                $driverModel = Driver::query()->whereKey($this->driver_id)->first();
+                if ($driverModel) {
+                    DB::table($driverModel->getTable())
+                        ->where($driverModel->getKeyName(), $this->driver_id)
+                        ->lockForUpdate()
+                        ->get();
+
+                    $terminatedAt = $this->departure_date
+                        ? Carbon::parse($this->departure_date)
+                        : $confirmedAt;
+
+                    $terminatedCause = $this->departure_reason
+                        ? trim((string) $this->departure_reason)
+                        : __('messages.turnover_departure_reason_default', ['reference' => $this->reference ?? $this->id]);
+
+                    $driverModel->assigned_vehicle_id = null;
+                    $driverModel->flotte_id = null;
+                    $driverModel->is_integrated = false;
+                    $driverModel->status = 'terminated';
+                    if (property_exists($driverModel, 'statu')) {
+                        $driverModel->statu = 'terminated';
+                    }
+                    if (property_exists($driverModel, 'state')) {
+                        $driverModel->state = 'terminated';
+                    }
+                    $driverModel->terminated_date = $terminatedAt->toDateString();
+                    $driverModel->terminated_cause = Str::limit($terminatedCause, 500);
+
+                    $driverModel->save();
                 }
             }
-            // If this turnover is for an administration staff (user)
+            // Handle administration turnover
             elseif ($this->user_id) {
                 $user = $this->user;
                 if ($user) {

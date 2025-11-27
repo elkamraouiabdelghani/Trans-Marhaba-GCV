@@ -96,7 +96,13 @@
                                                 <div class="bg-info bg-opacity-10 rounded p-3 text-center h-100">
                                                     <i class="bi bi-clock-history text-info fs-4 d-block mb-2"></i>
                                                     <small class="text-muted d-block">{{ __('messages.driving_hours') }}</small>
-                                                    <h4 class="mb-0 fw-bold text-dark">{{ $totalDrivingHoursThisWeek }}h</h4>
+                                                @php
+                                                    $formattedWeekDriving = sprintf('%02d:%02d',
+                                                        intdiv((int) round(($totalDrivingHoursThisWeek ?? 0) * 60), 60),
+                                                        (int) round(($totalDrivingHoursThisWeek ?? 0) * 60) % 60
+                                                    );
+                                                @endphp
+                                                <h4 class="mb-0 fw-bold text-dark">{{ $formattedWeekDriving }}</h4>
                                                     <small class="text-muted">{{ __('messages.this_week') }}</small>
                                                 </div>
                                             </div>
@@ -160,17 +166,7 @@
                             @php
                                 $driverStatusValue = strtolower((string)($driver->status ?? $driver->statu ?? $driver->state ?? ''));
                             @endphp
-                            @unless($driverStatusValue === 'terminated')
-                                <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#terminateDriverModal">
-                                    <i class="bi bi-person-x me-1"></i>{{ __('messages.terminate_driver') }}
-                                </button>
-                            @endunless
                             @if($driverStatusValue !== 'terminated')
-                                <a href="{{ route('violations.create', ['driver_id' => $driver->id]) }}"
-                                class="btn btn-success btn-sm d-flex align-items-center justify-content-center">
-                                    <i class="bi bi-flag-fill me-2"></i>
-                                    {{ __('messages.add') }} {{ __('messages.violation') }}
-                                </a>
                                 <a href="{{ route('drivers.alerts') }}" class="btn btn-warning btn-sm d-flex align-items-center justify-content-center">
                                     <i class="bi bi-bell me-2"></i>
                                     {{ __('messages.formation_alerts') }}
@@ -242,18 +238,150 @@
         <!-- Timeline/Gantt Chart -->
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-white border-0 py-3">
-                <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex justify-content-between flex-wrap gap-2 align-items-center">
                     <h5 class="mb-0 text-dark fw-bold">
                         <i class="bi bi-calendar-range me-2 text-primary"></i>
                         {{ __('messages.timeline_activity') }}
                     </h5>
+                    @if(($driverStatusValue ?? null) !== 'terminated')
+                        <button type="button"
+                                class="btn btn-info btn-sm d-flex align-items-center text-white"
+                                data-bs-toggle="modal"
+                                data-bs-target="#driverActivityModal">
+                            <i class="bi bi-clock-history me-2"></i>
+                            {{ __('messages.add_driver_activity') ?? 'Ajouter' }}
+                        </button>
+                    @endif
                 </div>
             </div>
             <div class="card-body">
-                <div class="text-center text-muted py-5">
-                    <i class="bi bi-calendar-x display-6 d-block mb-3"></i>
-                    <p class="mb-0">{{ __('messages.timeline_placeholder') ?? 'Driver Activity Timeline - Coming Soon' }}</p>
-                </div>
+                @php
+                    $timelineCollection = collect($timelineData ?? []);
+                    $hasTimeline = $timelineCollection->isNotEmpty();
+                    $formatDuration = function ($decimalHours) {
+                        $decimalHours = $decimalHours ?? 0;
+                        $totalMinutes = (int) round($decimalHours * 60);
+                        $hours = intdiv($totalMinutes, 60);
+                        $minutes = $totalMinutes % 60;
+                        return sprintf('%02d:%02d', $hours, $minutes);
+                    };
+                    $totalDrivingHours = $formatDuration($timelineCollection->sum('driving_hours'));
+                    $totalRestHours = $formatDuration($timelineCollection->sum('rest_hours'));
+                    $totalWorkHours = $formatDuration($timelineCollection->sum('work_hours'));
+                    $totalRestDailyHours = $formatDuration($timelineCollection->sum('rest_daily_hours'));
+                    $compliantDays = $timelineCollection->filter(fn($day) => ($day['is_compliant'] ?? false))->count();
+                @endphp
+
+                @if($hasTimeline)
+                    {{-- <div class="row g-3 mb-4">
+                        <div class="col-6 col-md-3">
+                            <div class="p-3 bg-light rounded border">
+                                <p class="text-muted text-uppercase small mb-1">{{ __('messages.total_driving_hours') ?? 'Driving' }}</p>
+                                <span class="fw-bold text-dark h5 mb-0 d-block">{{ $totalDrivingHours }}</span>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="p-3 bg-light rounded border">
+                                <p class="text-muted text-uppercase small mb-1">{{ __('messages.rest_time') ?? 'Rest' }}</p>
+                                <span class="fw-bold text-dark h5 mb-0 d-block">{{ $totalRestHours }}</span>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="p-3 bg-light rounded border">
+                                <p class="text-muted text-uppercase small mb-1">{{ __('messages.work_time') ?? 'Work' }}</p>
+                                <span class="fw-bold text-dark h5 mb-0 d-block">{{ $totalWorkHours }}</span>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="p-3 bg-light rounded border">
+                                <p class="text-muted text-uppercase small mb-1">{{ __('messages.rest_daily') ?? 'Daily Rest' }}</p>
+                                <span class="fw-bold text-dark h5 mb-0 d-block">{{ $totalRestDailyHours }}</span>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="p-3 bg-light rounded border">
+                                <p class="text-muted text-uppercase small mb-1">{{ __('messages.compliant_days') ?? 'Compliant Days' }}</p>
+                                <span class="fw-bold text-dark h5 mb-0 d-block">{{ $compliantDays }}/{{ $timelineCollection->count() }}</span>
+                            </div>
+                        </div>
+                    </div> --}}
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="text-nowrap">{{ __('messages.date') }}</th>
+                                    <th>{{ __('messages.flotte') }}</th>
+                                    <th>{{ __('messages.asset_description') ?? 'Asset' }}</th>
+                                    <th>{{ __('messages.start_time') }}</th>
+                                    <th>{{ __('messages.end_time') }}</th>
+                                    <th>{{ __('messages.work_time') ?? 'Work' }}</th>
+                                    <th>{{ __('messages.driving_time') ?? __('messages.driving_hours') }}</th>
+                                    <th>{{ __('messages.rest_time') ?? __('messages.rest_hours') }}</th>
+                                    <th>{{ __('messages.rest_daily') ?? 'Daily Rest' }}</th>
+                                    <th>{{ __('messages.status') }}</th>
+                                    <th>{{ __('messages.violations') ?? 'Violations' }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($timelineCollection as $day)
+                                    @php
+                                        $violations = $day['violations'] ?? [];
+                                        $hasViolations = count($violations) > 0;
+                                        $isCompliant = $day['is_compliant'] ?? !$hasViolations;
+                                    @endphp
+                                    <tr>
+                                        <td class="text-nowrap">
+                                            <div class="fw-semibold text-dark">{{ $day['date_label'] ?? $day['date'] }}</div>
+                                            <small class="text-muted">{{ $day['day_name'] ?? '' }}</small>
+                                        </td>
+                                        <td>{{ $day['flotte'] ?? __('messages.not_available') }}</td>
+                                        <td>
+                                            <div class="text-dark">{{ $day['asset_description'] ?? __('messages.not_available') }}</div>
+                                        </td>
+                                        <td>{{ $day['start_time'] ?? '—' }}</td>
+                                        <td>{{ $day['end_time'] ?? '—' }}</td>
+                                        <td>{{ $formatDuration($day['work_hours'] ?? 0) }}</td>
+                                        <td>{{ $formatDuration($day['driving_hours'] ?? 0) }}</td>
+                                        <td>{{ $formatDuration($day['rest_hours'] ?? 0) }}</td>
+                                        <td>{{ $formatDuration($day['rest_daily_hours'] ?? 0) }}</td>
+                                        <td>
+                                            @if($isCompliant)
+                                                <span class="badge bg-success-subtle text-success">{{ __('messages.compliant') }}</span>
+                                            @else
+                                                <span class="badge bg-danger-subtle text-danger">{{ __('messages.non_compliant') }}</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{{ $hasViolations ? 'danger' : 'secondary' }} bg-opacity-10 text-{{ $hasViolations ? 'danger' : 'secondary' }}">
+                                                {{ count($violations) }}
+                                            </span>
+                                            @if($hasViolations)
+                                                <div class="mt-2 text-muted small">
+                                                    @foreach(array_slice($violations, 0, 2) as $violation)
+                                                        <div>
+                                                            <strong>{{ $violation['time'] ?? '' }}</strong>
+                                                            {{ $violation['type_label'] ?? '' }}
+                                                            ({{ __('messages.severity') }}: {{ $violation['severity_label'] ?? '' }})
+                                                        </div>
+                                                    @endforeach
+                                                    @if(count($violations) > 2)
+                                                        <div>+{{ count($violations) - 2 }} {{ __('messages.more') ?? 'more' }}</div>
+                                                    @endif
+                                                </div>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @else
+                    <div class="text-center text-muted py-5">
+                        <i class="bi bi-calendar-x display-6 d-block mb-3"></i>
+                        <p class="mb-0">{{ __('messages.no_activity_data') }}</p>
+                    </div>
+                @endif
             </div>
         </div>
 
@@ -273,6 +401,14 @@
                             <input type="text" class="form-control" id="violationSearch" placeholder="{{ __('messages.search_in_table') }}" onkeyup="searchViolations()">
                         </div>
                         <div class="d-flex gap-2 justify-content-end flex-wrap">
+                            @if(($driverStatusValue ?? null) !== 'terminated')
+                                <button type="button"
+                                        class="btn btn-success btn-sm d-flex align-items-center justify-content-center"
+                                        onclick="window.location='{{ route('violations.create', ['driver_id' => $driver->id]) }}'">
+                                    <i class="bi bi-flag-fill me-2"></i>
+                                    {{ __('messages.add') }} {{ __('messages.violation') }}
+                                </button>
+                            @endif
                             <a class="btn btn-sm btn-outline-danger"
                                href="{{ route('drivers.violations.export-pdf', ['driver' => $driver] + $violationExportParams) }}">
                                 <i class="bi bi-file-pdf me-1"></i> {{ __('messages.export_pdf') }}
@@ -648,7 +784,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="text-center py-5">
+                                    <td colspan="7" class="text-center py-5">
                                         <div class="text-muted">
                                             <i class="bi bi-book display-1 mb-3"></i>
                                             <h5 class="mb-2">{{ __('messages.no_formations_found') }}</h5>
@@ -733,6 +869,190 @@
                 </div>
             </div>
         </div>
+
+        <!-- Driver Activity Modal -->
+        <div class="modal fade" id="driverActivityModal" tabindex="-1" aria-labelledby="driverActivityModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <form method="POST" action="{{ route('drivers.activities.store', $driver) }}" class="modal-content">
+                    @csrf
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="driverActivityModalLabel">
+                            <i class="bi bi-clock-history me-2 text-info"></i>
+                            {{ __('messages.add_driver_activity') ?? 'Ajouter' }}
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('messages.close') }}"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">
+                                    {{ __('messages.activity_date') ?? 'Date' }}
+                                    <span class="text-danger">*</span>
+                                </label>
+                                <input type="date"
+                                       name="activity_date"
+                                       class="form-control @error('activity_date') is-invalid @enderror"
+                                       value="{{ old('activity_date', now()->format('Y-m-d')) }}">
+                                @error('activity_date')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">{{ __('messages.start_time') ?? 'Heure de début' }}<span class="text-danger">*</span></label>
+                                <input type="time"
+                                       step="60"
+                                       id="activity-start-time"
+                                       name="start_time"
+                                       class="form-control @error('start_time') is-invalid @enderror"
+                                       value="{{ old('start_time') }}">
+                                @error('start_time')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">{{ __('messages.end_time') ?? 'Heure de fin' }}<span class="text-danger">*</span></label>
+                                <input type="time"
+                                       step="60"
+                                       id="activity-end-time"
+                                       name="end_time"
+                                       class="form-control @error('end_time') is-invalid @enderror"
+                                       value="{{ old('end_time') }}">
+                                @error('end_time')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">{{ __('messages.work_time') ?? 'Temps de travail' }}<span class="text-danger">*</span></label>
+                                <input type="text"
+                                       inputmode="numeric"
+                                       pattern="^\d{2}:\d{2}(:\d{2})?$"
+                                       placeholder="HH:MM"
+                                       id="activity-work-time"
+                                       readonly
+                                       name="work_time"
+                                       class="form-control @error('work_time') is-invalid @enderror"
+                                       value="{{ old('work_time') }}">
+                                <small class="text-muted">{{ __('messages.duration_format_hint') ?? 'Format HH:MM (durée)' }}</small>
+                                @error('work_time')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">{{ __('messages.driving_time') ?? 'Temps de conduite' }}<span class="text-danger">*</span></label>
+                                <input type="text"
+                                       inputmode="numeric"
+                                       pattern="^\d{2}:\d{2}(:\d{2})?$"
+                                       placeholder="HH:MM"
+                                       name="driving_time"
+                                       class="form-control @error('driving_time') is-invalid @enderror"
+                                       value="{{ old('driving_time') }}">
+                                <small class="text-muted">{{ __('messages.duration_format_hint') ?? 'Format HH:MM (durée)' }}</small>
+                                @error('driving_time')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">{{ __('messages.rest_time') ?? 'Temps de repos' }}<span class="text-danger">*</span></label>
+                                <input type="text"
+                                       inputmode="numeric"
+                                       pattern="^\d{2}:\d{2}(:\d{2})?$"
+                                       placeholder="HH:MM"
+                                       name="rest_time"
+                                       class="form-control @error('rest_time') is-invalid @enderror"
+                                       value="{{ old('rest_time') }}">
+                                <small class="text-muted">{{ __('messages.duration_format_hint') ?? 'Format HH:MM (durée)' }}</small>
+                                @error('rest_time')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">{{ __('messages.rest_daily') ?? 'Repos journalier' }}<span class="text-danger">*</span></label>
+                                <input type="text"
+                                       inputmode="numeric"
+                                       pattern="^\d{2}:\d{2}(:\d{2})?$"
+                                       placeholder="HH:MM"
+                                       name="rest_daily"
+                                       class="form-control @error('rest_daily') is-invalid @enderror"
+                                       value="{{ old('rest_daily') }}">
+                                <small class="text-muted">{{ __('messages.duration_format_hint') ?? 'Format HH:MM (durée)' }}</small>
+                                @error('rest_daily')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">{{ __('messages.flotte') ?? 'Flotte' }}</label>
+                                <input type="text"
+                                       name="flotte"
+                                       class="form-control @error('flotte') is-invalid @enderror"
+                                       value="{{ old('flotte', optional($driver->flotte)->name) }}">
+                                @error('flotte')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">{{ __('messages.asset_description') ?? 'Véhicule / Actif' }}</label>
+                                <input type="text"
+                                       name="asset_description"
+                                       class="form-control @error('asset_description') is-invalid @enderror"
+                                       value="{{ old('asset_description') }}">
+                                @error('asset_description')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">{{ __('messages.driver_name') ?? 'Conducteur' }}</label>
+                                <input type="text"
+                                       name="driver_name"
+                                       class="form-control @error('driver_name') is-invalid @enderror"
+                                       value="{{ old('driver_name', $driver->full_name ?? $driver->name) }}">
+                                @error('driver_name')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">{{ __('messages.start_location') ?? 'Lieu de départ' }}</label>
+                                <input type="text"
+                                       name="start_location"
+                                       class="form-control @error('start_location') is-invalid @enderror"
+                                       value="{{ old('start_location') }}">
+                                @error('start_location')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">{{ __('messages.overnight_location') ?? 'Lieu de repos' }}</label>
+                                <input type="text"
+                                       name="overnight_location"
+                                       class="form-control @error('overnight_location') is-invalid @enderror"
+                                       value="{{ old('overnight_location') }}">
+                                @error('overnight_location')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">{{ __('messages.reason') ?? 'Raison / Observations' }}</label>
+                                <textarea name="raison"
+                                          class="form-control @error('raison') is-invalid @enderror"
+                                          rows="3"
+                                          placeholder="{{ __('messages.activity_reason_placeholder') ?? 'Notes sur l\'activité...' }}">{{ old('raison') }}</textarea>
+                                @error('raison')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                            {{ __('messages.cancel') }}
+                        </button>
+                        <button type="submit" class="btn btn-info text-white">
+                            <i class="bi bi-save me-1"></i>
+                            {{ __('messages.save') ?? 'Enregistrer' }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
     @push('styles')
@@ -796,50 +1116,6 @@
         }
     </style>
     @endpush
-    
-    <!-- Terminate Driver Modal -->
-    <div class="modal fade" id="terminateDriverModal" tabindex="-1" aria-labelledby="terminateDriverModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <form method="POST" action="{{ route('drivers.terminate', $driver) }}" class="modal-content">
-                @csrf
-                <div class="modal-header">
-                    <h5 class="modal-title" id="terminateDriverModalLabel">
-                        <i class="bi bi-person-x text-danger me-2"></i>{{ __('messages.terminate_driver') }}
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <p class="text-muted">{{ __('messages.terminate_driver_description') }}</p>
-                    <div class="mb-3">
-                        <label for="terminatedAtInput" class="form-label">{{ __('messages.terminated_at') }}</label>
-                        <input type="date" id="terminatedAtInput" name="terminated_at" class="form-control" value="{{ now()->format('Y-m-d') }}" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="terminatedCauseInput" class="form-label">{{ __('messages.terminated_cause') }}</label>
-                        <textarea
-                            id="terminatedCauseInput"
-                            name="terminated_cause"
-                            class="form-control"
-                            rows="3"
-                            maxlength="500"
-                            placeholder="{{ __('messages.terminated_cause_placeholder') }}"
-                            required
-                        >{{ old('terminated_cause') }}</textarea>
-                        <small class="text-muted">{{ __('messages.terminated_cause_hint') }}</small>
-                    </div>
-                    <div class="alert alert-warning">
-                        <i class="bi bi-exclamation-triangle me-2"></i>{{ __('messages.terminate_driver_warning') }}
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ __('messages.cancel') }}</button>
-                    <button type="submit" class="btn btn-danger">
-                        <i class="bi bi-check2-circle me-1"></i>{{ __('messages.confirm_termination') }}
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
 
     @push('scripts')
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js" 
@@ -854,60 +1130,115 @@
         });
 
         document.addEventListener('DOMContentLoaded', function() {
-            const quickModalEl = document.getElementById('quickFormationModal');
-            if (!quickModalEl || typeof bootstrap === 'undefined') {
-                return;
+            const hasBootstrap = typeof bootstrap !== 'undefined';
+
+            if (hasBootstrap) {
+                const quickModalEl = document.getElementById('quickFormationModal');
+                if (quickModalEl) {
+                    const quickModal = new bootstrap.Modal(quickModalEl);
+                    const formationIdInput = document.getElementById('quick-formation-id');
+                    const formationThemeEl = document.getElementById('quick-formation-theme');
+                    const dueAtInput = document.getElementById('quick-due-at');
+                    const fileInput = document.getElementById('quick-report-file');
+                    const formationLookup = @json($formationsCatalog->pluck('theme', 'id'));
+
+                    document.querySelectorAll('.btn-quick-formation-start').forEach(function(button) {
+                        button.addEventListener('click', function() {
+                            const formationId = this.dataset.formationId;
+                            const formationTheme = this.dataset.formationTheme || formationLookup[formationId] || '';
+                            const nextDate = this.dataset.nextDate || '';
+
+                            if (formationIdInput) {
+                                formationIdInput.value = formationId;
+                            }
+                            if (formationThemeEl) {
+                                formationThemeEl.textContent = formationTheme;
+                            }
+                            if (dueAtInput) {
+                                dueAtInput.value = nextDate;
+                            }
+                            if (fileInput) {
+                                fileInput.value = '';
+                            }
+
+                            quickModal.show();
+                        });
+                    });
+
+                    const shouldOpenQuickModal = @json(session('open_quick_modal', false));
+                    if (shouldOpenQuickModal) {
+                        const oldFormationId = @json(old('formation_id'));
+                        if (oldFormationId && formationIdInput) {
+                            formationIdInput.value = oldFormationId;
+                        }
+                        if (formationThemeEl) {
+                            const oldTheme = oldFormationId ? (formationLookup[oldFormationId] || '') : '';
+                            formationThemeEl.textContent = oldTheme;
+                        }
+                        const oldDueAt = @json(old('due_at'));
+                        if (oldDueAt && dueAtInput) {
+                            dueAtInput.value = oldDueAt;
+                        }
+                        quickModal.show();
+                    }
+                }
+
+                const activityModalEl = document.getElementById('driverActivityModal');
+                if (activityModalEl) {
+                    const activityModal = new bootstrap.Modal(activityModalEl);
+                    const shouldOpenActivityModal = @json(session('open_activity_modal', false));
+                    if (shouldOpenActivityModal) {
+                        activityModal.show();
+                    }
+                }
             }
 
-            const quickModal = new bootstrap.Modal(quickModalEl);
-            const formationIdInput = document.getElementById('quick-formation-id');
-            const formationThemeEl = document.getElementById('quick-formation-theme');
-            const dueAtInput = document.getElementById('quick-due-at');
-            const fileInput = document.getElementById('quick-report-file');
-            const formationLookup = @json($formationsCatalog->pluck('theme', 'id'));
+            const startTimeInput = document.getElementById('activity-start-time');
+            const endTimeInput = document.getElementById('activity-end-time');
+            const workTimeInput = document.getElementById('activity-work-time');
 
-            document.querySelectorAll('.btn-quick-formation-start').forEach(function(button) {
-                button.addEventListener('click', function() {
-                    const formationId = this.dataset.formationId;
-                    const formationTheme = this.dataset.formationTheme || formationLookup[formationId] || '';
-                    const nextDate = this.dataset.nextDate || '';
+            const parseTimeToMinutes = (value) => {
+                if (!value || typeof value !== 'string') {
+                    return null;
+                }
+                const parts = value.split(':').map(Number);
+                if (parts.some(number => Number.isNaN(number))) {
+                    return null;
+                }
+                const [hours = 0, minutes = 0, seconds = 0] = parts;
+                return (hours * 60) + minutes + Math.floor(seconds / 60);
+            };
 
-                    if (formationIdInput) {
-                        formationIdInput.value = formationId;
-                    }
-                    if (formationThemeEl) {
-                        formationThemeEl.textContent = formationTheme;
-                    }
-                    if (dueAtInput) {
-                        dueAtInput.value = nextDate;
-                    }
-                    if (fileInput) {
-                        fileInput.value = '';
-                    }
+            const formatMinutesToTime = (minutes) => {
+                const hrs = Math.floor(minutes / 60).toString().padStart(2, '0');
+                const mins = Math.floor(minutes % 60).toString().padStart(2, '0');
+                return `${hrs}:${mins}`;
+            };
 
-                    quickModal.show();
-                });
+            const updateWorkTime = () => {
+                if (!startTimeInput || !endTimeInput || !workTimeInput) {
+                    return;
+                }
+                const startMinutes = parseTimeToMinutes(startTimeInput.value);
+                const endMinutes = parseTimeToMinutes(endTimeInput.value);
+
+                if (startMinutes === null || endMinutes === null || endMinutes <= startMinutes) {
+                    workTimeInput.value = '';
+                    return;
+                }
+
+                workTimeInput.value = formatMinutesToTime(endMinutes - startMinutes);
+            };
+
+            [startTimeInput, endTimeInput].forEach(input => {
+                if (input) {
+                    input.addEventListener('input', updateWorkTime);
+                    input.addEventListener('change', updateWorkTime);
+                }
             });
 
-            const shouldOpenQuickModal = @json(session('open_quick_modal', false));
-            if (shouldOpenQuickModal) {
-                const oldFormationId = @json(old('formation_id'));
-                if (oldFormationId && formationIdInput) {
-                    formationIdInput.value = oldFormationId;
-                }
-                if (formationThemeEl) {
-                    const oldTheme = oldFormationId ? (formationLookup[oldFormationId] || '') : '';
-                    formationThemeEl.textContent = oldTheme;
-                }
-                const oldDueAt = @json(old('due_at'));
-                if (oldDueAt && dueAtInput) {
-                    dueAtInput.value = oldDueAt;
-                }
-                quickModal.show();
-            }
+            updateWorkTime();
         });
-
-        // Activity modal removed - timeline system rejected
 
         // Basic HTML escaping for dynamic content
         function escapeHtml(value) {
