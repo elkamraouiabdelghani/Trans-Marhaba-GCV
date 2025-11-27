@@ -119,6 +119,10 @@
                             <i class="bi bi-download"></i>
                             {{ __('messages.export_excel') }}
                         </a>
+                        <a href="{{ route('administration-roles.create') }}" class="btn btn-dark btn-sm">
+                            <i class="bi bi-person-plus me-1"></i>
+                            {{ __('messages.create_new_user') ?? 'Create New User' }}
+                        </a>
                     </div>
                 </div>
             </div>

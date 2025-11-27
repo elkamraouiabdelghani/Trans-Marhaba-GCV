@@ -185,6 +185,8 @@ Route::middleware('auth')->group(function () {
     
     // Administration Roles
     Route::get('/administration-roles', [AdministrationRoleController::class, 'index'])->name('administration-roles.index');
+    Route::get('/administration-roles/create', [AdministrationRoleController::class, 'create'])->name('administration-roles.create');
+    Route::post('/administration-roles', [AdministrationRoleController::class, 'store'])->name('administration-roles.store');
     Route::get('/administration-roles/export', [AdministrationRoleController::class, 'export'])->name('administration-roles.export');
     Route::get('/administration-roles/terminated', [AdministrationRoleController::class, 'terminated'])->name('administration-roles.terminated');
     Route::get('/administration-roles/{user}/edit', [AdministrationRoleController::class, 'edit'])->name('administration-roles.edit');

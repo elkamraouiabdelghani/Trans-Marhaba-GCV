@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\Facades\Hash;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class AdministrationRoleController extends Controller
@@ -98,6 +99,68 @@ class AdministrationRoleController extends Controller
     }
 
     /**
+     * Show the form for creating a new administrative user.
+     */
+    public function create()
+    {
+        return view('administration_roles.create', [
+            'statusOptions' => [
+                'active' => __('messages.status_active'),
+                'inactive' => __('messages.status_inactive'),
+                // 'on_leave' => __('messages.status_on_leave'),
+            ],
+        ]);
+    }
+
+    /**
+     * Store a newly created administrative user.
+     */
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => [
+                'required',
+                'email',
+                'max:255',
+                'unique:users,email',
+            ],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'phone' => ['nullable', 'string', 'max:50'],
+            'department' => ['nullable', 'string', 'max:255'],
+            'role' => ['required', 'string', 'in:manager,other'],
+            'status' => ['required', 'in:active,inactive,on_leave'],
+            'date_of_birth' => ['nullable', 'date'],
+            'date_integration' => ['nullable', 'date'],
+            'profile_photo' => ['nullable', 'image', 'max:2048'],
+        ]);
+
+        $userData = [
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'phone' => $validated['phone'] ?? null,
+            'department' => $validated['department'] ?? null,
+            'role' => $validated['role'],
+            'status' => $validated['status'],
+            'date_of_birth' => $validated['date_of_birth'] ?? null,
+            'date_integration' => $validated['date_integration'] ?? null,
+            'is_integrated' => false,
+            'email_verified_at' => now(),
+        ];
+
+        if ($request->hasFile('profile_photo')) {
+            $userData['profile_photo_path'] = $request->file('profile_photo')->store('profiles/users', 'uploads');
+        }
+
+        $user = User::create($userData);
+
+        return redirect()
+            ->route('administration-roles.show', $user)
+            ->with('success', __('messages.user_created_successfully') ?? 'User created successfully.');
+    }
+
+    /**
      * Display the specified administrative user.
      */
     public function show(User $user)
@@ -162,7 +225,7 @@ class AdministrationRoleController extends Controller
             ],
             'phone' => ['nullable', 'string', 'max:50'],
             'department' => ['nullable', 'string', 'max:255'],
-            'role' => ['required', 'string', 'max:255', 'not_in:admin'],
+            'role' => ['required', 'string', 'in:manager,other'],
             'status' => ['required', 'in:active,inactive,on_leave,terminated'],
             'date_of_birth' => ['nullable', 'date'],
             'profile_photo' => ['nullable', 'image', 'max:2048'],
