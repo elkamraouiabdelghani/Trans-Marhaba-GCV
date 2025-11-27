@@ -15,12 +15,18 @@ return new class extends Migration
             $table->id();
             $table->foreignId('driver_id')->constrained('drivers')->onDelete('cascade');
             $table->date('activity_date');
+            $table->string('flotte')->nullable();
+            $table->string('asset_description')->nullable();
+            $table->string('driver_name')->nullable();
             $table->time('start_time');
             $table->time('end_time');
-            $table->unsignedInteger('driving_hours')->default(0);
-            $table->unsignedInteger('rest_hours')->default(0);
-            $table->text('route_description')->nullable();
-            $table->text('compliance_notes')->nullable();
+            $table->time('work_time')->nullable();
+            $table->time('driving_time')->nullable();
+            $table->time('rest_time')->nullable();
+            $table->time('rest_daily')->nullable();
+            $table->text('raison')->nullable();
+            $table->string('start_location')->nullable();
+            $table->string('overnight_location')->nullable();
             $table->timestamps();
         });
     }

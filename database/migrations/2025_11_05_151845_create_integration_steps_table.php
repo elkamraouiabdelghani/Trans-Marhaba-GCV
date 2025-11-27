@@ -14,8 +14,8 @@ return new class extends Migration
         Schema::create('integration_steps', function (Blueprint $table) {
             $table->id();
             $table->foreignId('integration_candidate_id')->constrained('integration_candidates')->onDelete('cascade');
-            $table->tinyInteger('step_number')->comment('Step number (1-8)');
-            $table->json('step_data')->nullable()->comment('Stores all form inputs for the step');
+            $table->tinyInteger('step_number');
+            $table->json('step_data')->nullable();
             $table->enum('status', ['pending', 'validated', 'rejected'])->default('pending');
             $table->foreignId('validated_by')->nullable()->constrained('users')->onDelete('set null');
             $table->timestamp('validated_at')->nullable();

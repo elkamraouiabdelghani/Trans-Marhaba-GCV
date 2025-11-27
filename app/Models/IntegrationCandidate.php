@@ -20,7 +20,6 @@ class IntegrationCandidate extends Model
         'description_poste',
         'prospection_method',
         'prospection_date',
-        // 'nombre_candidats',
         'notes_prospection',
         'status',
         'current_step',
@@ -35,7 +34,6 @@ class IntegrationCandidate extends Model
         'validated_at' => 'datetime',
         'rejected_at' => 'datetime',
         'current_step' => 'integer',
-        // 'nombre_candidats' => 'integer',
     ];
 
     /**

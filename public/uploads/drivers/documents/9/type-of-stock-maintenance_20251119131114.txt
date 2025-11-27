@@ -1,1 +1,0 @@
-the maintenance types: "when creating the tire we will stock it in maintenance table with operation=achat, cout=tire price, date=date of the creation, location=achat location", if the tire replaced will stock in maintenance table with operation=replaced, cout=NULL, date=replacing date, location=achat location".

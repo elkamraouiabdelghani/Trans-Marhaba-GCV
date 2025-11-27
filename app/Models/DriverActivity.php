@@ -13,12 +13,18 @@ class DriverActivity extends Model
     protected $fillable = [
         'driver_id',
         'activity_date',
+        'flotte',
+        'asset_description',
+        'driver_name',
         'start_time',
         'end_time',
-        'driving_hours',
-        'rest_hours',
-        'route_description',
-        'compliance_notes',
+        'work_time',
+        'driving_time',
+        'rest_time',
+        'rest_daily',
+        'raison',
+        'start_location',
+        'overnight_location',
     ];
 
     /**
@@ -26,8 +32,6 @@ class DriverActivity extends Model
      */
     protected $casts = [
         'activity_date' => 'date',
-        'driving_hours' => 'integer',
-        'rest_hours' => 'integer',
     ];
 
     /**

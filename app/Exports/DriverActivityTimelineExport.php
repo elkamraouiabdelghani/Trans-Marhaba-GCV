@@ -32,12 +32,18 @@ class DriverActivityTimelineExport implements FromCollection, WithHeadings, With
                     $data->push([
                         'date' => $day['date_label'] ?? '',
                         'day_name' => $day['day_name'] ?? '',
-                        'driving_hours' => $day['driving_hours'] ?? 0,
-                        'rest_hours' => $day['rest_hours'] ?? 0,
-                        'total_hours' => $day['total_hours'] ?? 0,
+                        'flotte' => $day['flotte'] ?? '',
+                        'driver_name' => $day['driver_name'] ?? '',
+                        'asset_description' => $day['asset_description'] ?? '',
                         'start_time' => $day['start_time'] ?? '',
                         'end_time' => $day['end_time'] ?? '',
-                        'route' => $day['route_description'] ?? '',
+                        'work_hours' => $day['work_hours'] ?? 0,
+                        'driving_hours' => $day['driving_hours'] ?? 0,
+                        'rest_hours' => $day['rest_hours'] ?? 0,
+                        'rest_daily_hours' => $day['rest_daily_hours'] ?? 0,
+                        'raison' => $day['raison'] ?? '',
+                        'start_location' => $day['start_location'] ?? '',
+                        'overnight_location' => $day['overnight_location'] ?? '',
                         'violation_time' => $violation['time'] ?? '',
                         'violation_type' => $violation['type_label'] ?? '',
                         'violation_rule' => $violation['rule'] ?? '',
@@ -50,12 +56,18 @@ class DriverActivityTimelineExport implements FromCollection, WithHeadings, With
                 $data->push([
                     'date' => $day['date_label'] ?? '',
                     'day_name' => $day['day_name'] ?? '',
-                    'driving_hours' => $day['driving_hours'] ?? 0,
-                    'rest_hours' => $day['rest_hours'] ?? 0,
-                    'total_hours' => $day['total_hours'] ?? 0,
+                    'flotte' => $day['flotte'] ?? '',
+                    'driver_name' => $day['driver_name'] ?? '',
+                    'asset_description' => $day['asset_description'] ?? '',
                     'start_time' => $day['start_time'] ?? '',
                     'end_time' => $day['end_time'] ?? '',
-                    'route' => $day['route_description'] ?? '',
+                    'work_hours' => $day['work_hours'] ?? 0,
+                    'driving_hours' => $day['driving_hours'] ?? 0,
+                    'rest_hours' => $day['rest_hours'] ?? 0,
+                    'rest_daily_hours' => $day['rest_daily_hours'] ?? 0,
+                    'raison' => $day['raison'] ?? '',
+                    'start_location' => $day['start_location'] ?? '',
+                    'overnight_location' => $day['overnight_location'] ?? '',
                     'violation_time' => '',
                     'violation_type' => '',
                     'violation_rule' => '',
@@ -73,12 +85,19 @@ class DriverActivityTimelineExport implements FromCollection, WithHeadings, With
         return [
             __('messages.date'),
             'Day',
-            __('messages.driving_hours'),
-            __('messages.rest_hours'),
-            __('messages.total') ?? 'Total Hours',
+            __('messages.flotte'),
+            __('messages.asset_description') ?? 'Asset Description',
+            __('messages.asset_description') ?? 'Asset Description',
+            __('messages.driver'),
             __('messages.start_time'),
             __('messages.end_time'),
-            __('messages.route'),
+            __('messages.work_time') ?? 'Work Time',
+            __('messages.driving_time') ?? __('messages.driving_hours'),
+            __('messages.rest_time') ?? __('messages.rest_hours'),
+            __('messages.rest_daily') ?? 'Daily Rest',
+            __('messages.raison') ?? 'Reason',
+            __('messages.start_location') ?? 'Start Location',
+            __('messages.overnight_location') ?? 'Overnight Location',
             __('messages.time'),
             __('messages.type'),
             __('messages.rule_broken'),
@@ -92,12 +111,18 @@ class DriverActivityTimelineExport implements FromCollection, WithHeadings, With
         return [
             $row['date'],
             $row['day_name'],
-            number_format($row['driving_hours'], 1) . 'h',
-            number_format($row['rest_hours'], 1) . 'h',
-            number_format($row['total_hours'], 1) . 'h',
+            $row['flotte'],
+            $row['asset_description'],
+            $row['driver_name'],
             $row['start_time'],
             $row['end_time'],
-            $row['route'],
+            $this->formatHours($row['work_hours']),
+            $this->formatHours($row['driving_hours']),
+            $this->formatHours($row['rest_hours']),
+            $this->formatHours($row['rest_daily_hours']),
+            $row['raison'],
+            $row['start_location'],
+            $row['overnight_location'],
             $row['violation_time'],
             $row['violation_type'],
             $row['violation_rule'],
@@ -108,8 +133,14 @@ class DriverActivityTimelineExport implements FromCollection, WithHeadings, With
 
     public function styles(Worksheet $sheet)
     {
-        $sheet->getStyle('A1:M1')->getFont()->setBold(true);
+        $sheet->getStyle('A1:S1')->getFont()->setBold(true);
         return [];
+    }
+
+    private function formatHours($value): string
+    {
+        $hours = is_numeric($value) ? (float) $value : 0.0;
+        return number_format($hours, 2) . 'h';
     }
 }
 

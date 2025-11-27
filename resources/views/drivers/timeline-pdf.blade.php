@@ -110,12 +110,18 @@
             <tr>
                 <th>{{ __('messages.date') }}</th>
                 <th>{{ __('messages.day_name') ?? 'Day' }}</th>
+                <th>{{ __('messages.flotte') }}</th>
+                <th>{{ __('messages.asset_description') ?? 'Asset Description' }}</th>
+                <th>{{ __('messages.driver') }}</th>
                 <th>{{ __('messages.start_time') }}</th>
                 <th>{{ __('messages.end_time') }}</th>
-                <th>{{ __('messages.driving_hours') }}</th>
-                <th>{{ __('messages.rest_hours') }}</th>
-                <th>{{ __('messages.total') ?? 'Total' }}</th>
-                <th>{{ __('messages.route') }}</th>
+                <th>{{ __('messages.work_time') ?? 'Work Time' }}</th>
+                <th>{{ __('messages.driving_time') ?? __('messages.driving_hours') }}</th>
+                <th>{{ __('messages.rest_time') ?? __('messages.rest_hours') }}</th>
+                <th>{{ __('messages.rest_daily') ?? 'Daily Rest' }}</th>
+                <th>{{ __('messages.raison') ?? 'Reason' }}</th>
+                <th>{{ __('messages.start_location') ?? 'Start Location' }}</th>
+                <th>{{ __('messages.overnight_location') ?? 'Overnight Location' }}</th>
                 <th>{{ __('messages.status') }}</th>
                 <th>{{ __('messages.violations') }}</th>
             </tr>
@@ -129,12 +135,18 @@
                 <tr class="{{ $hasViolations ? 'violation-row' : 'day-row' }}">
                     <td>{{ $day['date_label'] }}</td>
                     <td>{{ $day['day_name'] }}</td>
+                    <td>{{ $day['flotte'] ?? '-' }}</td>
+                    <td>{{ $day['asset_description'] ?? '-' }}</td>
+                    <td>{{ $day['driver_name'] ?? ($driver->full_name ?? '-') }}</td>
                     <td>{{ $day['start_time'] ?? '-' }}</td>
                     <td>{{ $day['end_time'] ?? '-' }}</td>
-                    <td>{{ number_format($day['driving_hours'] ?? 0, 1) }}h</td>
-                    <td>{{ number_format($day['rest_hours'] ?? 0, 1) }}h</td>
-                    <td>{{ number_format($day['total_hours'] ?? 0, 1) }}h</td>
-                    <td>{{ $day['route_description'] ?? '-' }}</td>
+                    <td>{{ number_format($day['work_hours'] ?? 0, 2) }}h</td>
+                    <td>{{ number_format($day['driving_hours'] ?? 0, 2) }}h</td>
+                    <td>{{ number_format($day['rest_hours'] ?? 0, 2) }}h</td>
+                    <td>{{ number_format($day['rest_daily_hours'] ?? 0, 2) }}h</td>
+                    <td>{{ $day['raison'] ?? '-' }}</td>
+                    <td>{{ $day['start_location'] ?? '-' }}</td>
+                    <td>{{ $day['overnight_location'] ?? '-' }}</td>
                     <td class="{{ $isCompliant ? 'compliant' : 'non-compliant' }}">
                         {{ $isCompliant ? __('messages.compliant') : __('messages.non_compliant') }}
                     </td>
@@ -155,7 +167,7 @@
                 @endif
             @empty
                 <tr>
-                    <td colspan="10" style="text-align: center; padding: 20px;">
+                    <td colspan="16" style="text-align: center; padding: 20px;">
                         {{ __('messages.no_activity_data') }}
                     </td>
                 </tr>

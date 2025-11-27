@@ -15,7 +15,6 @@ return new class extends Migration
             $table->id();
             $table->foreignId('driver_id')->constrained('drivers')->onDelete('cascade');
             $table->foreignId('formation_id')->constrained('formations')->onDelete('restrict');
-            // $table->foreignId('driver_formation_id')->nullable()->constrained('driver_formations')->onDelete('set null');
             $table->string('site')->nullable();
             $table->foreignId('flotte_id')->nullable()->constrained('flottes')->onDelete('set null');
             $table->string('theme')->nullable();

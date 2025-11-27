@@ -15,6 +15,7 @@ use App\Models\DriverViolation;
 use App\Models\DriverActivity;
 use App\Models\Formation;
 use App\Models\ViolationType;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
@@ -200,85 +201,9 @@ class DriversController extends Controller
             ->orderBy('start_time')
             ->get();
 
-        // Get compliance configuration
-        $maxDrivingHours = config('driver_activity.max_daily_driving_hours', 8);
-        $minRestHours = config('driver_activity.min_daily_rest_hours', 4);
-        $maxTotalHours = config('driver_activity.max_daily_total_hours', 12);
-        $workingWindowStart = config('driver_activity.working_window_start', '06:00');
-        $workingWindowEnd = config('driver_activity.working_window_end', '20:00');
-        $thresholds = config('driver_activity.violation_thresholds', []);
-
-        // Group activities by date and aggregate
-        $timelineData = [];
-        $allViolations = [];
-        $totalDrivingHoursThisWeek = 0;
-
-        $activitiesByDate = $activities->groupBy(function ($activity) {
-            return $activity->activity_date->format('Y-m-d');
-        });
-
-        foreach ($activitiesByDate as $date => $dayActivities) {
-            $activityDate = Carbon::parse($date);
-            
-            // Aggregate daily totals
-            $drivingHours = $dayActivities->sum('driving_hours');
-            $restHours = $dayActivities->sum('rest_hours');
-            $totalHours = $drivingHours + $restHours;
-
-            // Find earliest start time and latest end time
-            $startTimes = $dayActivities->pluck('start_time')->filter();
-            $endTimes = $dayActivities->pluck('end_time')->filter();
-            $earliestStart = $startTimes->isNotEmpty() ? $startTimes->min() : null;
-            $latestEnd = $endTimes->isNotEmpty() ? $endTimes->max() : null;
-
-            // Combine route descriptions
-            $routeDescriptions = $dayActivities->pluck('route_description')->filter()->unique()->values();
-            $routeInfo = $routeDescriptions->isNotEmpty() ? $routeDescriptions->implode('; ') : null;
-
-            // Check compliance and generate violations
-            $dayViolations = $this->checkCompliance(
-                $activityDate,
-                $drivingHours,
-                $restHours,
-                $totalHours,
-                $earliestStart,
-                $latestEnd,
-                $maxDrivingHours,
-                $minRestHours,
-                $maxTotalHours,
-                $workingWindowStart,
-                $workingWindowEnd,
-                $thresholds,
-                $routeInfo
-            );
-
-            // Add to all violations
-            foreach ($dayViolations as $violation) {
-                $allViolations[] = $violation;
-            }
-
-            // Calculate week total (for the current week)
-            $weekStart = Carbon::now()->startOfWeek();
-            $weekEnd = Carbon::now()->endOfWeek();
-            if ($activityDate->between($weekStart, $weekEnd)) {
-                $totalDrivingHoursThisWeek += $drivingHours;
-            }
-
-            // Build timeline day data
-            $timelineData[] = [
-                'date' => $date,
-                'date_label' => $activityDate->format('d/m/Y'),
-                'day_name' => $activityDate->format('l'), // Full day name (Monday, Tuesday, etc.)
-                'driving_hours' => $drivingHours,
-                'rest_hours' => $restHours,
-                'total_hours' => $totalHours,
-                'start_time' => $earliestStart,
-                'end_time' => $latestEnd,
-                'route_description' => $routeInfo,
-                'violations' => $dayViolations,
-                'is_compliant' => count($dayViolations) === 0,
-            ];
-        }
+        $timelineSummary = $this->summarizeDriverActivities($activities);
+        $timelineData = $timelineSummary['timeline']->toArray();
+        $totalDrivingHoursThisWeek = $this->calculateCurrentWeekDrivingHours($activities);
 
         $violationFilters = [
             'violation_type_id' => $violationTypeId,
@@ -538,22 +463,30 @@ class DriversController extends Controller
     public function storeActivity(Request $request, Driver $driver): RedirectResponse
     {
         try {
+            $timeRule = ['required', 'regex:/^\d{2}:\d{2}(:\d{2})?$/'];
+
             $validator = Validator::make($request->all(), [
                 'activity_date' => ['required', 'date'],
-                'start_time' => ['required', 'date_format:H:i'],
-                'end_time' => ['required', 'date_format:H:i'],
-                'driving_hours' => ['required', 'numeric', 'min:0', 'max:' . config('driver_activity.max_daily_driving_hours', 8)],
-                'rest_hours' => ['required', 'numeric', 'min:0'],
-                'route_description' => ['nullable', 'string', 'max:500'],
-                'compliance_notes' => ['nullable', 'string', 'max:1000'],
+                'flotte' => ['nullable', 'string', 'max:255'],
+                'asset_description' => ['nullable', 'string', 'max:255'],
+                'driver_name' => ['nullable', 'string', 'max:255'],
+                'start_time' => $timeRule,
+                'end_time' => $timeRule,
+                'work_time' => $timeRule,
+                'driving_time' => $timeRule,
+                'rest_time' => $timeRule,
+                'rest_daily' => $timeRule,
+                'raison' => ['nullable', 'string', 'max:1000'],
+                'start_location' => ['nullable', 'string', 'max:255'],
+                'overnight_location' => ['nullable', 'string', 'max:255'],
             ]);
 
             // Custom validation: end_time must be after start_time
             $validator->after(function ($validator) use ($request) {
                 if ($request->has('start_time') && $request->has('end_time')) {
-                    $start = \Carbon\Carbon::createFromFormat('H:i', $request->start_time);
-                    $end = \Carbon\Carbon::createFromFormat('H:i', $request->end_time);
-                    if ($end->lte($start)) {
+                    $start = $this->createTimeFromInput($request->start_time);
+                    $end = $this->createTimeFromInput($request->end_time);
+                    if ($start && $end && $end->lte($start)) {
                         $validator->errors()->add('end_time', __('messages.end_time_must_be_after_start_time') ?? 'End time must be after start time.');
                     }
                 }
@@ -568,26 +501,35 @@ class DriversController extends Controller
 
             $data = $validator->validated();
 
-            // Convert hours to integers (stored as hours, not minutes)
-            $data['driving_hours'] = (int) round($data['driving_hours']);
-            $data['rest_hours'] = (int) round($data['rest_hours']);
+            foreach (['start_time', 'end_time', 'work_time', 'driving_time', 'rest_time', 'rest_daily'] as $timeField) {
+                $data[$timeField] = $this->normalizeTimeInput($data[$timeField] ?? null);
+            }
+
+            $data['driver_name'] = $data['driver_name'] ?? ($driver->full_name ?? $driver->name ?? null);
+            $data['flotte'] = $data['flotte'] ?? ($driver->flotte->name ?? null);
 
             DriverActivity::create([
                 'driver_id' => $driver->id,
                 'activity_date' => $data['activity_date'],
+                'flotte' => $data['flotte'] ?? null,
+                'asset_description' => $data['asset_description'] ?? null,
+                'driver_name' => $data['driver_name'] ?? null,
                 'start_time' => $data['start_time'],
                 'end_time' => $data['end_time'],
-                'driving_hours' => $data['driving_hours'],
-                'rest_hours' => $data['rest_hours'],
-                'route_description' => $data['route_description'] ?? null,
-                'compliance_notes' => $data['compliance_notes'] ?? null,
+                'work_time' => $data['work_time'],
+                'driving_time' => $data['driving_time'],
+                'rest_time' => $data['rest_time'],
+                'rest_daily' => $data['rest_daily'],
+                'raison' => $data['raison'] ?? null,
+                'start_location' => $data['start_location'] ?? null,
+                'overnight_location' => $data['overnight_location'] ?? null,
             ]);
 
             Log::info('Driver activity stored', [
                 'driver_id' => $driver->id,
                 'activity_date' => $data['activity_date'],
-                'driving_hours' => $data['driving_hours'],
-                'rest_hours' => $data['rest_hours'],
+                'work_time' => $data['work_time'],
+                'driving_time' => $data['driving_time'],
             ]);
 
             return redirect()
@@ -622,74 +564,10 @@ class DriversController extends Controller
                 ->orderBy('start_time')
                 ->get();
 
-            // Get compliance configuration
-            $maxDrivingHours = config('driver_activity.max_daily_driving_hours', 8);
-            $minRestHours = config('driver_activity.min_daily_rest_hours', 4);
-            $maxTotalHours = config('driver_activity.max_daily_total_hours', 12);
-            $workingWindowStart = config('driver_activity.working_window_start', '06:00');
-            $workingWindowEnd = config('driver_activity.working_window_end', '20:00');
-            $thresholds = config('driver_activity.violation_thresholds', []);
-
-            // Group activities by date and aggregate (same logic as show method)
-            $timelineData = [];
-            $allViolations = [];
-            $totalDrivingHours = 0;
-
-            $activitiesByDate = $activities->groupBy(function ($activity) {
-                return $activity->activity_date->format('Y-m-d');
-            });
-
-            foreach ($activitiesByDate as $date => $dayActivities) {
-                $activityDate = Carbon::parse($date);
-                
-                $drivingHours = $dayActivities->sum('driving_hours');
-                $restHours = $dayActivities->sum('rest_hours');
-                $totalHours = $drivingHours + $restHours;
-
-                $startTimes = $dayActivities->pluck('start_time')->filter();
-                $endTimes = $dayActivities->pluck('end_time')->filter();
-                $earliestStart = $startTimes->isNotEmpty() ? $startTimes->min() : null;
-                $latestEnd = $endTimes->isNotEmpty() ? $endTimes->max() : null;
-
-                $routeDescriptions = $dayActivities->pluck('route_description')->filter()->unique()->values();
-                $routeInfo = $routeDescriptions->isNotEmpty() ? $routeDescriptions->implode('; ') : null;
-
-                $dayViolations = $this->checkCompliance(
-                    $activityDate,
-                    $drivingHours,
-                    $restHours,
-                    $totalHours,
-                    $earliestStart,
-                    $latestEnd,
-                    $maxDrivingHours,
-                    $minRestHours,
-                    $maxTotalHours,
-                    $workingWindowStart,
-                    $workingWindowEnd,
-                    $thresholds,
-                    $routeInfo
-                );
-
-                foreach ($dayViolations as $violation) {
-                    $allViolations[] = $violation;
-                }
-
-                $totalDrivingHours += $drivingHours;
-
-                $timelineData[] = [
-                    'date' => $date,
-                    'date_label' => $activityDate->format('d/m/Y'),
-                    'day_name' => $activityDate->format('l'),
-                    'driving_hours' => $drivingHours,
-                    'rest_hours' => $restHours,
-                    'total_hours' => $totalHours,
-                    'start_time' => $earliestStart,
-                    'end_time' => $latestEnd,
-                    'route_description' => $routeInfo,
-                    'violations' => $dayViolations,
-                    'is_compliant' => count($dayViolations) === 0,
-                ];
-            }
+            $timelineSummary = $this->summarizeDriverActivities($activities);
+            $timelineData = $timelineSummary['timeline']->toArray();
+            $allViolations = $timelineSummary['violations']->toArray();
+            $totalDrivingHours = $timelineSummary['totalDrivingHours'];
 
             $pdf = Pdf::loadView('drivers.timeline-pdf', [
                 'driver' => $driver,
@@ -733,71 +611,9 @@ class DriversController extends Controller
                 ->orderBy('start_time')
                 ->get();
 
-            // Get compliance configuration
-            $maxDrivingHours = config('driver_activity.max_daily_driving_hours', 8);
-            $minRestHours = config('driver_activity.min_daily_rest_hours', 4);
-            $maxTotalHours = config('driver_activity.max_daily_total_hours', 12);
-            $workingWindowStart = config('driver_activity.working_window_start', '06:00');
-            $workingWindowEnd = config('driver_activity.working_window_end', '20:00');
-            $thresholds = config('driver_activity.violation_thresholds', []);
-
-            // Group activities by date and aggregate (same logic as show method)
-            $timelineData = collect();
-            $allViolations = collect();
-
-            $activitiesByDate = $activities->groupBy(function ($activity) {
-                return $activity->activity_date->format('Y-m-d');
-            });
-
-            foreach ($activitiesByDate as $date => $dayActivities) {
-                $activityDate = Carbon::parse($date);
-                
-                $drivingHours = $dayActivities->sum('driving_hours');
-                $restHours = $dayActivities->sum('rest_hours');
-                $totalHours = $drivingHours + $restHours;
-
-                $startTimes = $dayActivities->pluck('start_time')->filter();
-                $endTimes = $dayActivities->pluck('end_time')->filter();
-                $earliestStart = $startTimes->isNotEmpty() ? $startTimes->min() : null;
-                $latestEnd = $endTimes->isNotEmpty() ? $endTimes->max() : null;
-
-                $routeDescriptions = $dayActivities->pluck('route_description')->filter()->unique()->values();
-                $routeInfo = $routeDescriptions->isNotEmpty() ? $routeDescriptions->implode('; ') : null;
-
-                $dayViolations = $this->checkCompliance(
-                    $activityDate,
-                    $drivingHours,
-                    $restHours,
-                    $totalHours,
-                    $earliestStart,
-                    $latestEnd,
-                    $maxDrivingHours,
-                    $minRestHours,
-                    $maxTotalHours,
-                    $workingWindowStart,
-                    $workingWindowEnd,
-                    $thresholds,
-                    $routeInfo
-                );
-
-                foreach ($dayViolations as $violation) {
-                    $allViolations->push($violation);
-                }
-
-                $timelineData->push([
-                    'date' => $date,
-                    'date_label' => $activityDate->format('d/m/Y'),
-                    'day_name' => $activityDate->format('l'),
-                    'driving_hours' => $drivingHours,
-                    'rest_hours' => $restHours,
-                    'total_hours' => $totalHours,
-                    'start_time' => $earliestStart,
-                    'end_time' => $latestEnd,
-                    'route_description' => $routeInfo,
-                    'violations' => $dayViolations,
-                    'is_compliant' => count($dayViolations) === 0,
-                ]);
-            }
+            $timelineSummary = $this->summarizeDriverActivities($activities);
+            $timelineData = $timelineSummary['timeline'];
+            $allViolations = $timelineSummary['violations'];
 
             $fileName = sprintf(
                 'driver-activity-timeline-%d-%s.xlsx',
@@ -1038,13 +854,185 @@ class DriversController extends Controller
         }
     }
 
-    /**
-     * Calculate driving hours for this week (placeholder)
-     */
-    // Removed placeholder driving hours; show 0 until real data is connected
-    private function calculateDrivingHoursThisWeek($driver)
+    private function summarizeDriverActivities(Collection $activities): array
     {
-        return 0;
+        $maxDrivingHours = config('driver_activity.max_daily_driving_hours', 8);
+        $minRestHours = config('driver_activity.min_daily_rest_hours', 4);
+        $maxTotalHours = config('driver_activity.max_daily_total_hours', 12);
+        $workingWindowStart = config('driver_activity.working_window_start', '06:00');
+        $workingWindowEnd = config('driver_activity.working_window_end', '20:00');
+        $thresholds = config('driver_activity.violation_thresholds', []);
+
+        $timelineData = collect();
+        $allViolations = collect();
+        $totalDrivingHours = 0.0;
+
+        $activitiesByDate = $activities->groupBy(function ($activity) {
+            $date = $activity->activity_date;
+            return $date instanceof Carbon ? $date->format('Y-m-d') : Carbon::parse($date)->format('Y-m-d');
+        });
+
+        foreach ($activitiesByDate as $date => $dayActivities) {
+            $activityDate = Carbon::parse($date);
+
+            $drivingHours = $this->sumTimeColumn($dayActivities, 'driving_time');
+            $restHours = $this->sumTimeColumn($dayActivities, 'rest_time');
+            $workHours = $this->sumTimeColumn($dayActivities, 'work_time');
+            $restDailyHours = $this->sumTimeColumn($dayActivities, 'rest_daily');
+            $totalHours = $workHours > 0 ? $workHours : $drivingHours + $restHours;
+
+            $startTimes = $dayActivities->pluck('start_time')->filter();
+            $endTimes = $dayActivities->pluck('end_time')->filter();
+            $earliestStart = $startTimes->isNotEmpty() ? $startTimes->min() : null;
+            $latestEnd = $endTimes->isNotEmpty() ? $endTimes->max() : null;
+
+            $flotteLabel = $this->condenseValues($dayActivities->pluck('flotte'));
+            $assetDescription = $this->condenseValues($dayActivities->pluck('asset_description'));
+            $driverName = $this->condenseValues($dayActivities->pluck('driver_name'));
+            $raisonLabel = $this->condenseValues($dayActivities->pluck('raison'));
+            $startLocationLabel = $this->condenseValues($dayActivities->pluck('start_location'));
+            $overnightLocationLabel = $this->condenseValues($dayActivities->pluck('overnight_location'));
+            $locationLabel = collect([$startLocationLabel, $overnightLocationLabel])
+                ->filter()
+                ->implode(' -> ');
+
+            if (!$locationLabel) {
+                $locationLabel = $assetDescription ?: null;
+            }
+
+            $dayViolations = $this->checkCompliance(
+                $activityDate,
+                $drivingHours,
+                $restHours,
+                $totalHours,
+                $earliestStart,
+                $latestEnd,
+                $maxDrivingHours,
+                $minRestHours,
+                $maxTotalHours,
+                $workingWindowStart,
+                $workingWindowEnd,
+                $thresholds,
+                $locationLabel
+            );
+
+            foreach ($dayViolations as $violation) {
+                $allViolations->push($violation);
+            }
+
+            $totalDrivingHours += $drivingHours;
+
+            $timelineData->push([
+                'date' => $date,
+                'date_label' => $activityDate->format('d/m/Y'),
+                'day_name' => $activityDate->format('l'),
+                'flotte' => $flotteLabel,
+                'asset_description' => $assetDescription,
+                'driver_name' => $driverName,
+                'start_time' => $earliestStart,
+                'end_time' => $latestEnd,
+                'work_hours' => $workHours,
+                'driving_hours' => $drivingHours,
+                'rest_hours' => $restHours,
+                'rest_daily_hours' => $restDailyHours,
+                'total_hours' => $totalHours,
+                'raison' => $raisonLabel,
+                'start_location' => $startLocationLabel,
+                'overnight_location' => $overnightLocationLabel,
+                'violations' => $dayViolations,
+                'is_compliant' => count($dayViolations) === 0,
+            ]);
+        }
+
+        return [
+            'timeline' => $timelineData->values(),
+            'violations' => $allViolations->values(),
+            'totalDrivingHours' => round($totalDrivingHours, 2),
+        ];
+    }
+
+    private function sumTimeColumn(Collection $activities, string $column): float
+    {
+        return $activities->sum(function ($activity) use ($column) {
+            return $this->timeToDecimal($activity->{$column} ?? null);
+        });
+    }
+
+    private function timeToDecimal($time): float
+    {
+        if (!$time) {
+            return 0.0;
+        }
+
+        if ($time instanceof Carbon) {
+            $time = $time->format('H:i:s');
+        }
+
+        $parts = explode(':', (string) $time);
+        $hours = (int) ($parts[0] ?? 0);
+        $minutes = (int) ($parts[1] ?? 0);
+        $seconds = (int) ($parts[2] ?? 0);
+
+        return $hours + ($minutes / 60) + ($seconds / 3600);
+    }
+
+    private function condenseValues(Collection $values): ?string
+    {
+        $unique = $values->filter()->unique()->values();
+        return $unique->isNotEmpty() ? $unique->implode(' / ') : null;
+    }
+
+    private function calculateCurrentWeekDrivingHours(Collection $activities): float
+    {
+        $weekStart = Carbon::now()->startOfWeek();
+        $weekEnd = Carbon::now()->endOfWeek();
+
+        $hours = $activities->filter(function ($activity) use ($weekStart, $weekEnd) {
+                if (!$activity->activity_date) {
+                    return false;
+                }
+
+                $date = $activity->activity_date instanceof Carbon
+                    ? $activity->activity_date
+                    : Carbon::parse($activity->activity_date);
+
+                return $date->between($weekStart, $weekEnd);
+            })
+            ->sum(fn($activity) => $this->timeToDecimal($activity->driving_time ?? null));
+
+        return round($hours, 1);
+    }
+
+    private function normalizeTimeInput(?string $time): ?string
+    {
+        if ($time === null || $time === '') {
+            return null;
+        }
+
+        if (preg_match('/^\d{2}:\d{2}:\d{2}$/', $time)) {
+            return $time;
+        }
+
+        if (preg_match('/^\d{2}:\d{2}$/', $time)) {
+            return $time . ':00';
+        }
+
+        return $time;
+    }
+
+    private function createTimeFromInput(?string $time): ?Carbon
+    {
+        $normalized = $this->normalizeTimeInput($time);
+
+        if (!$normalized) {
+            return null;
+        }
+
+        try {
+            return Carbon::createFromFormat('H:i:s', $normalized);
+        } catch (\Exception $e) {
+            return null;
+        }
     }
 
     /**
