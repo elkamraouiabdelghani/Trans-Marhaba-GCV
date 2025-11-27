@@ -190,7 +190,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/administration-roles/{user}/edit', [AdministrationRoleController::class, 'edit'])->name('administration-roles.edit');
     Route::put('/administration-roles/{user}', [AdministrationRoleController::class, 'update'])->name('administration-roles.update');
     Route::get('/administration-roles/{user}', [AdministrationRoleController::class, 'show'])->name('administration-roles.show');
-    Route::post('/administration-roles/{user}/terminate', [AdministrationRoleController::class, 'terminate'])->name('administration-roles.terminate');
     Route::post('/administration-roles/{user}/update-status', [AdministrationRoleController::class, 'updateStatus'])->name('administration-roles.update-status');
 
     // TBT Formations

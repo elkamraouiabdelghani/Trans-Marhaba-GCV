@@ -121,10 +121,19 @@ class Turnover extends Model
             elseif ($this->user_id) {
                 $user = $this->user;
                 if ($user) {
+                    $terminatedAt = $this->departure_date
+                        ? Carbon::parse($this->departure_date)
+                        : $confirmedAt;
+
+                    $terminatedCause = $this->departure_reason
+                        ? trim((string) $this->departure_reason)
+                        : __('messages.turnover_departure_reason_default', ['reference' => $this->reference ?? $this->id]);
+
                     $user->update([
                         'department' => 'other',
                         'status' => 'terminated',
-                        'terminated_date' => $confirmedAt->toDateString(),
+                        'terminated_date' => $terminatedAt->toDateString(),
+                        'terminated_cause' => Str::limit($terminatedCause, 500),
                         'is_integrated' => 0,
                         'role' => 'other',
                     ]);

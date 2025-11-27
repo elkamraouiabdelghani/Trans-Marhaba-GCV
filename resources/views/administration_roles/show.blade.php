@@ -109,16 +109,6 @@
                                     <i class="bi bi-arrow-repeat me-2"></i>{{ __('messages.update_status') }}
                                 </button>
                             @endif
-                            <hr class="my-2">
-                            @if($user->status !== 'terminated')
-                                <button type="button" class="btn btn-outline-danger btn-sm d-flex align-items-center justify-content-center" data-bs-toggle="modal" data-bs-target="#terminateModal">
-                                    <i class="bi bi-x-circle me-2"></i>{{ __('messages.mark_as_terminated') }}
-                                </button>
-                            @else
-                                <span class="btn btn-outline-danger btn-sm disabled d-flex align-items-center justify-content-center">
-                                    <i class="bi bi-info-circle me-2"></i>{{ __('messages.terminated') }}
-                                </span>
-                            @endif
                         </div>
                     </div>
                 </aside>
@@ -442,74 +432,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Terminate User Modal -->
-    @if($user->status !== 'terminated')
-    <div class="modal fade" id="terminateModal" tabindex="-1" aria-labelledby="terminateModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header bg-danger text-white">
-                    <h5 class="modal-title" id="terminateModalLabel">
-                        <i class="bi bi-exclamation-triangle me-2"></i>
-                        {{ __('messages.mark_as_terminated') }}
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <form action="{{ route('administration-roles.terminate', $user) }}" method="POST">
-                    @csrf
-                    <div class="modal-body">
-                        <div class="alert alert-warning" role="alert">
-                            <i class="bi bi-exclamation-triangle me-2"></i>
-                            {{ __('messages.terminate_user_warning', ['name' => $user->name]) }}
-                        </div>
-                        <div class="mb-3">
-                            <label for="terminated_date" class="form-label">
-                                {{ __('messages.terminated_date') }} <span class="text-danger">*</span>
-                            </label>
-                            <input type="date" 
-                                   class="form-control @error('terminated_date') is-invalid @enderror" 
-                                   id="terminated_date" 
-                                   name="terminated_date" 
-                                   value="{{ old('terminated_date', date('Y-m-d')) }}" 
-                                   required>
-                            @error('terminated_date')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                            <small class="form-text text-muted">{{ __('messages.terminated_date_help') }}</small>
-                        </div>
-                        <div class="mb-3">
-                            <label for="terminated_cause" class="form-label">
-                                {{ __('messages.terminated_cause') }} <span class="text-danger">*</span>
-                            </label>
-                            <textarea
-                                class="form-control @error('terminated_cause') is-invalid @enderror"
-                                id="terminated_cause"
-                                name="terminated_cause"
-                                rows="3"
-                                maxlength="500"
-                                placeholder="{{ __('messages.terminated_cause_placeholder') }}"
-                                required
-                            >{{ old('terminated_cause') }}</textarea>
-                            @error('terminated_cause')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                            <small class="form-text text-muted">{{ __('messages.terminated_cause_hint') }}</small>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                            {{ __('messages.cancel') }}
-                        </button>
-                        <button type="submit" class="btn btn-danger">
-                            <i class="bi bi-x-circle me-1"></i>
-                            {{ __('messages.confirm_termination') }}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-    @endif
 
     <!-- Toast Container -->
     <div class="toast-container position-fixed top-0 start-50 translate-middle-x p-3" style="z-index: 1055;">

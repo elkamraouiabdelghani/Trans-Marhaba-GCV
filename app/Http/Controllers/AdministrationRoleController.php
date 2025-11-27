@@ -198,36 +198,6 @@ class AdministrationRoleController extends Controller
             ->with('success', __('messages.user_updated_successfully'));
     }
 
-    /**
-     * Mark the administrative user as terminated.
-     */
-    public function terminate(User $user, Request $request)
-    {
-        // Ensure user is not an admin
-        if ($user->role === 'admin') {
-            abort(404);
-        }
-
-        // Validate the request
-        $validated = $request->validate([
-            'terminated_date' => 'required|date',
-            'terminated_cause' => 'required|string|max:500',
-        ]);
-
-        // Update user status and terminated date
-        $user->update([
-            'status' => 'terminated',
-            'terminated_date' => $validated['terminated_date'],
-            'terminated_cause' => trim($validated['terminated_cause']),
-            'is_integrated' => false,
-            'role' => 'other',
-            'department' => 'other',
-        ]);
-
-        return redirect()->route('administration-roles.show', $user)
-            ->with('success', __('messages.user_terminated_successfully'));
-    }
-
     public function updateStatus(User $user, Request $request)
     {
         if ($user->role === 'admin') {
