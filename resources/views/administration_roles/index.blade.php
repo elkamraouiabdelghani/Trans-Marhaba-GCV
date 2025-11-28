@@ -98,7 +98,7 @@
                         </h5>
                     </div>
                     <div class="d-flex flex-column flex-md-row gap-3 align-items-md-center w-100 justify-content-md-end">
-                        <div class="input-group input-group-sm border bottom-1 rounded-md" style="max-width: 320px;">
+                        <div class="input-group input-group-sm border rounded-md" style="max-width: 320px;">
                             <span class="input-group-text bg-light border-0"><i class="bi bi-search"></i></span>
                             <input
                                 type="text"

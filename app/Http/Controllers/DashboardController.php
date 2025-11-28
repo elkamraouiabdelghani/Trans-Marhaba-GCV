@@ -10,6 +10,7 @@ use App\Models\DriverViolation;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 
 class DashboardController extends Controller
 {
@@ -239,6 +240,8 @@ class DashboardController extends Controller
             __('messages.calendar_weekday_sun'),
         ];
 
+        $driversExceedingLegalHours = $this->getDriversExceedingLegalHours();
+
         return [
             'totalDrivers' => $totalDrivers,
             'calendarEvents' => $calendarEvents,
@@ -252,6 +255,73 @@ class DashboardController extends Controller
             'dashboardRangeEnd' => $rangeEnd,
             'violationsInRange' => $violationsInRange,
             'topViolatingDriver' => $topViolatingDriver,
+            'driversExceedingLegalHours' => $driversExceedingLegalHours,
         ];
+    }
+
+    /**
+     * Get top 3 drivers exceeding legal weekly driving hours.
+     * Legal limit is typically 56 hours per week (8 hours × 7 days).
+     */
+    protected function getDriversExceedingLegalHours(int $limit = 56, int $topCount = 3): Collection
+    {
+        $weekStart = Carbon::now()->startOfWeek();
+        $weekEnd = Carbon::now()->endOfWeek();
+
+        $drivers = Driver::query()
+            ->whereHas('activities', function ($query) use ($weekStart, $weekEnd) {
+                $query->whereBetween('activity_date', [$weekStart->toDateString(), $weekEnd->toDateString()]);
+            })
+            ->with(['activities' => function ($query) use ($weekStart, $weekEnd) {
+                $query->whereBetween('activity_date', [$weekStart->toDateString(), $weekEnd->toDateString()]);
+            }])
+            ->get();
+
+        $driversWithHours = $drivers->map(function ($driver) use ($weekStart, $weekEnd, $limit) {
+            $activities = $driver->activities->filter(function ($activity) use ($weekStart, $weekEnd) {
+                if (!$activity->activity_date) {
+                    return false;
+                }
+
+                $date = $activity->activity_date instanceof Carbon
+                    ? $activity->activity_date
+                    : Carbon::parse($activity->activity_date);
+
+                return $date->between($weekStart, $weekEnd);
+            });
+
+            $totalHours = $activities->sum(fn($activity) => $this->timeToDecimal($activity->driving_time ?? null));
+
+            return [
+                'driver' => $driver,
+                'total_hours' => $totalHours,
+                'over_limit' => max(0, $totalHours - $limit),
+            ];
+        })
+        ->filter(function($item) use ($limit) {
+            return $item['total_hours'] > $limit;
+        })
+        ->sortByDesc('total_hours')
+        ->take($topCount)
+        ->values();
+
+        return $driversWithHours;
+    }
+
+    /**
+     * Convert time string (HH:MM:SS or HH:MM) to decimal hours.
+     */
+    protected function timeToDecimal(?string $time): float
+    {
+        if (!$time) {
+            return 0.0;
+        }
+
+        $parts = explode(':', $time);
+        $hours = (int) ($parts[0] ?? 0);
+        $minutes = (int) ($parts[1] ?? 0);
+        $seconds = (int) ($parts[2] ?? 0);
+
+        return $hours + ($minutes / 60) + ($seconds / 3600);
     }
 }

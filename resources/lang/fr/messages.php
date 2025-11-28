@@ -37,6 +37,8 @@ return [
     'total_drivers' => 'Nombre total de conducteurs',
     'violations_this_week' => 'Nombre total d’infractions cette semaine',
     'drivers_exceeding_legal_hours' => 'Conducteurs dépassant les heures légales',
+    'top_drivers' => 'Top Conducteurs',
+    'no_drivers_exceeding_legal_hours' => 'Aucun conducteur ne dépasse les heures légales cette semaine',
     'top_violating_driver' => 'Conducteur avec le plus d’infractions',
     'total' => 'Total',
     'active' => 'Actif',

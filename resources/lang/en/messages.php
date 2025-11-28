@@ -36,6 +36,8 @@ return [
     'total_drivers' => 'Total Drivers',
     'violations_this_week' => 'Violations This Week',
     'drivers_exceeding_legal_hours' => 'Drivers Exceeding Legal Hours',
+    'top_drivers' => 'Top Drivers',
+    'no_drivers_exceeding_legal_hours' => 'No drivers exceeding legal hours this week',
     'top_violating_driver' => 'Top Violating Driver',
     'total' => 'Total',
     'active' => 'Active',

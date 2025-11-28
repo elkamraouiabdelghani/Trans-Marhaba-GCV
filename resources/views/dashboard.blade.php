@@ -66,17 +66,48 @@
             <div class="col-xl-3 col-lg-6 col-md-6">
                 <div class="card border-0 shadow-sm h-100">
                     <div class="card-body p-4">
-                        <div class="d-flex align-items-center row">
+                        <div class="d-flex align-items-center row mb-3">
                             <div class="col-3 bg-warning bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
                                 <i class="bi bi-alarm text-warning fs-4"></i>
                             </div>
                             <div class="col-9">
                                 <h6 class="text-muted mb-1">{{ __('messages.drivers_exceeding_legal_hours') }}</h6>
-                                <h3 class="mb-0 fw-bold text-dark">N/A</h3>
+                                <h3 class="mb-0 fw-bold text-dark">{{ $driversExceedingLegalHours->count() }}</h3>
                             </div>
                         </div>
+                        
+                        @if($driversExceedingLegalHours->isNotEmpty())
+                            <div class="mt-3">
+                                <h6 class="small text-muted mb-2">{{ __('messages.top_drivers') ?? 'Top Drivers' }}:</h6>
+                                <ul class="list-unstyled mb-0">
+                                    @foreach($driversExceedingLegalHours->take(3) as $item)
+                                        <li class="mb-2 d-flex justify-content-between align-items-center">
+                                            <div class="d-flex align-items-center">
+                                                <i class="bi bi-person-circle text-warning me-2"></i>
+                                                <a href="{{ route('drivers.show', $item['driver']) }}" class="text-decoration-none text-dark">
+                                                    <small class="fw-semibold">{{ $item['driver']->full_name ?? 'N/A' }}</small>
+                                                </a>
+                                            </div>
+                                            <div class="text-end">
+                                                <span class="badge bg-warning text-dark">
+                                                    {{ number_format($item['total_hours'], 1) }}h
+                                                </span>
+                                                <small class="text-danger d-block">
+                                                    +{{ number_format($item['over_limit'], 1) }}h
+                                                </small>
+                                            </div>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @else
+                            <div class="mt-3">
+                                <p class="text-muted small mb-0">{{ __('messages.no_drivers_exceeding_legal_hours') ?? 'No drivers exceeding legal hours this week' }}</p>
+                            </div>
+                        @endif
+                        
                         <div class="mt-3">
-                            <a href="#" class="btn btn-outline-warning btn-sm">
+                            <a href="{{ route('drivers.activities.index') }}" class="btn btn-outline-warning btn-sm">
                                 <i class="bi bi-eye me-1"></i>{{ __('messages.view_all') }}
                             </a>
                         </div>
@@ -185,6 +216,7 @@
                     </span>
                 </div>
             </div>
+
             <div class="card-body">
                 <div class="calendar-scroll">
                     <div class="alert alert-secondary d-flex flex-wrap align-items-center gap-3 mb-4 calendar-legend" role="alert">
