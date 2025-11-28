@@ -352,6 +352,8 @@ return [
     'high' => 'High',
     'speed_excess' => 'Speed Excess',
     'insufficient_rest' => 'Insufficient Rest',
+    'rest_time_exceeded' => 'Rest Time Exceeded',
+    'max_rest_hours_exceeded' => 'Maximum rest hours exceeded',
     'driving_time_exceeded' => 'Driving Time Exceeded',
     'safety_violation' => 'Safety Violation',
     'missing_documentation' => 'Missing Documentation',

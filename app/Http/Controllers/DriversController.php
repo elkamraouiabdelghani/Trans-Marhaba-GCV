@@ -846,11 +846,9 @@ class DriversController extends Controller
         float $totalHours,
         ?string $startTime,
         ?string $endTime,
-        int $maxDrivingHours,
-        int $minRestHours,
-        int $maxTotalHours,
-        string $workingWindowStart,
-        string $workingWindowEnd,
+        float $maxDrivingHours,
+        float $maxRestHours,
+        float $maxTotalHours,
         array $thresholds,
         ?string $location
     ): array {
@@ -877,17 +875,17 @@ class DriversController extends Controller
         }
 
         // Check rest hours minimum
-        if ($restHours < $minRestHours) {
-            $underMinimum = $minRestHours - $restHours;
-            $severity = $this->determineSeverity($underMinimum, $thresholds['rest_hours'] ?? []);
+        if ($restHours > $maxRestHours) {
+            $overLimit = $restHours - $maxRestHours;
+            $severity = $this->determineSeverity($overLimit, $thresholds['rest_hours'] ?? []);
             
             $violations[] = [
                 'id' => $baseId * 100 + count($violations) + 1,
                 'date' => $date->format('d/m/Y'),
                 'time' => $endTime ?? '23:59',
                 'type' => 'rest',
-                'type_label' => __('messages.insufficient_rest'),
-                'rule' => __('messages.insufficient_rest') . ": {$minRestHours}h min, " . round($restHours, 1) . "h actual",
+                'type_label' => __('messages.rest_time_exceeded'),
+                'rule' => __('messages.max_rest_hours_exceeded') . ": {$maxRestHours}h max, " . round($restHours, 1) . "h actual",
                 'severity' => $severity,
                 'severity_label' => ucfirst($severity),
                 'location' => $location ?? __('messages.unknown_location'),
@@ -912,59 +910,6 @@ class DriversController extends Controller
             ];
         }
 
-        // Check working window compliance
-        if ($startTime && $endTime) {
-            // Handle time format (could be H:i or H:i:s)
-            $startTimeFormatted = strlen($startTime) === 5 ? $startTime . ':00' : $startTime;
-            $endTimeFormatted = strlen($endTime) === 5 ? $endTime . ':00' : $endTime;
-            
-            try {
-                $startCarbon = Carbon::createFromFormat('H:i:s', $startTimeFormatted);
-                $endCarbon = Carbon::createFromFormat('H:i:s', $endTimeFormatted);
-                $windowStart = Carbon::createFromFormat('H:i', $workingWindowStart);
-                $windowEnd = Carbon::createFromFormat('H:i', $workingWindowEnd);
-            } catch (\Exception $e) {
-                // If parsing fails, skip window check
-                return $violations;
-            }
-
-            // Check if start time is before window
-            if ($startCarbon->lt($windowStart)) {
-                $minutesOutside = $startCarbon->diffInMinutes($windowStart);
-                $severity = $this->determineSeverityMinutes($minutesOutside, $thresholds['working_window'] ?? []);
-                
-                $violations[] = [
-                    'id' => ++$violationId,
-                    'date' => $date->format('d/m/Y'),
-                    'time' => $startTime,
-                    'type' => 'safety',
-                    'type_label' => __('messages.working_window_violation'),
-                    'rule' => __('messages.working_window_violation') . ": Start time {$startTime} is before allowed window ({$workingWindowStart})",
-                    'severity' => $severity,
-                    'severity_label' => ucfirst($severity),
-                    'location' => $location ?? __('messages.unknown_location'),
-                ];
-            }
-
-            // Check if end time is after window
-            if ($endCarbon->gt($windowEnd)) {
-                $minutesOutside = $endCarbon->diffInMinutes($windowEnd);
-                $severity = $this->determineSeverityMinutes($minutesOutside, $thresholds['working_window'] ?? []);
-                
-                $violations[] = [
-                    'id' => ++$violationId,
-                    'date' => $date->format('d/m/Y'),
-                    'time' => $endTime,
-                    'type' => 'safety',
-                    'type_label' => __('messages.working_window_violation'),
-                    'rule' => __('messages.working_window_violation') . ": End time {$endTime} is after allowed window ({$workingWindowEnd})",
-                    'severity' => $severity,
-                    'severity_label' => ucfirst($severity),
-                    'location' => $location ?? __('messages.unknown_location'),
-                ];
-            }
-        }
-
         return $violations;
     }
 
@@ -982,27 +927,11 @@ class DriversController extends Controller
         }
     }
 
-    /**
-     * Determine violation severity based on minutes threshold
-     */
-    private function determineSeverityMinutes(int $minutes, array $thresholds): string
-    {
-        if ($minutes >= ($thresholds['high'] ?? 120)) {
-            return 'high';
-        } elseif ($minutes >= ($thresholds['medium'] ?? 60)) {
-            return 'medium';
-        } else {
-            return 'low';
-        }
-    }
-
     private function summarizeDriverActivities(Collection $activities): array
     {
-        $maxDrivingHours = config('driver_activity.max_daily_driving_hours', 8);
-        $minRestHours = config('driver_activity.min_daily_rest_hours', 4);
+        $maxDrivingHours = config('driver_activity.max_daily_driving_hours', 9);
+        $maxRestHours = config('driver_activity.max_daily_rest_hours', 3);
         $maxTotalHours = config('driver_activity.max_daily_total_hours', 12);
-        $workingWindowStart = config('driver_activity.working_window_start', '06:00');
-        $workingWindowEnd = config('driver_activity.working_window_end', '20:00');
         $thresholds = config('driver_activity.violation_thresholds', []);
 
         $timelineData = collect();
@@ -1050,10 +979,8 @@ class DriversController extends Controller
                 $earliestStart,
                 $latestEnd,
                 $maxDrivingHours,
-                $minRestHours,
+                $maxRestHours,
                 $maxTotalHours,
-                $workingWindowStart,
-                $workingWindowEnd,
                 $thresholds,
                 $locationLabel
             );
