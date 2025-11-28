@@ -116,12 +116,12 @@
                 <span class="sidebar-text">{{ __('messages.violations') }}</span>
             </a>
         </li>
-        <li class="mb-2">
+        {{-- <li class="mb-2">
             <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2">
                 <i class="bi bi-shield-check me-2 text-gray-600 sidebar-icon"></i>
                 <span class="sidebar-text">{{ __('messages.score_points') }}</span>
             </a>
-        </li>
+        </li> --}}
         <li class="mb-2">
             <a href="{{ route('drivers.activities.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2">
                 <i class="bi bi-clock-history me-2 text-gray-600 sidebar-icon"></i>
@@ -353,12 +353,12 @@
                     <span class="sidebar-text">{{ __('messages.violations_by_type') }}</span>
                 </a>
             </li>
-            <li class="mb-2">
+            {{-- <li class="mb-2">
                 <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2">
                     <i class="bi bi-shield-check me-2 text-gray-600 sidebar-icon"></i>
                     <span class="sidebar-text">{{ __('messages.score_points') }}</span>
                 </a>
-            </li>
+            </li> --}}
             <li class="mb-2">
                 <a href="{{ route('drivers.activities.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2">
                     <i class="bi bi-clock-history me-2 text-gray-600 sidebar-icon"></i>
