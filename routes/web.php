@@ -11,6 +11,7 @@ use App\Http\Controllers\TurnoverController;
 use App\Http\Controllers\DriverConcernController;
 use App\Http\Controllers\OrganigramMemberController;
 use App\Http\Controllers\ChangementTypeController;
+use App\Http\Controllers\DriverHandoverController;
 use App\Http\Controllers\PrincipaleCretaireController;
 use App\Http\Controllers\SousCretaireController;
 use App\Http\Controllers\ChangementController;
@@ -206,6 +207,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/coaching-cabines/{coachingCabine}/pdf', [CoachingCabineController::class, 'pdf'])->name('coaching-cabines.pdf');
     Route::put('/coaching-cabines/{coachingCabine}/complete', [CoachingCabineController::class, 'complete'])->name('coaching-cabines.complete');
     Route::resource('coaching-cabines', CoachingCabineController::class);
+
+    // Driver Handovers
+    Route::get('/driver-handovers/export', [DriverHandoverController::class, 'export'])->name('driver-handovers.export');
+    Route::resource('driver-handovers', DriverHandoverController::class);
+    Route::post('/driver-handovers/{driver_handover}/confirm', [DriverHandoverController::class, 'confirm'])->name('driver-handovers.confirm');
     
 });
 

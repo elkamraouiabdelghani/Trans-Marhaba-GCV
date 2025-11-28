@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Models\DriverHandover;
 
 class Vehicle extends Model
 {
@@ -25,6 +27,7 @@ class Vehicle extends Model
         'vin_number',
         'brand',
         'model',
+        'current_mileage',
         'year',
         'fuel_type',
         'status',
@@ -43,6 +46,11 @@ class Vehicle extends Model
     public function driver()
     {
         return $this->hasOne(Driver::class, 'assigned_vehicle_id');
+    }
+
+    public function handovers(): HasMany
+    {
+        return $this->hasMany(DriverHandover::class);
     }
 
     /**

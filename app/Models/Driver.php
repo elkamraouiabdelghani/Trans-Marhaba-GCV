@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use App\Models\IntegrationCandidate;
 use App\Models\Changement;
+use App\Models\DriverHandover;
 
 class Driver extends Model
 {
@@ -156,6 +157,16 @@ class Driver extends Model
     public function violations(): HasMany
     {
         return $this->hasMany(DriverViolation::class);
+    }
+
+    public function handoversFrom(): HasMany
+    {
+        return $this->hasMany(DriverHandover::class, 'driver_from_id');
+    }
+
+    public function handoversTo(): HasMany
+    {
+        return $this->hasMany(DriverHandover::class, 'driver_to_id');
     }
 
     /**

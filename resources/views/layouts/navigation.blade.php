@@ -86,6 +86,12 @@
             </ul>
         </li>
         <li class="mb-2">
+            <a href="{{ route('driver-handovers.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('driver-handovers.*') ? 'active' : '' }}">
+                <i class="bi bi-arrow-repeat me-2 text-gray-600 sidebar-icon"></i>
+                <span class="sidebar-text">{{ __('messages.driver_handovers') }}</span>
+            </a>
+        </li>
+        <li class="mb-2">
             <a href="{{ route('turnovers.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('turnovers.*') ? 'active' : '' }}">
                 <i class="bi bi-arrow-left-right me-2 text-gray-600 sidebar-icon"></i>
                 <span class="sidebar-text">{{ __('messages.turnovers') }}</span>
@@ -207,6 +213,8 @@
                         {{ __('messages.tbt_formations') }}
                     @elseif(request()->routeIs('reports.*') || request()->routeIs('reports.index') || request()->routeIs('reports.create') || request()->routeIs('reports.edit') || request()->routeIs('reports.show'))
                         {{ __('messages.reports') }}
+                    @elseif(request()->routeIs('driver-handovers.*') || request()->routeIs('driver-handovers.index') || request()->routeIs('driver-handovers.create') || request()->routeIs('driver-handovers.edit') || request()->routeIs('driver-handovers.show'))
+                        {{ __('messages.driver_handovers') }}
                     @elseif(request()->routeIs('administration-roles.*'))
                         {{ __('messages.administration_roles') }}
                     @endif
@@ -315,8 +323,14 @@
                 </ul>
             </li>
             <li class="mb-2">
-                <a href="{{ route('turnovers.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('turnovers.*') ? 'active' : '' }}">
+                <a href="{{ route('driver-handovers.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('driver-handovers.*') ? 'active' : '' }}">
                     <i class="bi bi-arrow-left-right me-2 text-gray-600 sidebar-icon"></i>
+                    <span class="sidebar-text">{{ __('messages.driver_handovers') }}</span>
+                </a>
+            </li>
+            <li class="mb-2">
+                <a href="{{ route('turnovers.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('turnovers.*') ? 'active' : '' }}">
+                    <i class="bi bi-arrow-repeat me-2 text-gray-600 sidebar-icon"></i>
                     <span class="sidebar-text">{{ __('messages.turnovers') }}</span>
                 </a>
             </li>

@@ -28,6 +28,8 @@
                     {{ __('messages.coaching_cabines') }}
                 @elseif(request()->routeIs('tbt-formations.*') || request()->routeIs('tbt-formations.index') || request()->routeIs('tbt-formations.create') || request()->routeIs('tbt-formations.edit') || request()->routeIs('tbt-formations.show') || request()->routeIs('formation-processes.*') || request()->routeIs('formation-processes.index') || request()->routeIs('formation-processes.create') || request()->routeIs('formation-processes.edit') || request()->routeIs('formation-processes.show'))
                     {{ __('messages.tbt_formations') }}
+                @elseif(request()->routeIs('driver-handovers.*') || request()->routeIs('driver-handovers.index') || request()->routeIs('driver-handovers.create') || request()->routeIs('driver-handovers.edit') || request()->routeIs('driver-handovers.show'))
+                    {{ __('messages.driver_handovers') }}
                 @else
                     {{ __('messages.brand') }}
                 @endif
