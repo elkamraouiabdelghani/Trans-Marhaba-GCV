@@ -114,10 +114,28 @@
                         </div>
                         <div class="">
                             <label class="form-label">{{ __('messages.cause') }}</label>
-                            <textarea name="cause" rows="3" class="form-control @error('cause') is-invalid @enderror">{{ old('cause') }}</textarea>
+                            <select name="cause" id="cause-select" class="form-select @error('cause') is-invalid @enderror">
+                                <option value="">{{ __('messages.select_cause') ?? 'Select cause' }}</option>
+                                <option value="malade" {{ old('cause') === 'malade' ? 'selected' : '' }}>{{ __('messages.cause_malade') ?? 'Malade' }}</option>
+                                <option value="demission" {{ old('cause') === 'demission' ? 'selected' : '' }}>{{ __('messages.cause_demission') ?? 'Démission' }}</option>
+                                <option value="conge" {{ old('cause') === 'conge' ? 'selected' : '' }}>{{ __('messages.cause_conge') ?? 'Congé' }}</option>
+                                <option value="other" {{ old('cause') === 'other' || (old('cause') && !in_array(old('cause'), ['malade', 'demission', 'conge'])) ? 'selected' : '' }}>{{ __('messages.cause_other') ?? 'Autre' }}</option>
+                            </select>
                             @error('cause')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
+                            <div id="cause-other-input" style="display: {{ old('cause') && !in_array(old('cause'), ['malade', 'demission', 'conge', 'other', '']) ? 'block' : (old('cause') === 'other' ? 'block' : 'none') }};" class="mt-2">
+                                <label class="form-label small">{{ __('messages.cause_other_specify') ?? 'Spécifier la cause' }}</label>
+                                <input type="text" 
+                                       name="cause_other" 
+                                       id="cause-other-text" 
+                                       value="{{ old('cause_other', (old('cause') && !in_array(old('cause'), ['malade', 'demission', 'conge', 'other', ''])) ? old('cause') : '') }}" 
+                                       class="form-control @error('cause_other') is-invalid @enderror" 
+                                       placeholder="{{ __('messages.cause_other_placeholder') ?? 'Entrez la cause' }}">
+                                @error('cause_other')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -135,7 +153,7 @@
                         'carnet_metrologique' => 'CARNET METROLOGIQUE + ATTESTATION D\'INSTALLATION',
                         'attestation_flexible' => 'ATTESTATION DE FLEXIBLE',
                         'attestation_extincteurs' => 'ATTESTATION DES EXTINCTEURS',
-                        'manuel_atlas' => 'MANUEL ATLAS',
+                        'manuel_atlas' => 'MANUEL LES RISQUES ET AIRS REPOS',
                     ];
 
                     $documentCheckboxes = [
@@ -149,7 +167,7 @@
                         'cheque_dv' => 'CHEQUE D.V',
                         'facture_bl_dv' => 'FACTURE & BL CACHETE D.V',
                         'certificat_jaugeage' => 'CERTIFICAT DE JAUGEAGE',
-                        'attestation_deplacement' => 'Attestation de déplacement obligatoire',
+                        'attestation_deplacement' => 'Attestation de déplacement (optionnel)',
                     ];
                 @endphp
                 <div class="table-responsive m-4">
@@ -159,6 +177,8 @@
                                 <th>{{ __('messages.documents') }}</th>
                                 <th class="text-center" style="width: 80px;">{{ __('messages.yes') }}</th>
                                 <th class="text-center" style="width: 80px;">{{ __('messages.no') }}</th>
+                                <th style="width: 250px;">{{ __('messages.observation') ?? 'Observation' }}</th>
+                                <th style="width: 150px;">{{ __('messages.image') ?? 'Image' }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -171,6 +191,18 @@
                                                    class="form-control form-control-sm"
                                                    name="documents[jawaz_autoroute]"
                                                    value="{{ old('documents.jawaz_autoroute') }}">
+                                        </td>
+                                        <td>
+                                            <textarea name="documents[{{ $key }}_observation]" 
+                                                      rows="2" 
+                                                      class="form-control form-control-sm" 
+                                                      placeholder="{{ __('messages.observation_placeholder') ?? 'Observation...' }}">{{ old("documents.{$key}_observation") }}</textarea>
+                                        </td>
+                                        <td>
+                                            <input type="file" 
+                                                   name="documents_images[{{ $key }}]" 
+                                                   accept="image/*"
+                                                   class="form-control form-control-sm">
                                         </td>
                                     @else
                                         <td class="text-center">
@@ -186,6 +218,18 @@
                                                    value="non"
                                                    class="form-check-input"
                                                    {{ old("documents.$key") === 'non' ? 'checked' : '' }}>
+                                        </td>
+                                        <td>
+                                            <textarea name="documents[{{ $key }}_observation]" 
+                                                      rows="2" 
+                                                      class="form-control form-control-sm" 
+                                                      placeholder="{{ __('messages.observation_placeholder') ?? 'Observation...' }}">{{ old("documents.{$key}_observation") }}</textarea>
+                                        </td>
+                                        <td>
+                                            <input type="file" 
+                                                   name="documents_images[{{ $key }}]" 
+                                                   accept="image/*"
+                                                   class="form-control form-control-sm">
                                         </td>
                                     @endif
                                 </tr>
@@ -231,6 +275,18 @@
                                                class="form-check-input"
                                                {{ old("documents.options.row_$loop->index.status") === 'non' ? 'checked' : '' }}>
                                     </td>
+                                    <td>
+                                        <textarea name="documents[options][row_{{ $loop->index }}][observation]" 
+                                                  rows="2" 
+                                                  class="form-control form-control-sm" 
+                                                  placeholder="{{ __('messages.observation_placeholder') ?? 'Observation...' }}">{{ old("documents.options.row_$loop->index.observation") }}</textarea>
+                                    </td>
+                                    <td>
+                                        <input type="file" 
+                                               name="documents_images[options][row_{{ $loop->index }}]" 
+                                               accept="image/*"
+                                               class="form-control form-control-sm">
+                                    </td>
                                 </tr>
                             @endforeach
                         </tbody>
@@ -254,7 +310,6 @@
                         'nombre_flexibles' => 'NOMBRE DE FLEXIBLES:',
                         'cle_vanne' => 'CLE A VANNE',
                         'pince_plombage' => 'PINCE DE PLOMBAGE',
-                        'nombre_reduction' => 'NOMBRE DE REDUCTION:',
                         'cones' => '3 CONES',
                         'triangle_panne' => 'TRIANGLE DE PANNE',
                         'pneu_secours' => 'UN PNEU DE SECOURS',
@@ -270,6 +325,8 @@
                                 <th>{{ __('messages.tools_equipment') ?? 'OUTILLAGES / MATERIELS' }}</th>
                                 <th class="text-center" style="width: 80px;">{{ __('messages.yes') }}</th>
                                 <th class="text-center" style="width: 80px;">{{ __('messages.no') }}</th>
+                                <th style="width: 250px;">{{ __('messages.observation') ?? 'Observation' }}</th>
+                                <th style="width: 150px;">{{ __('messages.image') ?? 'Image' }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -277,18 +334,22 @@
                                 <tr>
                                     <td class="fw-semibold text-uppercase small d-flex align-items-center gap-2">
                                         {{ $label }}
-                                        @if(in_array($key, ['extincteurs', 'nombre_flexibles', 'nombre_reduction']))
+                                        @if(in_array($key, ['extincteurs', 'nombre_flexibles']))
                                             <div class="d-flex flex-wrap gap-2 align-items-center">
                                                 @php
                                                     $counts = $key === 'extincteurs' ? ['N°1', 'N°2', 'N°3'] : ['1', '2', '3', '4'];
                                                 @endphp
                                                 @foreach($counts as $index => $countLabel)
                                                     <div class="d-flex align-items-center gap-1">
-                                                        <span class="small">{{ $countLabel }}</span>
-                                                        <input type="text"
+                                                        <input type="checkbox"
+                                                               id="equipment_count_{{ $key }}_{{ $index }}"
                                                                name="equipment_counts[{{ $key }}][{{ $index }}]"
-                                                               value="{{ old("equipment_counts.$key.$index") }}"
-                                                               class="form-control form-control-sm rounded border-gray-300 h-2">
+                                                               value="1"
+                                                               class="form-check-input"
+                                                               {{ old("equipment_counts.$key.$index") ? 'checked' : '' }}>
+                                                        <label class="form-check-label small mb-0" for="equipment_count_{{ $key }}_{{ $index }}">
+                                                            {{ $countLabel }}
+                                                        </label>
                                                     </div>
                                                 @endforeach
                                             </div>
@@ -307,6 +368,18 @@
                                                value="non"
                                                class="form-check-input"
                                                {{ old("equipment.$key") === 'non' ? 'checked' : '' }}>
+                                    </td>
+                                    <td>
+                                        <textarea name="equipment[{{ $key }}_observation]" 
+                                                  rows="2" 
+                                                  class="form-control form-control-sm" 
+                                                  placeholder="{{ __('messages.observation_placeholder') ?? 'Observation...' }}">{{ old("equipment.{$key}_observation") }}</textarea>
+                                    </td>
+                                    <td>
+                                        <input type="file" 
+                                               name="equipment_images[{{ $key }}]" 
+                                               accept="image/*"
+                                               class="form-control form-control-sm">
                                     </td>
                                 </tr>
                             @endforeach
@@ -391,6 +464,31 @@
 
             driverSelect.dispatchEvent(new Event('change'));
             updateVehicleKm(vehicleSelect.value);
+
+            // Handle cause dropdown - show/hide "other" input
+            const causeSelect = document.getElementById('cause-select');
+            const causeOtherInput = document.getElementById('cause-other-input');
+            const causeOtherText = document.getElementById('cause-other-text');
+
+            if (causeSelect && causeOtherInput) {
+                causeSelect.addEventListener('change', function() {
+                    if (this.value === 'other') {
+                        causeOtherInput.style.display = 'block';
+                        if (causeOtherText) {
+                            causeOtherText.required = true;
+                        }
+                    } else {
+                        causeOtherInput.style.display = 'none';
+                        if (causeOtherText) {
+                            causeOtherText.required = false;
+                            causeOtherText.value = '';
+                        }
+                    }
+                });
+
+                // Trigger on page load to set initial state
+                causeSelect.dispatchEvent(new Event('change'));
+            }
         });
     </script>
 </x-app-layout>

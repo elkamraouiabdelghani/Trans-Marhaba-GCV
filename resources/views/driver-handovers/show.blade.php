@@ -109,7 +109,7 @@
 
             <!-- Sidebar with Quick Actions -->
             <div class="col-12 col-lg-4">
-                <aside class="position-sticky" style="top: 0.5rem;">
+                <aside class="position-sticky" style="top: 0.5rem;margin-bottom: 1.5rem;">
                     <div class="card border-0 shadow-sm">
                         <div class="card-header bg-white border-0 py-3">
                             <h6 class="mb-0 text-dark fw-bold text-uppercase small">
@@ -164,6 +164,280 @@
                     </div>
                 </aside>
             </div>
+        </div>
+
+        {{-- Documents Table --}}
+        <div class="card border-0 shadow-sm mb-4">
+            @php
+                $documentRows = [
+                    'cartes_grises' => 'CARTES GRISES',
+                    'certificats_visite' => 'CERTIFICATS DE LA VISITE TECHNIQUE',
+                    'cartes_autorisation' => "CARTES D'AUTORISATION",
+                    'jawaz_autoroute' => 'JAWAZ / AUTOROUTE N°',
+                    'attestation_assurance' => 'ATTESTATIONS ASSURANCE',
+                    'attestation_vignette' => 'ATTESTATION DE VIGNETTE',
+                    'carnet_metrologique' => 'CARNET METROLOGIQUE + ATTESTATION D\'INSTALLATION',
+                    'attestation_flexible' => 'ATTESTATION DE FLEXIBLE',
+                    'attestation_extincteurs' => 'ATTESTATION DES EXTINCTEURS',
+                    'manuel_atlas' => 'MANUEL LES RISQUES ET AIRS REPOS',
+                ];
+
+                $documentCheckboxes = [
+                    'fds' => 'F.D.S',
+                    'manuel_conducteur' => 'MANUEL CONDUCTEUR',
+                    'consignes_securite' => 'CONSIGNES DE SECURITE',
+                    'cahier_inspection' => 'CAHIER INSPECTION A.D',
+                    'cahier_feuille_route' => 'CAHIER FEUILLE DE ROUTE',
+                    'manuel_secourisme' => 'MANUEL DE SECOURISME',
+                    'disque_dernier_voyage' => 'DISQUE DERNIER VOYAGE',
+                    'cheque_dv' => 'CHEQUE D.V',
+                    'facture_bl_dv' => 'FACTURE & BL CACHETE D.V',
+                    'certificat_jaugeage' => 'CERTIFICAT DE JAUGEAGE',
+                    'attestation_deplacement' => 'Attestation de déplacement (optionnel)',
+                ];
+
+                $equipmentRows = [
+                    'harnais' => 'HARNAIS (semta)',
+                    'clea_goujons' => 'CLE A GOUJONS',
+                    'cle_cabine' => 'CLE DE CABINE',
+                    'extincteurs' => 'EXTINCTEURS:',
+                    'calles' => 'CALLES',
+                    'radio_cassette' => 'RADIO CASSETTE',
+                    'cable_abs' => 'CABLE ABS INSTALLE',
+                    'flexibles' => 'FLEXIBLES',
+                    'plaques_signalisation' => 'PLAQUES SIGNALETIQUES DE PANNES',
+                    'plaques_immatriculation' => 'PLAQUES D\'IMMATRICULATION + PLAQUE 80',
+                    'nombre_flexibles' => 'NOMBRE DE FLEXIBLES:',
+                    'cle_vanne' => 'CLE A VANNE',
+                    'pince_plombage' => 'PINCE DE PLOMBAGE',
+                    'cones' => '3 CONES',
+                    'triangle_panne' => 'TRIANGLE DE PANNE',
+                    'pneu_secours' => 'UN PNEU DE SECOURS',
+                    'seau_aluminium' => 'UN SAUT EN ALUMINIUM AVEC PRODUIT ABSORBANT (SABLE)',
+                    'boite_pharmacie' => 'BOITE A PHARMACIE',
+                ];
+
+                $documents = $handover->documents ?? [];
+                $equipment = $handover->equipment ?? [];
+                $equipmentCounts = $equipment['counts'] ?? [];
+            @endphp
+            
+            <div class="card-header bg-white border-0 py-3">
+                <h6 class="mb-0 text-dark fw-bold text-uppercase small">
+                    <i class="bi bi-file-earmark-text me-2 text-primary"></i>
+                    {{ __('messages.documents') }}
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>{{ __('messages.documents') }}</th>
+                                <th class="text-center" style="width: 80px;">{{ __('messages.yes') }}</th>
+                                <th class="text-center" style="width: 80px;">{{ __('messages.no') }}</th>
+                                <th style="width: 250px;">{{ __('messages.observation') ?? 'Observation' }}</th>
+                                <th style="width: 150px;">{{ __('messages.image') ?? 'Image' }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($documentRows as $key => $label)
+                                <tr>
+                                    <td class="fw-semibold text-uppercase small">{{ $label }}</td>
+                                    @if($key === 'jawaz_autoroute')
+                                        <td colspan="2" class="text-center">
+                                            <span class="small">{{ $documents['jawaz_autoroute'] ?? 'N/A' }}</span>
+                                        </td>
+                                        <td>
+                                            <small>{{ $documents["{$key}_observation"] ?? '—' }}</small>
+                                        </td>
+                                        <td class="text-center">
+                                            @if(isset($documents["{$key}_image"]) && $documents["{$key}_image"])
+                                                <img src="{{ route('uploads.serve', $documents["{$key}_image"]) }}" 
+                                                     alt="Image" 
+                                                     class="img-thumbnail" 
+                                                     style="max-width: 80px; max-height: 80px; cursor: pointer;"
+                                                     onclick="window.open(this.src, '_blank')">
+                                            @else
+                                                <span class="text-muted small">—</span>
+                                            @endif
+                                        </td>
+                                    @else
+                                        <td class="text-center">
+                                            @if(isset($documents[$key]) && $documents[$key] === 'oui')
+                                                <span class="badge bg-success">✓</span>
+                                            @endif
+                                        </td>
+                                        <td class="text-center">
+                                            @if(isset($documents[$key]) && $documents[$key] === 'non')
+                                                <span class="badge bg-danger">✗</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            <small>{{ $documents["{$key}_observation"] ?? '—' }}</small>
+                                        </td>
+                                        <td class="text-center">
+                                            @if(isset($documents["{$key}_image"]) && $documents["{$key}_image"])
+                                                <img src="{{ route('uploads.serve', $documents["{$key}_image"]) }}" 
+                                                     alt="Image" 
+                                                     class="img-thumbnail" 
+                                                     style="max-width: 80px; max-height: 80px; cursor: pointer;"
+                                                     onclick="window.open(this.src, '_blank')">
+                                            @else
+                                                <span class="text-muted small">—</span>
+                                            @endif
+                                        </td>
+                                    @endif
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+
+                    @if(isset($documents['options']))
+                        <table class="table table-bordered align-middle mt-3">
+                            <tbody>
+                                @foreach(array_chunk($documentCheckboxes, 3, true) as $chunkIndex => $chunk)
+                                    <tr>
+                                        @foreach($chunk as $key => $label)
+                                            <td>
+                                                <div class="fw-semibold text-uppercase small mb-2">{{ $label }}</div>
+                                                @if(isset($documents['options'][$key]['checked']) && $documents['options'][$key]['checked'])
+                                                    <span class="badge bg-info">✓ Présent</span>
+                                                @endif
+                                            </td>
+                                        @endforeach
+                                        @if(count($chunk) < 3)
+                                            @for($i = count($chunk); $i < 3; $i++)
+                                                <td></td>
+                                            @endfor
+                                        @endif
+                                        <td class="text-center" style="width: 80px;">
+                                            @if(isset($documents['options']['row_' . $chunkIndex]['status']) && $documents['options']['row_' . $chunkIndex]['status'] === 'oui')
+                                                <span class="badge bg-success">✓</span>
+                                            @endif
+                                        </td>
+                                        <td class="text-center" style="width: 80px;">
+                                            @if(isset($documents['options']['row_' . $chunkIndex]['status']) && $documents['options']['row_' . $chunkIndex]['status'] === 'non')
+                                                <span class="badge bg-danger">✗</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            <small>{{ $documents['options']['row_' . $chunkIndex]['observation'] ?? '—' }}</small>
+                                        </td>
+                                        <td class="text-center">
+                                            @if(isset($documents['options']['row_' . $chunkIndex]['image']) && $documents['options']['row_' . $chunkIndex]['image'])
+                                                <img src="{{ route('uploads.serve', $documents['options']['row_' . $chunkIndex]['image']) }}" 
+                                                     alt="Image" 
+                                                     class="img-thumbnail" 
+                                                     style="max-width: 80px; max-height: 80px; cursor: pointer;"
+                                                     onclick="window.open(this.src, '_blank')">
+                                            @else
+                                                <span class="text-muted small">—</span>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    @endif
+                </div>
+            </div>
+        </div>
+
+        {{-- Equipment Table --}}
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white border-0 py-3">
+                <h6 class="mb-0 text-dark fw-bold text-uppercase small">
+                    <i class="bi bi-tools me-2 text-primary"></i>
+                    {{ __('messages.tools_equipment') ?? 'OUTILLAGES / MATERIELS' }}
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>{{ __('messages.tools_equipment') ?? 'OUTILLAGES / MATERIELS' }}</th>
+                                <th class="text-center" style="width: 80px;">{{ __('messages.yes') }}</th>
+                                <th class="text-center" style="width: 80px;">{{ __('messages.no') }}</th>
+                                <th style="width: 250px;">{{ __('messages.observation') ?? 'Observation' }}</th>
+                                <th style="width: 150px;">{{ __('messages.image') ?? 'Image' }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($equipmentRows as $key => $label)
+                                <tr>
+                                    <td class="fw-semibold text-uppercase small d-flex align-items-center gap-2">
+                                        {{ $label }}
+                                        @if(in_array($key, ['extincteurs', 'nombre_flexibles']))
+                                            <div class="d-flex flex-wrap gap-2 align-items-center">
+                                                @php
+                                                    $counts = $key === 'extincteurs' ? ['N°1', 'N°2', 'N°3'] : ['1', '2', '3', '4'];
+                                                @endphp
+                                                @foreach($counts as $index => $countLabel)
+                                                    @if(isset($equipmentCounts[$key][$index]) && $equipmentCounts[$key][$index])
+                                                        <span class="badge bg-secondary small">{{ $countLabel }} ✓</span>
+                                                    @endif
+                                                @endforeach
+                                            </div>
+                                        @endif
+                                    </td>
+                                    <td class="text-center">
+                                        @if(isset($equipment[$key]) && $equipment[$key] === 'oui')
+                                            <span class="badge bg-success">✓</span>
+                                        @endif
+                                    </td>
+                                    <td class="text-center">
+                                        @if(isset($equipment[$key]) && $equipment[$key] === 'non')
+                                            <span class="badge bg-danger">✗</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        <small>{{ $equipment["{$key}_observation"] ?? '—' }}</small>
+                                    </td>
+                                    <td class="text-center">
+                                        @if(isset($equipment["{$key}_image"]) && $equipment["{$key}_image"])
+                                            <img src="{{ route('uploads.serve', $equipment["{$key}_image"]) }}" 
+                                                 alt="Image" 
+                                                 class="img-thumbnail" 
+                                                 style="max-width: 80px; max-height: 80px; cursor: pointer;"
+                                                 onclick="window.open(this.src, '_blank')">
+                                        @else
+                                            <span class="text-muted small">—</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        {{-- Anomalies Section --}}
+        <div class="card border-0 shadow-sm mb-4">
+            @if($handover->anomalies_description || $handover->anomalies_actions)
+                <div class="card-header bg-white border-0 py-3">
+                    <h6 class="mb-0 text-dark fw-bold text-uppercase small">
+                        <i class="bi bi-exclamation-triangle me-2 text-warning"></i>
+                        {{ __('messages.anomalies') ?? 'Anomalies' }}
+                    </h6>
+                </div>
+                <div class="card-body">
+                    @if($handover->anomalies_description)
+                        <div class="mb-3">
+                            <h6 class="text-muted text-uppercase small mb-2">{{ __('messages.description') ?? 'Description' }}</h6>
+                            <p class="mb-0">{{ $handover->anomalies_description }}</p>
+                        </div>
+                    @endif
+                    @if($handover->anomalies_actions)
+                        <div>
+                            <h6 class="text-muted text-uppercase small mb-2">{{ __('messages.actions') ?? 'Actions' }}</h6>
+                            <p class="mb-0">{{ $handover->anomalies_actions }}</p>
+                        </div>
+                    @endif
+                </div>
+            @endif
         </div>
     </div>
 

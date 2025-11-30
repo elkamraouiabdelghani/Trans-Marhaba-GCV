@@ -187,6 +187,46 @@
             font-size: 7px;
             color: #6b7280;
         }
+        .images-section {
+            margin-top: 10px;
+            margin-bottom: 15px;
+            page-break-inside: avoid;
+        }
+        .images-grid {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 5px;
+        }
+        .images-grid td {
+            width: 50%;
+            padding: 5px;
+            vertical-align: top;
+            border: 1px solid #e5e7eb;
+            background-color: #ffffff;
+        }
+        .image-container {
+            text-align: center;
+            padding: 5px;
+        }
+        .image-label {
+            font-size: 7px;
+            font-weight: bold;
+            color: #374151;
+            margin-bottom: 3px;
+            text-transform: uppercase;
+        }
+        .image-wrapper {
+            display: inline-block;
+            border: 1px solid #d1d5db;
+            padding: 3px;
+            background-color: #f9fafb;
+        }
+        .image-wrapper img {
+            max-width: 100px;
+            max-height: 100px;
+            object-fit: contain;
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -245,9 +285,10 @@
     <table>
         <thead>
             <tr>
-                <th style="width: 70%;">Document</th>
+                <th style="width: 50%;">Document</th>
                 <th class="check-column">OUI</th>
                 <th class="check-column">NON</th>
+                <th style="width: 35%;">Observation</th>
             </tr>
         </thead>
         <tbody>
@@ -257,6 +298,9 @@
                     @if($key === 'jawaz_autoroute')
                         <td colspan="2" style="text-align: center; font-size: 8px;">
                             {{ $documents['jawaz_autoroute'] ?? 'N/A' }}
+                        </td>
+                        <td style="font-size: 7px; padding: 2px;">
+                            {{ $documents["{$key}_observation"] ?? '' }}
                         </td>
                     @else
                         <td class="check-column">
@@ -269,11 +313,67 @@
                                 <span class="no-mark">✗</span>
                             @endif
                         </td>
+                        <td style="font-size: 7px; padding: 2px;">
+                            {{ $documents["{$key}_observation"] ?? '' }}
+                        </td>
                     @endif
                 </tr>
             @endforeach
         </tbody>
     </table>
+
+    {{-- Document Images Section --}}
+    @php
+        $documentImages = [];
+        foreach($documentRows as $key => $label) {
+            if(isset($documents["{$key}_image"]) && $documents["{$key}_image"]) {
+                $documentImages[] = [
+                    'label' => $label,
+                    'image' => $documents["{$key}_image"]
+                ];
+            }
+        }
+        // Add images from document options
+        if(isset($documents['options']) && is_array($documents['options'])) {
+            $optionsChunks = array_chunk($documentCheckboxes, 3, true);
+            foreach($optionsChunks as $chunkIndex => $chunk) {
+                $rowKey = 'row_' . $chunkIndex;
+                if(isset($documents['options'][$rowKey]['image']) && $documents['options'][$rowKey]['image']) {
+                    $labels = array_values($chunk);
+                    $documentImages[] = [
+                        'label' => implode(' / ', $labels),
+                        'image' => $documents['options'][$rowKey]['image']
+                    ];
+                }
+            }
+        }
+    @endphp
+    @if(count($documentImages) > 0)
+        <div class="images-section">
+            <div style="font-weight: bold; font-size: 9px; margin-bottom: 5px; color: #166534;">IMAGES DES DOCUMENTS</div>
+            <table class="images-grid">
+                <tbody>
+                    @foreach(array_chunk($documentImages, 2) as $imageRow)
+                        <tr>
+                            @foreach($imageRow as $imageData)
+                                <td>
+                                    <div class="image-container">
+                                        <div class="image-label">{{ $imageData['label'] }}</div>
+                                        <div class="image-wrapper">
+                                            <img src="{{ $imageData['image'] }}" alt="{{ $imageData['label'] }}">
+                                        </div>
+                                    </div>
+                                </td>
+                            @endforeach
+                            @if(count($imageRow) < 2)
+                                <td></td>
+                            @endif
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    @endif
 
     {{-- Document Options (Checkboxes) --}}
     @if(isset($documents['options']))
@@ -307,6 +407,9 @@
                                 <span class="no-mark">✗</span>
                             @endif
                         </td>
+                        <td style="font-size: 7px; padding: 2px;">
+                            {{ $documents['options']['row_' . $chunkIndex]['observation'] ?? '' }}
+                        </td>
                     </tr>
                 @endforeach
             </tbody>
@@ -318,9 +421,10 @@
     <table>
         <thead>
             <tr>
-                <th style="width: 70%;">Équipement</th>
+                <th style="width: 50%;">Équipement</th>
                 <th class="check-column">OUI</th>
                 <th class="check-column">NON</th>
+                <th style="width: 35%;">Observation</th>
             </tr>
         </thead>
         <tbody>
@@ -335,7 +439,7 @@
                                 @endphp
                                 @foreach($counts as $index => $countLabel)
                                     @if(isset($equipment_counts[$key][$index]) && $equipment_counts[$key][$index])
-                                        {{ $countLabel }}: {{ $equipment_counts[$key][$index] }}
+                                        {{ $countLabel }}✓
                                     @endif
                                 @endforeach
                             </span>
@@ -351,10 +455,52 @@
                             <span class="no-mark">✗</span>
                         @endif
                     </td>
+                    <td style="font-size: 7px; padding: 2px;">
+                        {{ $equipment["{$key}_observation"] ?? '' }}
+                    </td>
                 </tr>
             @endforeach
         </tbody>
     </table>
+
+    {{-- Equipment Images Section --}}
+    @php
+        $equipmentImages = [];
+        foreach($equipmentRows as $key => $label) {
+            if(isset($equipment["{$key}_image"]) && $equipment["{$key}_image"]) {
+                $equipmentImages[] = [
+                    'label' => $label,
+                    'image' => $equipment["{$key}_image"]
+                ];
+            }
+        }
+    @endphp
+    @if(count($equipmentImages) > 0)
+        <div class="images-section">
+            <div style="font-weight: bold; font-size: 9px; margin-bottom: 5px; color: #166534;">IMAGES DES ÉQUIPEMENTS</div>
+            <table class="images-grid">
+                <tbody>
+                    @foreach(array_chunk($equipmentImages, 2) as $imageRow)
+                        <tr>
+                            @foreach($imageRow as $imageData)
+                                <td>
+                                    <div class="image-container">
+                                        <div class="image-label">{{ $imageData['label'] }}</div>
+                                        <div class="image-wrapper">
+                                            <img src="{{ $imageData['image'] }}" alt="{{ $imageData['label'] }}">
+                                        </div>
+                                    </div>
+                                </td>
+                            @endforeach
+                            @if(count($imageRow) < 2)
+                                <td></td>
+                            @endif
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    @endif
 
     {{-- Anomalies Section --}}
     <div class="anomalies-section">

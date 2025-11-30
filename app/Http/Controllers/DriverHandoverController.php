@@ -356,18 +356,99 @@ class DriverHandoverController extends Controller
             }
         }
 
+        // Handle cause field - if "other" is selected, use cause_other value
+        if (isset($data['cause']) && $data['cause'] === 'other' && !empty($data['cause_other'])) {
+            $data['cause'] = $data['cause_other'];
+        }
+        // Remove cause_other from data as it's not a database field
+        unset($data['cause_other']);
+
         // Prepare documents data
         if ($request->has('documents')) {
-            $data['documents'] = $request->input('documents', []);
+            $documents = $request->input('documents', []);
+            
+            // Handle document images uploads
+            if ($request->hasFile('documents_images')) {
+                $images = $request->file('documents_images');
+                
+                // Handle regular document images
+                foreach ($images as $key => $file) {
+                    if ($key === 'options') {
+                        continue; // Handle options separately
+                    }
+                    
+                    if ($file && $file->isValid()) {
+                        $path = $file->store('driver-handovers/documents', 'uploads');
+                        $documents["{$key}_image"] = $path;
+                        
+                        // Delete old image if updating
+                        if ($handover && isset($handover->documents["{$key}_image"])) {
+                            $oldPath = $handover->documents["{$key}_image"];
+                            if (Storage::disk('uploads')->exists($oldPath)) {
+                                Storage::disk('uploads')->delete($oldPath);
+                            }
+                        }
+                    }
+                }
+                
+                // Handle document options images
+                if (isset($images['options']) && is_array($images['options'])) {
+                    if (!isset($documents['options'])) {
+                        $documents['options'] = [];
+                    }
+                    
+                    foreach ($images['options'] as $rowKey => $file) {
+                        if ($file && $file->isValid()) {
+                            $path = $file->store('driver-handovers/documents', 'uploads');
+                            
+                            if (!isset($documents['options'][$rowKey])) {
+                                $documents['options'][$rowKey] = [];
+                            }
+                            
+                            $documents['options'][$rowKey]['image'] = $path;
+                            
+                            // Delete old image if updating
+                            if ($handover && isset($handover->documents['options'][$rowKey]['image'])) {
+                                $oldPath = $handover->documents['options'][$rowKey]['image'];
+                                if (Storage::disk('uploads')->exists($oldPath)) {
+                                    Storage::disk('uploads')->delete($oldPath);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            $data['documents'] = $documents;
         }
 
         // Prepare equipment data
         if ($request->has('equipment')) {
             $equipment = $request->input('equipment', []);
+            
             // Merge equipment_counts into equipment data
             if ($request->has('equipment_counts')) {
                 $equipment['counts'] = $request->input('equipment_counts', []);
             }
+            
+            // Handle equipment images uploads
+            if ($request->hasFile('equipment_images')) {
+                foreach ($request->file('equipment_images') as $key => $file) {
+                    if ($file && $file->isValid()) {
+                        $path = $file->store('driver-handovers/equipment', 'uploads');
+                        $equipment["{$key}_image"] = $path;
+                        
+                        // Delete old image if updating
+                        if ($handover && isset($handover->equipment["{$key}_image"])) {
+                            $oldPath = $handover->equipment["{$key}_image"];
+                            if (Storage::disk('uploads')->exists($oldPath)) {
+                                Storage::disk('uploads')->delete($oldPath);
+                            }
+                        }
+                    }
+                }
+            }
+            
             $data['equipment'] = $equipment;
         }
 

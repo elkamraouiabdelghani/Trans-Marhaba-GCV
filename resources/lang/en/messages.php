@@ -988,6 +988,13 @@ return [
     'actions_prises' => 'Actions taken',
     'create_handover' => 'Add',
     'cause' => 'Reason',
+    'select_cause' => 'Select cause',
+    'cause_malade' => 'Malade',
+    'cause_demission' => 'Démission',
+    'cause_conge' => 'Congé',
+    'cause_other' => 'Other',
+    'cause_other_specify' => 'Specify the cause',
+    'cause_other_placeholder' => 'Enter the cause',
     'handover_created' => 'Handover created successfully.',
     'handover_updated' => 'Handover updated successfully.',
     'handover_deleted' => 'Handover deleted successfully.',
@@ -1464,6 +1471,8 @@ return [
     'alerts' => 'Alerts',
     'formation_alerts' => 'Formation Alerts',
     'dg_dga_signature' => 'DG/DGA Signature',
+    'image' => 'Image',
+    'anomalies' => 'Anomalies',
 ];
 
 

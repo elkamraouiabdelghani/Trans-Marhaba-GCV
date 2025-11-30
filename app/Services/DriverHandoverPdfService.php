@@ -79,14 +79,42 @@ class DriverHandoverPdfService
             $equipmentData = $handover->equipment ?? [];
             $equipmentCounts = $equipmentData['counts'] ?? [];
             
+            // Convert image paths to absolute paths for PDF rendering
+            $documents = $handover->documents ?? [];
+            foreach ($documents as $key => $value) {
+                if (is_string($value) && str_ends_with($key, '_image') && $value) {
+                    $documents[$key] = Storage::disk('uploads')->path($value);
+                } elseif (is_array($value) && isset($value['image']) && $value['image']) {
+                    $documents[$key]['image'] = Storage::disk('uploads')->path($value['image']);
+                }
+            }
+            
+            // Handle document options images
+            if (isset($documents['options']) && is_array($documents['options'])) {
+                foreach ($documents['options'] as $rowKey => $optionData) {
+                    if (is_array($optionData) && isset($optionData['image']) && $optionData['image']) {
+                        $documents['options'][$rowKey]['image'] = Storage::disk('uploads')->path($optionData['image']);
+                    }
+                }
+            }
+            
+            // Convert equipment image paths to absolute paths
+            foreach ($equipmentData as $key => $value) {
+                if (is_string($value) && str_ends_with($key, '_image') && $value) {
+                    $equipmentData[$key] = Storage::disk('uploads')->path($value);
+                }
+            }
+            
             $data = [
                 'handover' => $handover,
                 'documentRows' => $documentRows,
                 'documentCheckboxes' => $documentCheckboxes,
                 'equipmentRows' => $equipmentRows,
-                'documents' => $handover->documents ?? [],
+                'documents' => $documents,
                 'equipment' => $equipmentData,
                 'equipment_counts' => $equipmentCounts,
+                'anomalies_description' => $handover->anomalies_description ?? '',
+                'anomalies_actions' => $handover->anomalies_actions ?? '',
                 'generated_at' => now()->format('d/m/Y H:i'),
             ];
 
