@@ -129,7 +129,7 @@
             </a>
         </li>
         <li class="mb-2">
-            <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2">
+            <a href="{{ route('export-center.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('export-center.*') ? 'active' : '' }}">
                 <i class="bi bi-box-arrow-down me-2 text-gray-600 sidebar-icon"></i>
                 <span class="sidebar-text">{{ __('messages.export_center') }}</span>
             </a>
@@ -217,6 +217,8 @@
                         {{ __('messages.driver_handovers') }}
                     @elseif(request()->routeIs('administration-roles.*'))
                         {{ __('messages.administration_roles') }}
+                    @elseif(request()->routeIs('export-center.*'))
+                        {{ __('messages.export_center') }}
                     @endif
                 </span>
             </div>
@@ -366,7 +368,7 @@
                 </a>
             </li>
             <li class="mb-2">
-                <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2">
+                <a href="{{ route('export-center.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('export-center.*') ? 'active' : '' }}">
                     <i class="bi bi-box-arrow-down me-2 text-gray-600 sidebar-icon"></i>
                     <span class="sidebar-text">{{ __('messages.export_center') }}</span>
                 </a>

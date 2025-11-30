@@ -19,6 +19,7 @@ use App\Http\Controllers\CoachingCabineController;
 use App\Http\Controllers\TbtFormationController;
 use App\Http\Controllers\ViolationTypeController;
 use App\Http\Controllers\DriverViolationController;
+use App\Http\Controllers\ExportCenterController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Storage;
@@ -212,6 +213,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/driver-handovers/export', [DriverHandoverController::class, 'export'])->name('driver-handovers.export');
     Route::resource('driver-handovers', DriverHandoverController::class);
     Route::post('/driver-handovers/{driver_handover}/confirm', [DriverHandoverController::class, 'confirm'])->name('driver-handovers.confirm');
+
+    // Export Center
+    Route::get('/export-center', [\App\Http\Controllers\ExportCenterController::class, 'index'])->name('export-center.index');
+    Route::get('/export-center/violations/export', [\App\Http\Controllers\ExportCenterController::class, 'exportViolations'])->name('export-center.violations.export');
+    Route::get('/export-center/violations/export-pdf', [\App\Http\Controllers\ExportCenterController::class, 'exportViolationsPdf'])->name('export-center.violations.export-pdf');
+    Route::get('/export-center/driving-times/export', [\App\Http\Controllers\ExportCenterController::class, 'exportDrivingTimes'])->name('export-center.driving-times.export');
+    Route::get('/export-center/driving-times/export-pdf', [\App\Http\Controllers\ExportCenterController::class, 'exportDrivingTimesPdf'])->name('export-center.driving-times.export-pdf');
     
 });
 
