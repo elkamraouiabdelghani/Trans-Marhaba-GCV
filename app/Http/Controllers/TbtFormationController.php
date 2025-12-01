@@ -120,7 +120,7 @@ class TbtFormationController extends Controller
                 if (!$file) {
                     continue;
                 }
-                $path = $file->store('tbt_formations/documents', 'uploads');
+                $path = $file->store('tbt_formations/documents', 'public');
                 $documents[] = [
                     'name' => $file->getClientOriginalName(),
                     'path' => $path,
@@ -193,7 +193,7 @@ class TbtFormationController extends Controller
                 if (!$file) {
                     continue;
                 }
-                $path = $file->store('tbt_formations/documents', 'uploads');
+                $path = $file->store('tbt_formations/documents', 'public');
                 $newDocuments[] = [
                     'name' => $file->getClientOriginalName(),
                     'path' => $path,

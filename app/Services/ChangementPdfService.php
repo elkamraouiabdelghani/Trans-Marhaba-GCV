@@ -53,8 +53,8 @@ class ChangementPdfService
 
             // Create directory if it doesn't exist
             $directory = 'changement-reports';
-            if (!Storage::disk('uploads')->exists($directory)) {
-                Storage::disk('uploads')->makeDirectory($directory);
+            if (!Storage::disk('public')->exists($directory)) {
+                Storage::disk('public')->makeDirectory($directory);
             }
 
             // Generate filename
@@ -67,7 +67,7 @@ class ChangementPdfService
             );
 
             // Save PDF
-            Storage::disk('uploads')->put($fileName, $pdf->output());
+            Storage::disk('public')->put($fileName, $pdf->output());
 
             Log::info('Changement checklist PDF generated', [
                 'changement_id' => $changement->id,

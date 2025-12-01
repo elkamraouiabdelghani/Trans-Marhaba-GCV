@@ -9,7 +9,6 @@ use App\Models\IntegrationStep;
 use App\Models\Driver;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
@@ -402,7 +401,7 @@ class IntegrationController extends Controller
                 if ($request->hasFile('contract')) {
                     $contracts = [];
                     foreach ($request->file('contract') as $file) {
-                        $path = $file->store('integration/contracts', 'uploads');
+                        $path = $file->store('integration/contracts', 'public');
                         $contracts[] = [
                             'name' => $file->getClientOriginalName(),
                             'path' => $path,
@@ -479,14 +478,14 @@ class IntegrationController extends Controller
 
                 if ($request->hasFile('photo')) {
                     if ($existingPhotoPath) {
-                        Storage::disk('uploads')->delete($existingPhotoPath);
+                        Storage::disk('public')->delete($existingPhotoPath);
                     }
                     $directory = $integration->type === 'driver' ? 'profiles/drivers' : 'profiles/users';
                     $photoPath = $request->file('photo')->store($directory, 'uploads');
                     $validated['photo_path'] = $photoPath;
                 } elseif ($removePhoto) {
                     if ($existingPhotoPath) {
-                        Storage::disk('uploads')->delete($existingPhotoPath);
+                        Storage::disk('public')->delete($existingPhotoPath);
                     }
                     $validated['photo_path'] = null;
                 } elseif (!empty($existingPhotoPath)) {
@@ -990,7 +989,7 @@ class IntegrationController extends Controller
         try {
             // Handle photo upload
             if ($request->hasFile('photo')) {
-                $photoPath = $request->file('photo')->store('integration/photos', 'uploads');
+                $photoPath = $request->file('photo')->store('integration/photos', 'public');
                 $validated['photo_path'] = $photoPath;
             }
 
@@ -998,7 +997,7 @@ class IntegrationController extends Controller
             if ($request->hasFile('documents')) {
                 $documents = [];
                 foreach ($request->file('documents') as $file) {
-                    $docPath = $file->store('integration/documents', 'uploads');
+                    $docPath = $file->store('integration/documents', 'public');
                     $documents[] = [
                         'name' => $file->getClientOriginalName(),
                         'path' => $docPath,
@@ -1026,7 +1025,7 @@ class IntegrationController extends Controller
         if ($request->hasFile('documents_files')) {
             $documents = [];
             foreach ($request->file('documents_files') as $file) {
-                $path = $file->store('integration/document-verification', 'uploads');
+                $path = $file->store('integration/document-verification', 'public');
                 $documents[] = [
                     'name' => $file->getClientOriginalName(),
                     'path' => $path,
@@ -1046,7 +1045,7 @@ class IntegrationController extends Controller
         if ($request->hasFile('documents')) {
             $documents = [];
             foreach ($request->file('documents') as $file) {
-                $path = $file->store('integration/step4-documents', 'uploads');
+                $path = $file->store('integration/step4-documents', 'public');
                 $documents[] = [
                     'name' => $file->getClientOriginalName(),
                     'path' => $path,
@@ -1066,7 +1065,7 @@ class IntegrationController extends Controller
         if ($request->hasFile('documents')) {
             $documents = [];
             foreach ($request->file('documents') as $file) {
-                $path = $file->store('integration/step5-documents', 'uploads');
+                $path = $file->store('integration/step5-documents', 'public');
                 $documents[] = [
                     'name' => $file->getClientOriginalName(),
                     'path' => $path,
@@ -1086,7 +1085,7 @@ class IntegrationController extends Controller
         if ($request->hasFile('documents')) {
             $documents = [];
             foreach ($request->file('documents') as $file) {
-                $path = $file->store('integration/step6-documents', 'uploads');
+                $path = $file->store('integration/step6-documents', 'public');
                 $documents[] = [
                     'name' => $file->getClientOriginalName(),
                     'path' => $path,
@@ -1107,7 +1106,7 @@ class IntegrationController extends Controller
         if ($request->hasFile('documents')) {
             $documents = [];
             foreach ($request->file('documents') as $file) {
-                $path = $file->store('integration/step8-documents', 'uploads');
+                $path = $file->store('integration/step8-documents', 'public');
                 $documents[] = [
                     'name' => $file->getClientOriginalName(),
                     'path' => $path,
@@ -1127,7 +1126,7 @@ class IntegrationController extends Controller
         if ($request->hasFile('documents')) {
             $documents = [];
             foreach ($request->file('documents') as $file) {
-                $path = $file->store('integration/step9-documents', 'uploads');
+                $path = $file->store('integration/step9-documents', 'public');
                 $documents[] = [
                     'name' => $file->getClientOriginalName(),
                     'path' => $path,

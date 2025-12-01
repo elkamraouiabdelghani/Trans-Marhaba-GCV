@@ -187,7 +187,7 @@
                 @if(isset($stepData['photo_path']) && $stepData['photo_path'])
                     <div class="mt-2 d-flex align-items-center gap-2">
                         @if($stepData['photo_path'])
-                        <img src="{{ $stepData['photo_path'] ? asset('uploads/' . $stepData['photo_path']) : asset('images/default-profile.png') }}"
+                        <img src="{{ $stepData['photo_path'] ? asset('storage/' . $stepData['photo_path']) : asset('images/default-profile.png') }}"
                              alt="{{ $stepData['full_name'] ?? 'Profile photo' }}"
                              class="rounded-circle"
                              style="width: 60px; height: 60px; object-fit: cover;">

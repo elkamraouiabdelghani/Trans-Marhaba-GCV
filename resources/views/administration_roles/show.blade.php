@@ -31,7 +31,7 @@
                                 <div class="position-relative d-inline-block">
                                     <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style="width: 120px; height: 120px;">
                                         @if($user->profile_photo_path)
-                                            <img src="{{ $user->profile_photo_path ? asset('uploads/' . $user->profile_photo_path) : asset('images/default-profile.png') }}" alt="{{ $user->name }}" class="rounded-circle" style="width: 100%; height: 100%; object-fit: cover;">
+                                            <img src="{{ $user->profile_photo_path ? asset('storage/' . $user->profile_photo_path) : asset('images/default-profile.png') }}" alt="{{ $user->name }}" class="rounded-circle" style="width: 100%; height: 100%; object-fit: cover;">
                                         @else
                                             <i class="bi bi-person-gear text-primary" style="font-size: 4rem;"></i>
                                         @endif
@@ -353,7 +353,7 @@
                                                     </span>
                                                 </td>
                                                 <td class="text-center">
-                                                    @if($changement->check_list_path && \Illuminate\Support\Facades\Storage::disk('uploads')->exists($changement->check_list_path))
+                                                    @if($changement->check_list_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($changement->check_list_path))
                                                         <a href="{{ route('changements.checklist.download', $changement) }}" 
                                                            class="btn btn-outline-success btn-sm" 
                                                            title="{{ __('messages.download_checklist') }}">

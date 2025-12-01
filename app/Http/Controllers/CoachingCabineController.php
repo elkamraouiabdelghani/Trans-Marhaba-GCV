@@ -2,13 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\CoachingSessionRequest;
 use App\Models\CoachingSession;
 use App\Models\Driver;
 use App\Models\Flotte;
 use Barryvdh\DomPDF\Facade\Pdf;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\View\View;
 use Throwable;
 
 class CoachingCabineController extends Controller
@@ -16,7 +15,7 @@ class CoachingCabineController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request): View|RedirectResponse
+    public function index(Request $request)
     {
         try {
             $query = CoachingSession::with(['driver', 'flotte']);
@@ -102,7 +101,7 @@ class CoachingCabineController extends Controller
     /**
      * Show the form for creating a new resource.
      */
-    public function create(): View|RedirectResponse
+    public function create()
     {
         try {
             $drivers = Driver::orderBy('full_name')->get();
@@ -118,23 +117,9 @@ class CoachingCabineController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request): RedirectResponse
+    public function store(CoachingSessionRequest $request)
     {
-        $validated = $request->validate([
-            'driver_id' => ['required', 'exists:drivers,id'],
-            'flotte_id' => ['nullable', 'exists:flottes,id'],
-            'date' => ['required', 'date'],
-            'date_fin' => ['required', 'date', 'after_or_equal:date'],
-            'type' => ['required', 'in:initial,suivi,correctif,route_analysing,obc_suite,other'],
-            'route_taken' => ['nullable', 'string', 'max:255'],
-            'moniteur' => ['nullable', 'string', 'max:255'],
-            'assessment' => ['nullable', 'string'],
-            'status' => ['required', 'in:planned,in_progress,completed,cancelled'],
-            'validity_days' => ['required', 'integer', 'min:1'],
-            'next_planning_session' => ['nullable', 'date'],
-            'score' => ['nullable', 'integer', 'min:0', 'max:100'],
-            'notes' => ['nullable', 'string'],
-        ]);
+        $validated = $request->validated();
 
         try {
             // If driver doesn't have a flotte assigned, assign the selected flotte
@@ -162,7 +147,7 @@ class CoachingCabineController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(CoachingSession $coachingCabine): View|RedirectResponse
+    public function show(CoachingSession $coachingCabine)
     {
         try {
             $coachingCabine->load(['driver', 'flotte']);
@@ -177,7 +162,7 @@ class CoachingCabineController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(CoachingSession $coachingCabine): View|RedirectResponse
+    public function edit(CoachingSession $coachingCabine)
     {
         try {
             $drivers = Driver::orderBy('full_name')->get();
@@ -193,23 +178,9 @@ class CoachingCabineController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, CoachingSession $coachingCabine): RedirectResponse
+    public function update(CoachingSessionRequest $request, CoachingSession $coachingCabine)
     {
-        $validated = $request->validate([
-            'driver_id' => ['required', 'exists:drivers,id'],
-            'flotte_id' => ['nullable', 'exists:flottes,id'],
-            'date' => ['required', 'date'],
-            'date_fin' => ['required', 'date', 'after_or_equal:date'],
-            'type' => ['required', 'in:initial,suivi,correctif,route_analysing,obc_suite,other'],
-            'route_taken' => ['nullable', 'string', 'max:255'],
-            'moniteur' => ['nullable', 'string', 'max:255'],
-            'assessment' => ['nullable', 'string'],
-            'status' => ['required', 'in:planned,in_progress,completed,cancelled'],
-            'validity_days' => ['required', 'integer', 'min:1'],
-            'next_planning_session' => ['nullable', 'date'],
-            'score' => ['nullable', 'integer', 'min:0', 'max:100'],
-            'notes' => ['nullable', 'string'],
-        ]);
+        $validated = $request->validated();
 
         try {
             // If driver doesn't have a flotte assigned, assign the selected flotte
@@ -278,7 +249,7 @@ class CoachingCabineController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(CoachingSession $coachingCabine): RedirectResponse
+    public function destroy(CoachingSession $coachingCabine)
     {
         try {
             $coachingCabine->delete();
@@ -295,7 +266,7 @@ class CoachingCabineController extends Controller
     /**
      * Display the yearly planning view (spreadsheet-like).
      */
-    public function planning(Request $request, ?int $year = null): View|RedirectResponse
+    public function planning(Request $request, ?int $year = null)
     {
         try {
             $year = $year ?? $request->input('year', date('Y'));
@@ -568,7 +539,7 @@ class CoachingCabineController extends Controller
     /**
      * Complete a coaching session.
      */
-    public function complete(Request $request, CoachingSession $coachingCabine): RedirectResponse
+    public function complete(Request $request, CoachingSession $coachingCabine)
     {
         $validated = $request->validate([
             'score' => ['required', 'integer', 'min:0', 'max:100'],

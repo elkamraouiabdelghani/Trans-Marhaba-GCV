@@ -83,9 +83,9 @@ class DriverHandoverPdfService
             $documents = $handover->documents ?? [];
             foreach ($documents as $key => $value) {
                 if (is_string($value) && str_ends_with($key, '_image') && $value) {
-                    $documents[$key] = Storage::disk('uploads')->path($value);
+                    $documents[$key] = Storage::disk('public')->path($value);
                 } elseif (is_array($value) && isset($value['image']) && $value['image']) {
-                    $documents[$key]['image'] = Storage::disk('uploads')->path($value['image']);
+                    $documents[$key]['image'] = Storage::disk('public')->path($value['image']);
                 }
             }
             
@@ -93,7 +93,7 @@ class DriverHandoverPdfService
             if (isset($documents['options']) && is_array($documents['options'])) {
                 foreach ($documents['options'] as $rowKey => $optionData) {
                     if (is_array($optionData) && isset($optionData['image']) && $optionData['image']) {
-                        $documents['options'][$rowKey]['image'] = Storage::disk('uploads')->path($optionData['image']);
+                        $documents['options'][$rowKey]['image'] = Storage::disk('public')->path($optionData['image']);
                     }
                 }
             }
@@ -101,7 +101,7 @@ class DriverHandoverPdfService
             // Convert equipment image paths to absolute paths
             foreach ($equipmentData as $key => $value) {
                 if (is_string($value) && str_ends_with($key, '_image') && $value) {
-                    $equipmentData[$key] = Storage::disk('uploads')->path($value);
+                    $equipmentData[$key] = Storage::disk('public')->path($value);
                 }
             }
             
@@ -126,8 +126,8 @@ class DriverHandoverPdfService
 
             // Create directory if it doesn't exist
             $directory = 'driver-handovers';
-            if (!Storage::disk('uploads')->exists($directory)) {
-                Storage::disk('uploads')->makeDirectory($directory);
+            if (!Storage::disk('public')->exists($directory)) {
+                Storage::disk('public')->makeDirectory($directory);
             }
 
             // Generate filename
@@ -140,7 +140,7 @@ class DriverHandoverPdfService
             );
 
             // Save PDF
-            Storage::disk('uploads')->put($fileName, $pdf->output());
+            Storage::disk('public')->put($fileName, $pdf->output());
 
             Log::info('Driver handover PDF generated', [
                 'handover_id' => $handover->id,

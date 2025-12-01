@@ -43,20 +43,8 @@ Route::get('/dashboard/calendar/pdf', [DashboardController::class, 'calendarPdf'
     ->middleware(['auth', 'verified'])
     ->name('dashboard.calendar.pdf');
 
-Route::get('/uploads/files/{path}', function (string $path) {
-    $disk = Storage::disk('uploads');
-    if (!$disk->exists($path)) {
-        abort(404);
-    }
-
-    $absolutePath = $disk->path($path);
-
-    if (!file_exists($absolutePath)) {
-        abort(404);
-    }
-
-    return response()->file($absolutePath);
-})->where('path', '.*')->name('uploads.serve');
+// Legacy route to serve files by path if ever needed; by default we use /storage URLs
+// with the "public" disk (storage/app/public ↔ public/storage).
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

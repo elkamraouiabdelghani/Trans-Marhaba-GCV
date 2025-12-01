@@ -327,7 +327,7 @@
                                                 <i class="bi bi-eye"></i>
                                             </a>
                                             @php
-                                                $hasChecklist = $changement->check_list_path && \Illuminate\Support\Facades\Storage::disk('uploads')->exists($changement->check_list_path);
+                                                $hasChecklist = $changement->check_list_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($changement->check_list_path);
                                                 $step5 = $changement->getStep(5);
                                                 $canAccessChecklist = $step5 && $step5->isValidated();
                                             @endphp

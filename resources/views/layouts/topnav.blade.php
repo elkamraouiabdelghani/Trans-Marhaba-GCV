@@ -30,6 +30,8 @@
                     {{ __('messages.tbt_formations') }}
                 @elseif(request()->routeIs('driver-handovers.*') || request()->routeIs('driver-handovers.index') || request()->routeIs('driver-handovers.create') || request()->routeIs('driver-handovers.edit') || request()->routeIs('driver-handovers.show'))
                     {{ __('messages.driver_handovers') }}
+                @elseif(request()->routeIs('export-center.*'))
+                    {{ __('messages.export_center') }}
                 @else
                     {{ __('messages.brand') }}
                 @endif
@@ -46,7 +48,7 @@
                 <a href="{{ route('violations.index') }}" class="nav-link text-dark">{{ __('messages.violations') }}</a>
             </li>
             <li class="nav-item">
-                <a href="#" class="nav-link text-dark">{{ __('messages.reports') }}</a>
+                <a href="{{ route('export-center.index') }}" class="nav-link text-dark">{{ __('messages.export_center') }}</a>
             </li>
         </ul>
         {{-- language switcher --}}

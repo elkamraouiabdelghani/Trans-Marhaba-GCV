@@ -10,9 +10,6 @@ use App\Models\Formation;
 use App\Models\Flotte;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
-use Illuminate\View\View;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -871,13 +868,13 @@ class FormationProcessController extends Controller
         try {
             // Handle trainer contract upload
             if ($request->hasFile('trainer_contract')) {
-                $contractPath = $request->file('trainer_contract')->store('formation/contracts', 'uploads');
+                $contractPath = $request->file('trainer_contract')->store('formation/contracts', 'public');
                 $validated['trainer_contract_path'] = $contractPath;
             }
 
             // Handle training program upload
             if ($request->hasFile('training_program')) {
-                $programPath = $request->file('training_program')->store('formation/programs', 'uploads');
+                $programPath = $request->file('training_program')->store('formation/programs', 'public');
                 $validated['training_program_path'] = $programPath;
             }
 
@@ -898,13 +895,13 @@ class FormationProcessController extends Controller
         try {
             // Handle attendance sheet upload
             if ($request->hasFile('attendance_sheet')) {
-                $attendancePath = $request->file('attendance_sheet')->store('formation/attendance', 'uploads');
+                $attendancePath = $request->file('attendance_sheet')->store('formation/attendance', 'public');
                 $validated['attendance_sheet_path'] = $attendancePath;
             }
 
             // Handle training materials upload
             if ($request->hasFile('training_materials')) {
-                $materialsPath = $request->file('training_materials')->store('formation/materials', 'uploads');
+                $materialsPath = $request->file('training_materials')->store('formation/materials', 'public');
                 $validated['training_materials_path'] = $materialsPath;
             }
 
@@ -925,7 +922,7 @@ class FormationProcessController extends Controller
         try {
             // Handle completion certificate upload
             if ($request->hasFile('completion_certificate')) {
-                $certificatePath = $request->file('completion_certificate')->store('formation/certificates', 'uploads');
+                $certificatePath = $request->file('completion_certificate')->store('formation/certificates', 'public');
                 $validated['completion_certificate_path'] = $certificatePath;
             }
 
@@ -1107,8 +1104,8 @@ class FormationProcessController extends Controller
             $pdf = Pdf::loadView('formations.processes.reports.summary', $data)->setPaper('a4');
 
             $directory = 'formation-reports';
-            if (!Storage::disk('uploads')->exists($directory)) {
-                Storage::disk('uploads')->makeDirectory($directory);
+            if (!Storage::disk('public')->exists($directory)) {
+                Storage::disk('public')->makeDirectory($directory);
             }
 
             $fileName = sprintf(
@@ -1118,7 +1115,7 @@ class FormationProcessController extends Controller
                 now()->format('YmdHis')
             );
 
-            Storage::disk('uploads')->put($fileName, $pdf->output());
+            Storage::disk('public')->put($fileName, $pdf->output());
 
             Log::info('Formation report generated', [
                 'formation_process_id' => $formationProcess->id,

@@ -198,7 +198,7 @@ class DriverViolationController extends Controller
                 $files = $request->file('document');
                 $file = is_array($files) ? reset($files) : $files;
                 if ($file) {
-                    $documentPath = $file->store('violations/documents', 'uploads');
+                    $documentPath = $file->store('violations/documents', 'public');
                     $validated['document_path'] = $documentPath;
                 }
             }
@@ -210,7 +210,7 @@ class DriverViolationController extends Controller
             // Handle evidence upload for inline action-plan fields
             if ($request->hasFile('evidence')) {
                 $file = $request->file('evidence');
-                $path = $file->store('violations/evidence', 'uploads');
+                $path = $file->store('violations/evidence', 'public');
                 $validated['evidence_path'] = $path;
                 $validated['evidence_original_name'] = $file->getClientOriginalName();
             }
@@ -352,22 +352,22 @@ class DriverViolationController extends Controller
                 $files = $request->file('document');
                 $file = is_array($files) ? reset($files) : $files;
                 if ($file) {
-                    if ($driverViolation->document_path && Storage::disk('uploads')->exists($driverViolation->document_path)) {
-                        Storage::disk('uploads')->delete($driverViolation->document_path);
+                    if ($driverViolation->document_path && Storage::disk('public')->exists($driverViolation->document_path)) {
+                        Storage::disk('public')->delete($driverViolation->document_path);
                     }
-                    $documentPath = $file->store('violations/documents', 'uploads');
+                    $documentPath = $file->store('violations/documents', 'public');
                     $validated['document_path'] = $documentPath;
                 }
             }
 
             // Handle evidence upload/update
             if ($request->hasFile('evidence')) {
-                if ($driverViolation->evidence_path && Storage::disk('uploads')->exists($driverViolation->evidence_path)) {
-                    Storage::disk('uploads')->delete($driverViolation->evidence_path);
+                if ($driverViolation->evidence_path && Storage::disk('public')->exists($driverViolation->evidence_path)) {
+                    Storage::disk('public')->delete($driverViolation->evidence_path);
                 }
 
                 $file = $request->file('evidence');
-                $path = $file->store('violations/evidence', 'uploads');
+                $path = $file->store('violations/evidence', 'public');
                 $validated['evidence_path'] = $path;
                 $validated['evidence_original_name'] = $file->getClientOriginalName();
             }
@@ -392,12 +392,12 @@ class DriverViolationController extends Controller
     {
         try {
             // Delete document if exists
-            if ($driverViolation->document_path && Storage::disk('uploads')->exists($driverViolation->document_path)) {
-                Storage::disk('uploads')->delete($driverViolation->document_path);
+            if ($driverViolation->document_path && Storage::disk('public')->exists($driverViolation->document_path)) {
+                Storage::disk('public')->delete($driverViolation->document_path);
             }
 
-            if ($driverViolation->evidence_path && Storage::disk('uploads')->exists($driverViolation->evidence_path)) {
-                Storage::disk('uploads')->delete($driverViolation->evidence_path);
+            if ($driverViolation->evidence_path && Storage::disk('public')->exists($driverViolation->evidence_path)) {
+                Storage::disk('public')->delete($driverViolation->evidence_path);
             }
 
             $driverViolation->delete();
@@ -478,7 +478,7 @@ class DriverViolationController extends Controller
     public function downloadDocument(DriverViolation $driverViolation)
     {
         try {
-            if (!$driverViolation->document_path || !Storage::disk('uploads')->exists($driverViolation->document_path)) {
+            if (!$driverViolation->document_path || !Storage::disk('public')->exists($driverViolation->document_path)) {
                 return redirect()
                     ->route('violations.show', $driverViolation)
                     ->with('error', __('messages.violation_document_not_found'));
@@ -490,7 +490,7 @@ class DriverViolationController extends Controller
                 pathinfo($driverViolation->document_path, PATHINFO_EXTENSION)
             );
 
-            $filePath = Storage::disk('uploads')->path($driverViolation->document_path);
+            $filePath = Storage::disk('public')->path($driverViolation->document_path);
             return response()->download($filePath, $fileName);
         } catch (Throwable $exception) {
             report($exception);
@@ -504,7 +504,7 @@ class DriverViolationController extends Controller
     public function downloadActionEvidence(DriverViolation $driverViolation)
     {
         try {
-            if (!$driverViolation->evidence_path || !Storage::disk('uploads')->exists($driverViolation->evidence_path)) {
+            if (!$driverViolation->evidence_path || !Storage::disk('public')->exists($driverViolation->evidence_path)) {
                 return redirect()
                     ->route('violations.show', $driverViolation)
                     ->with('error', __('messages.violation_evidence_not_found'));
@@ -518,7 +518,7 @@ class DriverViolationController extends Controller
                     pathinfo($driverViolation->evidence_path, PATHINFO_EXTENSION)
                 );
 
-            return response()->download(Storage::disk('uploads')->path($driverViolation->evidence_path), $downloadName);
+            return response()->download(Storage::disk('public')->path($driverViolation->evidence_path), $downloadName);
         } catch (Throwable $exception) {
             report($exception);
 

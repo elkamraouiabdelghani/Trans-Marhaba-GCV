@@ -152,7 +152,7 @@
                         <i class="bi bi-file-earmark-text me-2"></i>
                         {{ __('messages.formation_report_available') ?? 'Rapport de formation disponible.' }}
                     </div>
-                    <a href="{{ \Illuminate\Support\Facades\Storage::disk('uploads')->url($stepData['report_path']) }}"
+                    <a href="{{ asset('storage/' . $stepData['report_path']) }}"
                        class="btn btn-outline-primary btn-sm"
                        target="_blank"
                        rel="noopener">

@@ -5,13 +5,19 @@
 
     <div class="container-fluid py-4">
         <!-- Breadcrumb -->
-        <nav aria-label="breadcrumb" class="mb-4">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">{{ __('messages.dashboard') }}</a></li>
-                <li class="breadcrumb-item"><a href="{{ route('drivers.index') }}">{{ __('messages.drivers') }}</a></li>
-                <li class="breadcrumb-item"><a href="{{ route('drivers.show', $driver) }}">{{ $driver->full_name ?? __('messages.driver_number') . $driver->id }}</a></li>
-                <li class="breadcrumb-item active">{{ __('messages.edit') }}</li>
-            </ol>
+        <nav aria-label="breadcrumb" class="p-3 mb-4 rounded-3 shadow-sm bg-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">{{ __('messages.dashboard') }}</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('drivers.index') }}">{{ __('messages.drivers') }}</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('drivers.show', $driver) }}">{{ $driver->full_name ?? __('messages.driver_number') . $driver->id }}</a></li>
+                    <li class="breadcrumb-item active">{{ __('messages.edit') }}</li>
+                </ol>
+                <a href="{{ route('drivers.show', $driver) }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-arrow-left me-1"></i>
+                    {{ __('messages.back') }}
+                </a>
+            </div>
         </nav>
 
         <!-- Success/Error Messages -->
@@ -39,10 +45,6 @@
                         <i class="bi bi-pencil-square me-2 text-primary"></i>
                         {{ __('messages.edit_driver') }}: {{ $driver->full_name ?? __('messages.driver_number') . $driver->id }}
                     </h5>
-                    <a href="{{ route('drivers.show', $driver) }}" class="btn btn-outline-secondary btn-sm">
-                        <i class="bi bi-arrow-left me-1"></i>
-                        {{ __('messages.back') }}
-                    </a>
                 </div>
             </div>
             <div class="card-body p-4">
@@ -159,7 +161,7 @@
                             @if($driver->profile_photo_path)
                                 <div class="d-flex align-items-center gap-3 mt-2">
                                     @if($driver->profile_photo_path)
-                                    <img src="{{ $driver->profile_photo_path ? asset('uploads/' . $driver->profile_photo_path) : asset('images/default-profile.png') }}" 
+                                    <img src="{{ $driver->profile_photo_path ? asset('storage/' . $driver->profile_photo_path) : asset('images/default-profile.png') }}" 
                                          alt="{{ $driver->full_name ?? __('messages.profile_photo') }}" 
                                          class="rounded-circle" 
                                          style="width: 70px; height: 70px; object-fit: cover;">
@@ -442,7 +444,7 @@
                                             $isImage = in_array($extension, ['png','jpg','jpeg','gif','bmp','webp']);
                                             $isUrl = $path && filter_var($path, FILTER_VALIDATE_URL);
                                             $previewUrl = $path
-                                                ? ($isUrl ? $path : Storage::disk('uploads')->url($path))
+                                                ? ($isUrl ? $path : asset('storage/' . $path))
                                                 : null;
                                             $token = $path ? rtrim(strtr(base64_encode($path), '+/', '-_'), '=') : null;
                                             $viewUrl = $token ? route('drivers.documents.show', ['driver' => $driver->id, 'document' => $token]) : null;
@@ -497,7 +499,6 @@
                             </div>
                         @endif
 
-                        <label class="form-label fw-semibold">{{ __('messages.upload_documents') }}</label>
                         <div class="file-upload-area @error('documents') is-invalid @enderror"
                              id="fileUploadArea"
                              ondrop="handleDrop(event)"
@@ -549,7 +550,6 @@
                         {{ __('messages.notes') }}
                     </h6>
                     <div class="mb-4">
-                        <label for="notes" class="form-label">{{ __('messages.notes') }}</label>
                         <textarea class="form-control @error('notes') is-invalid @enderror" 
                                   id="notes" 
                                   name="notes" 

@@ -146,7 +146,7 @@
                                     <td class="px-4">
                                         <div class="d-flex align-items-center">
                                             @if($user->profile_photo_path)
-                                                <img src="{{ $user->profile_photo_path ? asset('uploads/' . $user->profile_photo_path) : asset('images/default-profile.png') }}" alt="{{ $user->name }}" class="rounded-circle me-3" style="width: 40px; height: 40px; object-fit: cover;">
+                                                <img src="{{ $user->profile_photo_path ? asset('storage/' . $user->profile_photo_path) : asset('images/default-profile.png') }}" alt="{{ $user->name }}" class="rounded-circle me-3" style="width: 40px; height: 40px; object-fit: cover;">
                                             @else
                                                 <div class="bg-primary bg-opacity-10 rounded-circle px-2 py-1 me-3">
                                                     <i class="bi bi-person text-primary"></i>

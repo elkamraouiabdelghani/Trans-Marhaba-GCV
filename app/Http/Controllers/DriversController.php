@@ -16,15 +16,12 @@ use App\Models\DriverActivity;
 use App\Models\Formation;
 use App\Models\ViolationType;
 use Illuminate\Support\Collection;
-use Illuminate\View\View;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -561,7 +558,7 @@ class DriversController extends Controller
 
             $dueDate = Carbon::parse($data['due_at'])->startOfDay();
 
-            $reportPath = $request->file('report_file')->store('driver-formations/reports', 'uploads');
+            $reportPath = $request->file('report_file')->store('driver-formations/reports', 'public');
 
             DriverFormation::create([
                 'driver_id' => $driver->id,
@@ -1679,7 +1676,7 @@ class DriversController extends Controller
             $path = $driverFormation->certificate_path;
             $disk = null;
 
-            if (Storage::disk('uploads')->exists($path)) {
+            if (Storage::disk('public')->exists($path)) {
                 $disk = 'uploads';
             } elseif (Storage::disk('public')->exists($path)) {
                 $disk = 'public';
@@ -1724,13 +1721,13 @@ class DriversController extends Controller
             $existingPhotoPath = $driver->profile_photo_path;
 
             if ($request->hasFile('profile_photo')) {
-                if ($existingPhotoPath && Storage::disk('uploads')->exists($existingPhotoPath)) {
-                    Storage::disk('uploads')->delete($existingPhotoPath);
+                if ($existingPhotoPath && Storage::disk('public')->exists($existingPhotoPath)) {
+                    Storage::disk('public')->delete($existingPhotoPath);
                 }
-                $validated['profile_photo_path'] = $request->file('profile_photo')->store('profiles/drivers', 'uploads');
+                $validated['profile_photo_path'] = $request->file('profile_photo')->store('profiles/drivers', 'public');
             } elseif ($request->boolean('remove_photo')) {
-                if ($existingPhotoPath && Storage::disk('uploads')->exists($existingPhotoPath)) {
-                    Storage::disk('uploads')->delete($existingPhotoPath);
+                if ($existingPhotoPath && Storage::disk('public')->exists($existingPhotoPath)) {
+                    Storage::disk('public')->delete($existingPhotoPath);
                 }
                 $validated['profile_photo_path'] = null;
             } elseif ($existingPhotoPath) {
@@ -1922,7 +1919,7 @@ class DriversController extends Controller
             $path = $file->storeAs(
                 "drivers/documents/{$driver->id}",
                 $filename,
-                'uploads'
+                'public'
             );
 
             $documents[] = [
@@ -2039,8 +2036,8 @@ class DriversController extends Controller
             }
 
             try {
-                if (Storage::disk('uploads')->exists($path)) {
-                    Storage::disk('uploads')->delete($path);
+                if (Storage::disk('public')->exists($path)) {
+                    Storage::disk('public')->delete($path);
                 }
             } catch (\Throwable $e) {
                 Log::warning('Failed to delete driver document file', [
@@ -2064,7 +2061,7 @@ class DriversController extends Controller
 
             $path = $documentData['path'];
             /** @var \Illuminate\Filesystem\FilesystemAdapter $disk */
-            $disk = Storage::disk('uploads');
+            $disk = Storage::disk('public');
 
             if (!$disk->exists($path)) {
                 abort(404);
@@ -2147,8 +2144,8 @@ class DriversController extends Controller
             $document = $documents[$index];
             
             // Delete file from storage if path exists
-            if (isset($document['path']) && Storage::disk('uploads')->exists($document['path'])) {
-                Storage::disk('uploads')->delete($document['path']);
+            if (isset($document['path']) && Storage::disk('public')->exists($document['path'])) {
+                Storage::disk('public')->delete($document['path']);
             }
 
             // Remove document from array
@@ -2174,5 +2171,3 @@ class DriversController extends Controller
         }
     }
 }
-
-

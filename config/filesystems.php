@@ -47,14 +47,7 @@ return [
             'report' => false,
         ],
 
-        'uploads' => [
-            'driver' => 'local',
-            'root' => public_path('uploads'),
-            'url' => env('APP_URL').'/uploads',
-            'visibility' => 'public',
-            'throw' => false,
-            'report' => false,
-        ],
+        // You can add more custom disks here if needed.
 
         's3' => [
             'driver' => 's3',

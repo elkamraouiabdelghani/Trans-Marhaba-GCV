@@ -176,9 +176,9 @@ class DriverHandoverController extends Controller
         $driver_handover->update($data);
 
         // Delete old PDF file if it exists
-        if ($oldPdfPath && Storage::disk('uploads')->exists($oldPdfPath)) {
+        if ($oldPdfPath && Storage::disk('public')->exists($oldPdfPath)) {
             try {
-                Storage::disk('uploads')->delete($oldPdfPath);
+                Storage::disk('public')->delete($oldPdfPath);
             } catch (\Exception $e) {
                 Log::warning('Failed to delete old handover PDF', [
                     'handover_id' => $driver_handover->id,
@@ -293,7 +293,7 @@ class DriverHandoverController extends Controller
     public function destroy(DriverHandover $driver_handover)
     {
         if ($driver_handover->handover_file_path) {
-            Storage::disk('uploads')->delete($driver_handover->handover_file_path);
+            Storage::disk('public')->delete($driver_handover->handover_file_path);
         }
 
         $driver_handover->delete();
@@ -378,14 +378,14 @@ class DriverHandoverController extends Controller
                     }
                     
                     if ($file && $file->isValid()) {
-                        $path = $file->store('driver-handovers/documents', 'uploads');
+                        $path = $file->store('driver-handovers/documents', 'public');
                         $documents["{$key}_image"] = $path;
                         
                         // Delete old image if updating
                         if ($handover && isset($handover->documents["{$key}_image"])) {
                             $oldPath = $handover->documents["{$key}_image"];
-                            if (Storage::disk('uploads')->exists($oldPath)) {
-                                Storage::disk('uploads')->delete($oldPath);
+                            if (Storage::disk('public')->exists($oldPath)) {
+                                Storage::disk('public')->delete($oldPath);
                             }
                         }
                     }
@@ -399,7 +399,7 @@ class DriverHandoverController extends Controller
                     
                     foreach ($images['options'] as $rowKey => $file) {
                         if ($file && $file->isValid()) {
-                            $path = $file->store('driver-handovers/documents', 'uploads');
+                            $path = $file->store('driver-handovers/documents', 'public');
                             
                             if (!isset($documents['options'][$rowKey])) {
                                 $documents['options'][$rowKey] = [];
@@ -410,8 +410,8 @@ class DriverHandoverController extends Controller
                             // Delete old image if updating
                             if ($handover && isset($handover->documents['options'][$rowKey]['image'])) {
                                 $oldPath = $handover->documents['options'][$rowKey]['image'];
-                                if (Storage::disk('uploads')->exists($oldPath)) {
-                                    Storage::disk('uploads')->delete($oldPath);
+                                if (Storage::disk('public')->exists($oldPath)) {
+                                    Storage::disk('public')->delete($oldPath);
                                 }
                             }
                         }
@@ -435,14 +435,14 @@ class DriverHandoverController extends Controller
             if ($request->hasFile('equipment_images')) {
                 foreach ($request->file('equipment_images') as $key => $file) {
                     if ($file && $file->isValid()) {
-                        $path = $file->store('driver-handovers/equipment', 'uploads');
+                        $path = $file->store('driver-handovers/equipment', 'public');
                         $equipment["{$key}_image"] = $path;
                         
                         // Delete old image if updating
                         if ($handover && isset($handover->equipment["{$key}_image"])) {
                             $oldPath = $handover->equipment["{$key}_image"];
-                            if (Storage::disk('uploads')->exists($oldPath)) {
-                                Storage::disk('uploads')->delete($oldPath);
+                            if (Storage::disk('public')->exists($oldPath)) {
+                                Storage::disk('public')->delete($oldPath);
                             }
                         }
                     }
@@ -454,10 +454,10 @@ class DriverHandoverController extends Controller
 
         if ($request->hasFile('handover_file')) {
             if ($handover && $handover->handover_file_path) {
-                Storage::disk('uploads')->delete($handover->handover_file_path);
+                Storage::disk('public')->delete($handover->handover_file_path);
             }
 
-            $data['handover_file_path'] = $request->file('handover_file')->store('driver-handovers', 'uploads');
+            $data['handover_file_path'] = $request->file('handover_file')->store('driver-handovers', 'public');
         }
 
         return $data;

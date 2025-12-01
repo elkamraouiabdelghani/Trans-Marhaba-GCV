@@ -6,13 +6,10 @@ use App\Models\Changement;
 use App\Models\ChangementStep;
 use App\Models\ChangementChecklistResult;
 use App\Models\ChangementType;
-use App\Models\PrincipaleCretaire;
 use App\Models\SousCretaire;
 use App\Models\Driver;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\View\View;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -23,7 +20,7 @@ class ChangementController extends Controller
     /**
      * Display a listing of all changements.
      */
-    public function index(Request $request): View|RedirectResponse
+    public function index(Request $request)
     {
         try {
             $query = Changement::query()
@@ -90,7 +87,7 @@ class ChangementController extends Controller
     /**
      * Show the form for creating a new changement (Step 1).
      */
-    public function create(): View
+    public function create()
     {
         $changementTypes = ChangementType::where('is_active', true)
             ->orderBy('name')
@@ -117,7 +114,7 @@ class ChangementController extends Controller
     /**
      * Store a newly created changement (Step 1 data).
      */
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request)
     {
         $validated = $request->validate([
             'changement_type_id' => ['required', 'exists:changement_types,id'],
@@ -202,7 +199,7 @@ class ChangementController extends Controller
     /**
      * Display the specified changement progress.
      */
-    public function show(Changement $changement): View|RedirectResponse
+    public function show(Changement $changement)
     {
         try {
             $changement->load(['steps', 'changementType', 'subject']);
@@ -236,7 +233,7 @@ class ChangementController extends Controller
     /**
      * Display a specific step form.
      */
-    public function step(Changement $changement, int $stepNumber): View|RedirectResponse
+    public function step(Changement $changement, int $stepNumber)
     {
         try {
             // Validate step number
@@ -323,7 +320,7 @@ class ChangementController extends Controller
     /**
      * Save step data.
      */
-    public function saveStep(Request $request, Changement $changement, int $stepNumber): RedirectResponse
+    public function saveStep(Request $request, Changement $changement, int $stepNumber)
     {
         try {
             // Validate step number
@@ -442,7 +439,7 @@ class ChangementController extends Controller
     /**
      * Validate a step.
      */
-    public function validateStep(Request $request, Changement $changement, int $stepNumber): RedirectResponse
+    public function validateStep(Request $request, Changement $changement, int $stepNumber)
     {
         try {
             // Refresh changement to ensure we have latest data
@@ -505,7 +502,7 @@ class ChangementController extends Controller
     /**
      * Reject a step.
      */
-    public function rejectStep(Request $request, Changement $changement, int $stepNumber): RedirectResponse
+    public function rejectStep(Request $request, Changement $changement, int $stepNumber)
     {
         try {
             $step = $changement->getStep($stepNumber);
@@ -544,7 +541,7 @@ class ChangementController extends Controller
     /**
      * Display the checklist page (Step 6).
      */
-    public function checklist(Changement $changement): View|RedirectResponse
+    public function checklist(Changement $changement)
     {
         try {
             // Ensure step 5 is validated
@@ -584,7 +581,7 @@ class ChangementController extends Controller
     /**
      * Save checklist results and generate PDF.
      */
-    public function saveChecklist(Request $request, Changement $changement): RedirectResponse
+    public function saveChecklist(Request $request, Changement $changement)
     {
         try {
             // Ensure step 5 is validated
@@ -606,8 +603,8 @@ class ChangementController extends Controller
             // Delete old checklist if it exists
             if ($changement->check_list_path) {
                 // Delete old PDF file from uploads folder
-                if (Storage::disk('uploads')->exists($changement->check_list_path)) {
-                    Storage::disk('uploads')->delete($changement->check_list_path);
+                if (Storage::disk('public')->exists($changement->check_list_path)) {
+                    Storage::disk('public')->delete($changement->check_list_path);
                 }
             }
 
@@ -686,14 +683,14 @@ class ChangementController extends Controller
     public function downloadChecklist(Changement $changement)
     {
         try {
-            if (!$changement->check_list_path || !Storage::disk('uploads')->exists($changement->check_list_path)) {
+            if (!$changement->check_list_path || !Storage::disk('public')->exists($changement->check_list_path)) {
                 return redirect()
                     ->route('changements.show', $changement->id)
                     ->with('error', __('messages.changements_checklist_not_found'));
             }
 
             $fileName = sprintf('checklist-changement-%d-%s.pdf', $changement->id, now()->format('YmdHis'));
-            $filePath = Storage::disk('uploads')->path($changement->check_list_path);
+            $filePath = Storage::disk('public')->path($changement->check_list_path);
 
             return response()->download($filePath, $fileName);
         } catch (Throwable $e) {
@@ -711,7 +708,7 @@ class ChangementController extends Controller
     /**
      * Finalize changement process.
      */
-    public function finalize(Changement $changement): RedirectResponse
+    public function finalize(Changement $changement)
     {
         try {
             // Check if Step 6 (checklist) is validated

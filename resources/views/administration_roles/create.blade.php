@@ -10,7 +10,6 @@
                     <i class="bi bi-person-plus me-2 text-primary"></i>
                     {{ __('messages.create_new_user') ?? 'Create New User' }}
                 </h5>
-                <small class="text-muted">{{ __('messages.create_user_description') ?? 'Add a new administrative user to the system' }}</small>
             </div>
             <a href="{{ route('administration-roles.index') }}" class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-arrow-left me-1"></i>{{ __('messages.back') }}

@@ -281,8 +281,8 @@ class TurnoverController extends Controller
         ]);
 
         try {
-            if ($turnover->turnover_pdf_path && Storage::disk('uploads')->exists($turnover->turnover_pdf_path)) {
-                Storage::disk('uploads')->delete($turnover->turnover_pdf_path);
+            if ($turnover->turnover_pdf_path && Storage::disk('public')->exists($turnover->turnover_pdf_path)) {
+                Storage::disk('public')->delete($turnover->turnover_pdf_path);
             }
 
             $turnover->refresh();
@@ -312,7 +312,7 @@ class TurnoverController extends Controller
      */
     public function downloadInterviewPdf(Turnover $turnover)
     {
-        if (!$turnover->turnover_pdf_path || !Storage::disk('uploads')->exists($turnover->turnover_pdf_path)) {
+        if (!$turnover->turnover_pdf_path || !Storage::disk('public')->exists($turnover->turnover_pdf_path)) {
             return redirect()
                 ->back()
                 ->with('error', __('messages.exit_interview_pdf_not_found'));
@@ -320,7 +320,7 @@ class TurnoverController extends Controller
 
         $fileName = sprintf('exit-interview-%d.pdf', $turnover->id);
 
-        return response()->download(Storage::disk('uploads')->path($turnover->turnover_pdf_path), $fileName);
+        return response()->download(Storage::disk('public')->path($turnover->turnover_pdf_path), $fileName);
     }
 
     /**

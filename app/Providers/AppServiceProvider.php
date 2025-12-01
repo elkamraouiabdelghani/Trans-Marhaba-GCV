@@ -20,10 +20,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        $uploadsPath = public_path('uploads');
-
-        if (!File::exists($uploadsPath)) {
-            File::makeDirectory($uploadsPath, 0755, true);
-        }
+        // No storage-specific boot logic needed; we rely on the default "public" disk
+        // (storage/app/public ↔ public/storage via `php artisan storage:link`).
     }
 }

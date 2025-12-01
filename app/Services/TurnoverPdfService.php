@@ -76,8 +76,8 @@ class TurnoverPdfService
         $directory = 'turnover-reports';
         $storagePath = $directory . '/' . $fileName;
 
-        Storage::disk('uploads')->makeDirectory($directory);
-        Storage::disk('uploads')->put($storagePath, $pdf->output());
+        Storage::disk('public')->makeDirectory($directory);
+        Storage::disk('public')->put($storagePath, $pdf->output());
 
         return $storagePath;
     }

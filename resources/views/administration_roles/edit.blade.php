@@ -10,7 +10,6 @@
                     <i class="bi bi-person-lines-fill me-2 text-primary"></i>
                     {{ __('messages.edit') }} — {{ $user->name }}
                 </h5>
-                <small class="text-muted">{{ __('messages.update_user_details') ?? __('messages.update') }}</small>
             </div>
             <a href="{{ route('administration-roles.show', $user) }}" class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-arrow-left me-1"></i>{{ __('messages.back') }}
@@ -133,7 +132,7 @@
                                     @if($user->profile_photo_path)
                                         <div class="d-flex align-items-center gap-3 mt-2">
                                             @if($user->profile_photo_path)
-                                            <img src="{{ $user->profile_photo_path ? asset('uploads/' . $user->profile_photo_path) : asset('images/default-profile.png') }}" 
+                                            <img src="{{ $user->profile_photo_path ? asset('storage/' . $user->profile_photo_path) : asset('images/default-profile.png') }}" 
                                                  alt="{{ $user->name }}" 
                                                  class="rounded-circle" 
                                                  style="width: 70px; height: 70px; object-fit: cover;">

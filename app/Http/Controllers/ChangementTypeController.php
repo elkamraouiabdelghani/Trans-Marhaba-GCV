@@ -3,14 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\ChangementType;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\View\View;
 use Throwable;
 
 class ChangementTypeController extends Controller
 {
-    public function index(): View|RedirectResponse
+    public function index()
     {
         try {
             $changementTypes = ChangementType::withCount('principaleCretaires')
@@ -25,7 +23,7 @@ class ChangementTypeController extends Controller
         }
     }
 
-    public function create(): View|RedirectResponse
+    public function create()
     {
         try {
             return view('changements.changement_types.create');
@@ -36,7 +34,7 @@ class ChangementTypeController extends Controller
         }
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request)
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -59,7 +57,7 @@ class ChangementTypeController extends Controller
         }
     }
 
-    public function show(ChangementType $changementType): View|RedirectResponse
+    public function show(ChangementType $changementType)
     {
         try {
             $changementType->load('principaleCretaires.sousCretaires');
@@ -72,7 +70,7 @@ class ChangementTypeController extends Controller
         }
     }
 
-    public function edit(ChangementType $changementType): View|RedirectResponse
+    public function edit(ChangementType $changementType)
     {
         try {
             return view('changements.changement_types.edit', compact('changementType'));
@@ -83,7 +81,7 @@ class ChangementTypeController extends Controller
         }
     }
 
-    public function update(Request $request, ChangementType $changementType): RedirectResponse
+    public function update(Request $request, ChangementType $changementType)
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -114,7 +112,7 @@ class ChangementTypeController extends Controller
         }
     }
 
-    public function destroy(ChangementType $changementType): RedirectResponse
+    public function destroy(ChangementType $changementType)
     {
         try {
             if ($changementType->principaleCretaires()->exists()) {
