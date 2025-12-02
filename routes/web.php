@@ -20,6 +20,7 @@ use App\Http\Controllers\TbtFormationController;
 use App\Http\Controllers\ViolationTypeController;
 use App\Http\Controllers\DriverViolationController;
 use App\Http\Controllers\ExportCenterController;
+use App\Http\Controllers\RestPointController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Storage;
@@ -43,8 +44,6 @@ Route::get('/dashboard/calendar/pdf', [DashboardController::class, 'calendarPdf'
     ->middleware(['auth', 'verified'])
     ->name('dashboard.calendar.pdf');
 
-// Legacy route to serve files by path if ever needed; by default we use /storage URLs
-// with the "public" disk (storage/app/public ↔ public/storage).
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -203,11 +202,16 @@ Route::middleware('auth')->group(function () {
     Route::post('/driver-handovers/{driver_handover}/confirm', [DriverHandoverController::class, 'confirm'])->name('driver-handovers.confirm');
 
     // Export Center
-    Route::get('/export-center', [\App\Http\Controllers\ExportCenterController::class, 'index'])->name('export-center.index');
-    Route::get('/export-center/violations/export', [\App\Http\Controllers\ExportCenterController::class, 'exportViolations'])->name('export-center.violations.export');
-    Route::get('/export-center/violations/export-pdf', [\App\Http\Controllers\ExportCenterController::class, 'exportViolationsPdf'])->name('export-center.violations.export-pdf');
-    Route::get('/export-center/driving-times/export', [\App\Http\Controllers\ExportCenterController::class, 'exportDrivingTimes'])->name('export-center.driving-times.export');
-    Route::get('/export-center/driving-times/export-pdf', [\App\Http\Controllers\ExportCenterController::class, 'exportDrivingTimesPdf'])->name('export-center.driving-times.export-pdf');
+    Route::get('/export-center', [ExportCenterController::class, 'index'])->name('export-center.index');
+    Route::get('/export-center/violations/export', [ExportCenterController::class, 'exportViolations'])->name('export-center.violations.export');
+    Route::get('/export-center/violations/export-pdf', [ExportCenterController::class, 'exportViolationsPdf'])->name('export-center.violations.export-pdf');
+    Route::get('/export-center/driving-times/export', [ExportCenterController::class, 'exportDrivingTimes'])->name('export-center.driving-times.export');
+    Route::get('/export-center/driving-times/export-pdf', [ExportCenterController::class, 'exportDrivingTimesPdf'])->name('export-center.driving-times.export-pdf');
+    
+    // Rest Points
+    Route::get('/rest-points/export', [RestPointController::class, 'export'])->name('rest-points.export');
+    Route::match(['get', 'post'], '/rest-points/export-pdf', [RestPointController::class, 'exportPdf'])->name('rest-points.export-pdf');
+    Route::resource('rest-points', RestPointController::class)->except(['create', 'edit', 'show']);
     
 });
 

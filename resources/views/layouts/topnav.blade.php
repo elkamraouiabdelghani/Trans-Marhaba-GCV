@@ -32,6 +32,8 @@
                     {{ __('messages.driver_handovers') }}
                 @elseif(request()->routeIs('export-center.*'))
                     {{ __('messages.export_center') }}
+                @elseif(request()->routeIs('rest-points.*'))
+                    {{ __('messages.rest_points') }}
                 @else
                     {{ __('messages.brand') }}
                 @endif
@@ -40,6 +42,9 @@
         <ul class="nav">
             <li class="nav-item">
                 <a href="{{ route('dashboard') }}" class="nav-link text-dark">{{ __('messages.dashboard') }}</a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('rest-points.index') }}" class="nav-link text-dark">{{ __('messages.rest_points') }}</a>
             </li>
             <li class="nav-item">
                 <a href="{{ route('drivers.index') }}" class="nav-link text-dark">{{ __('messages.drivers') }}</a>
