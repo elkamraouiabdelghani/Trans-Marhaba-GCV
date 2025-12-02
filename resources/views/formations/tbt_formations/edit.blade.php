@@ -194,7 +194,7 @@
                                                 @endphp
                                                 @if($path)
                                                     <li class="d-flex align-items-center mb-1">
-                                                        <a href="{{ route('uploads.serve', ['path' => $path]) }}" target="_blank" class="me-2">
+                                                        <a href="{{ asset('storage/' . $path) }}" target="_blank" class="me-2">
                                                             <i class="bi bi-file-earmark-text me-1"></i>{{ $name }}
                                                         </a>
                                                     </li>

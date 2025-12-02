@@ -1674,17 +1674,9 @@ class DriversController extends Controller
             }
 
             $path = $driverFormation->certificate_path;
-            $disk = null;
 
-            if (Storage::disk('public')->exists($path)) {
-                $disk = 'uploads';
-            } elseif (Storage::disk('public')->exists($path)) {
-                $disk = 'public';
-            } elseif (Storage::disk(config('filesystems.default'))->exists($path)) {
-                $disk = config('filesystems.default');
-            }
-
-            if (!$disk) {
+            // Certificates are stored on the public disk (default storage folder)
+            if (!Storage::disk('public')->exists($path)) {
                 Log::warning('Certificate file not found on any configured disk', [
                     'driver_formation_id' => $driverFormation->id,
                     'path' => $path,
@@ -1696,7 +1688,7 @@ class DriversController extends Controller
             $fileName = basename($path);
 
             /** @var \Illuminate\Filesystem\FilesystemAdapter $storage */
-            $storage = Storage::disk($disk);
+            $storage = Storage::disk('public');
 
             return $storage->download($path, $fileName);
         } catch (\Throwable $e) {

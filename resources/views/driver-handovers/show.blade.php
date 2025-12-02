@@ -140,7 +140,7 @@
                             @endif
 
                             @if($handover->handover_file_path)
-                                <a href="{{ route('uploads.serve', $handover->handover_file_path) }}" 
+                                <a href="{{ asset('storage/' . $handover->handover_file_path) }}" 
                                    target="_blank" 
                                    class="btn btn-primary btn-sm"
                                    download>
@@ -253,7 +253,7 @@
                                         </td>
                                         <td class="text-center">
                                             @if(isset($documents["{$key}_image"]) && $documents["{$key}_image"])
-                                                <img src="{{ route('uploads.serve', $documents["{$key}_image"]) }}" 
+                                                <img src="{{ asset('storage/' . $documents["{$key}_image"]) }}" 
                                                      alt="Image" 
                                                      class="img-thumbnail" 
                                                      style="max-width: 80px; max-height: 80px; cursor: pointer;"
@@ -278,7 +278,7 @@
                                         </td>
                                         <td class="text-center">
                                             @if(isset($documents["{$key}_image"]) && $documents["{$key}_image"])
-                                                <img src="{{ route('uploads.serve', $documents["{$key}_image"]) }}" 
+                                                <img src="{{ asset('storage/' . $documents["{$key}_image"]) }}" 
                                                      alt="Image" 
                                                      class="img-thumbnail" 
                                                      style="max-width: 80px; max-height: 80px; cursor: pointer;"
@@ -326,7 +326,7 @@
                                         </td>
                                         <td class="text-center">
                                             @if(isset($documents['options']['row_' . $chunkIndex]['image']) && $documents['options']['row_' . $chunkIndex]['image'])
-                                                <img src="{{ route('uploads.serve', $documents['options']['row_' . $chunkIndex]['image']) }}" 
+                                                <img src="{{ asset('storage/' . $documents['options']['row_' . $chunkIndex]['image']) }}" 
                                                      alt="Image" 
                                                      class="img-thumbnail" 
                                                      style="max-width: 80px; max-height: 80px; cursor: pointer;"
@@ -397,7 +397,7 @@
                                     </td>
                                     <td class="text-center">
                                         @if(isset($equipment["{$key}_image"]) && $equipment["{$key}_image"])
-                                            <img src="{{ route('uploads.serve', $equipment["{$key}_image"]) }}" 
+                                            <img src="{{ asset('storage/' . $equipment["{$key}_image"]) }}" 
                                                  alt="Image" 
                                                  class="img-thumbnail" 
                                                  style="max-width: 80px; max-height: 80px; cursor: pointer;"

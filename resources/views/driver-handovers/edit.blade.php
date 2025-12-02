@@ -210,7 +210,7 @@
                                         <td>
                                             @if(isset($documents["{$key}_image"]) && $documents["{$key}_image"])
                                                 <div class="mb-2">
-                                                    <img src="{{ route('uploads.serve', $documents["{$key}_image"]) }}" 
+                                                    <img src="{{ asset('storage/' . $documents["{$key}_image"]) }}" 
                                                          alt="Image" 
                                                          class="img-thumbnail" 
                                                          style="max-width: 80px; max-height: 80px;">
@@ -245,7 +245,7 @@
                                         <td>
                                             @if(isset($documents["{$key}_image"]) && $documents["{$key}_image"])
                                                 <div class="mb-2">
-                                                    <img src="{{ route('uploads.serve', $documents["{$key}_image"]) }}" 
+                                                    <img src="{{ asset('storage/' . $documents["{$key}_image"]) }}" 
                                                          alt="Image" 
                                                          class="img-thumbnail" 
                                                          style="max-width: 80px; max-height: 80px;">
@@ -316,7 +316,7 @@
                                     <td>
                                         @if(isset($documents['options']['row_' . $loop->index]['image']) && $documents['options']['row_' . $loop->index]['image'])
                                             <div class="mb-2">
-                                                <img src="{{ route('uploads.serve', $documents['options']['row_' . $loop->index]['image']) }}" 
+                                                <img src="{{ asset('storage/' . $documents['options']['row_' . $loop->index]['image']) }}" 
                                                      alt="Image" 
                                                      class="img-thumbnail" 
                                                      style="max-width: 80px; max-height: 80px;">
@@ -419,15 +419,15 @@
                                                   class="form-control form-control-sm" 
                                                   placeholder="{{ __('messages.observation_placeholder') ?? 'Observation...' }}">{{ old("equipment.{$key}_observation", $equipment["{$key}_observation"] ?? '') }}</textarea>
                                     </td>
-                                    <td>
-                                        @if(isset($equipment["{$key}_image"]) && $equipment["{$key}_image"])
-                                            <div class="mb-2">
-                                                <img src="{{ route('uploads.serve', $equipment["{$key}_image"]) }}" 
-                                                     alt="Image" 
-                                                     class="img-thumbnail" 
-                                                     style="max-width: 80px; max-height: 80px;">
-                                            </div>
-                                        @endif
+                                <td>
+                                    @if(isset($equipment["{$key}_image"]) && $equipment["{$key}_image"])
+                                        <div class="mb-2">
+                                            <img src="{{ asset('storage/' . $equipment["{$key}_image"]) }}" 
+                                                 alt="Image" 
+                                                 class="img-thumbnail" 
+                                                 style="max-width: 80px; max-height: 80px;">
+                                        </div>
+                                    @endif
                                         <input type="file" 
                                                name="equipment_images[{{ $key }}]" 
                                                accept="image/*"

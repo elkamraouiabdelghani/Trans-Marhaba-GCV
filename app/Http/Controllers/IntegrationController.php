@@ -481,7 +481,8 @@ class IntegrationController extends Controller
                         Storage::disk('public')->delete($existingPhotoPath);
                     }
                     $directory = $integration->type === 'driver' ? 'profiles/drivers' : 'profiles/users';
-                    $photoPath = $request->file('photo')->store($directory, 'uploads');
+                    // Store profile photos on the public disk so they are accessible via the default storage folder
+                    $photoPath = $request->file('photo')->store($directory, 'public');
                     $validated['photo_path'] = $photoPath;
                 } elseif ($removePhoto) {
                     if ($existingPhotoPath) {

@@ -192,12 +192,14 @@
                                                     <i class="bi bi-check-circle"></i>
                                                 </button>
                                             @endif
-                                            <a href="{{ route('uploads.serve', $handover->handover_file_path) }}" 
-                                               target="_blank" 
-                                               class="btn btn-sm btn-outline-danger"
-                                               download>
-                                                <i class="bi bi-download"></i>
-                                            </a>
+                                            @if($handover->handover_file_path)
+                                                <a href="{{ asset('storage/' . $handover->handover_file_path) }}" 
+                                                   target="_blank" 
+                                                   class="btn btn-sm btn-outline-danger"
+                                                   download>
+                                                    <i class="bi bi-download"></i>
+                                                </a>
+                                            @endif
                                         </div>
                                     </td>
                                 </tr>

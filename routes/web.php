@@ -43,8 +43,7 @@ Route::get('/dashboard', [DashboardController::class, 'index'])
 Route::get('/dashboard/calendar/pdf', [DashboardController::class, 'calendarPdf'])
     ->middleware(['auth', 'verified'])
     ->name('dashboard.calendar.pdf');
-
-
+    
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
