@@ -58,8 +58,8 @@ class RestPointController extends Controller
 
             $restPoints = $restPointsQuery->paginate(15)->withQueryString();
 
-            // Get all rest points for map (without pagination)
-            $allRestPoints = RestPoint::all();
+            // Get filtered rest points for map (without pagination, but with same filters)
+            $allRestPoints = (clone $restPointsQuery)->get();
 
             return view('rest-points.index', [
                 'restPoints' => $restPoints,
