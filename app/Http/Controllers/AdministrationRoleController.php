@@ -125,6 +125,35 @@ class AdministrationRoleController extends Controller
     }
 
     /**
+     * Serve an administrative user's profile photo through the application.
+     */
+    public function profilePhoto(User $user)
+    {
+        try {
+            $path = $user->profile_photo_path;
+
+            if (! $path) {
+                abort(404);
+            }
+
+            $disk = Storage::disk('public');
+
+            if (! $disk->exists($path)) {
+                abort(404);
+            }
+
+            return response()->file($disk->path($path));
+        } catch (\Throwable $e) {
+            Log::error('Failed to serve admin profile photo', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            abort(500);
+        }
+    }
+
+    /**
      * Show the form for creating a new administrative user.
      */
     public function create()

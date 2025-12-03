@@ -131,14 +131,10 @@
                                     @enderror
                                     @if($user->profile_photo_path)
                                         <div class="d-flex align-items-center gap-3 mt-2">
-                                            @if($user->profile_photo_path)
-                                            <img src="{{ $user->profile_photo_path ? asset('storage/' . $user->profile_photo_path) : asset('images/default-profile.png') }}" 
+                                            <img src="{{ route('administration-roles.profile-photo', $user) }}" 
                                                  alt="{{ $user->name }}" 
                                                  class="rounded-circle" 
                                                  style="width: 70px; height: 70px; object-fit: cover;">
-                                            @else
-                                                <i class="bi bi-person-gear text-primary" style="font-size: 4rem;"></i>
-                                            @endif
 
                                             <div class="form-check">
                                                 <input class="form-check-input"

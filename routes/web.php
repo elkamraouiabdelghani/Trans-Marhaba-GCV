@@ -183,6 +183,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/administration-roles/terminated', [AdministrationRoleController::class, 'terminated'])->name('administration-roles.terminated');
     Route::get('/administration-roles/{user}/edit', [AdministrationRoleController::class, 'edit'])->name('administration-roles.edit');
     Route::put('/administration-roles/{user}', [AdministrationRoleController::class, 'update'])->name('administration-roles.update');
+    Route::get('/administration-roles/{user}/profile-photo', [AdministrationRoleController::class, 'profilePhoto'])->name('administration-roles.profile-photo');
     Route::get('/administration-roles/{user}', [AdministrationRoleController::class, 'show'])->name('administration-roles.show');
     Route::post('/administration-roles/{user}/update-status', [AdministrationRoleController::class, 'updateStatus'])->name('administration-roles.update-status');
 
