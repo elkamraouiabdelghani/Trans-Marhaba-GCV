@@ -1,3 +1,7 @@
+@php
+    use Illuminate\Support\Facades\Storage;
+@endphp
+
 <x-app-layout>
     <x-slot name="header">
         @include('layouts.topnav')
@@ -339,11 +343,14 @@
                                                         </label>
                                                         <div class="row g-2" id="existing_pictures_preview">
                                                             @foreach($existingChecklist->documents as $index => $document)
+                                                                @php
+                                                                    $docUrl = route('rest-points.checklists.document', ['encoded' => base64_encode($document)]);
+                                                                @endphp
                                                                 <div class="col-md-3 col-sm-4 col-6 existing-picture-item" data-index="{{ $index }}">
                                                                     <div class="position-relative">
-                                                                        <img src="{{ asset('storage/' . $document) }}" 
-                                                                             alt="Picture {{ $index + 1 }}" 
-                                                                             class="img-thumbnail w-100" 
+                                                                        <img src="{{ $docUrl }}"
+                                                                             alt="Picture {{ $index + 1 }}"
+                                                                             class="img-thumbnail w-100"
                                                                              style="height: 150px; object-fit: cover;">
                                                                         <button type="button" 
                                                                                 class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1 remove-existing-picture" 
@@ -573,5 +580,3 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 </script>
-
-

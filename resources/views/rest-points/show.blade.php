@@ -1,3 +1,7 @@
+@php
+    use Illuminate\Support\Facades\Storage;
+@endphp
+
 <x-app-layout>
     <x-slot name="header">
         @include('layouts.topnav')
@@ -237,12 +241,15 @@
                         <div class="card-body p-4">
                             <div class="row g-3">
                                 @foreach($checklist->documents as $document)
+                                    @php
+                                        $docUrl = route('rest-points.checklists.document', ['encoded' => base64_encode($document)]);
+                                    @endphp
                                     <div class="col-md-4 col-sm-6">
                                         <div class="card border">
-                                            <a href="{{ asset('storage/' . $document) }}" target="_blank" class="text-decoration-none">
-                                                <img src="{{ asset('storage/' . $document) }}" 
-                                                     alt="Document" 
-                                                     class="card-img-top" 
+                                            <a href="{{ $docUrl }}" target="_blank" class="text-decoration-none">
+                                                <img src="{{ $docUrl }}"
+                                                     alt="Document"
+                                                     class="card-img-top"
                                                      style="height: 200px; object-fit: cover; cursor: pointer;">
                                             </a>
                                         </div>

@@ -220,6 +220,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/rest-points/{rest_point}/checklists', [RestPointChecklistController::class, 'store'])->name('rest-points.checklists.store');
     Route::get('/rest-points/{rest_point}/checklists/{checklist}', [RestPointChecklistController::class, 'show'])->name('rest-points.checklists.show');
     Route::match(['get', 'post'], '/rest-points/{rest_point}/checklists/{checklist}/pdf', [RestPointChecklistController::class, 'pdf'])->name('rest-points.checklists.pdf');
+    Route::get('/rest-points/checklists/document/{encoded}', [RestPointChecklistController::class, 'document'])->name('rest-points.checklists.document');
     
     // Rest Points Checklist Categories (CRUD)
     Route::resource('rest-points-checklist-categories', RestPointChecklistCategoryController::class)

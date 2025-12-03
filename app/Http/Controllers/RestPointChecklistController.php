@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Throwable;
@@ -286,6 +287,41 @@ class RestPointChecklistController extends Controller
             return redirect()
                 ->route('rest-points.show', $rest_point)
                 ->with('error', __('messages.error_exporting_pdf') ?? 'Error generating checklist PDF.');
+        }
+    }
+
+    /**
+     * Serve a checklist document stored on the public disk.
+     *
+     * We use an encoded path so we don't expose raw storage paths in the URL.
+     */
+    public function document(string $encoded)
+    {
+        try {
+            $path = base64_decode($encoded, true);
+
+            if ($path === false) {
+                abort(404);
+            }
+
+            // Basic security check – prevent directory traversal
+            if (str_contains($path, '..')) {
+                abort(403);
+            }
+
+            if (! Storage::disk('public')->exists($path)) {
+                abort(404);
+            }
+
+            return response()->file(Storage::disk('public')->path($path));
+        } catch (Throwable $exception) {
+            Log::error('Failed to serve rest point checklist document', [
+                'error' => $exception->getMessage(),
+                'trace' => $exception->getTraceAsString(),
+                'encoded' => $encoded,
+            ]);
+
+            abort(500);
         }
     }
 }
