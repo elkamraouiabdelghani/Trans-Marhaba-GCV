@@ -41,7 +41,10 @@
                                 <div class="position-relative d-inline-block">
                                     <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style="width: 120px; height: 120px;">
                                         @if($driver->profile_photo_path)
-                                            <img src="{{ $driver->profile_photo_path ? asset('storage/' . $driver->profile_photo_path) : asset('images/default-profile.png') }}" alt="{{ $driver->full_name ?? __('messages.profile_photo') }}" class="rounded-circle" style="width: 100%; height: 100%; object-fit: cover;">
+                                            <img src="{{ route('drivers.profile-photo', $driver) }}"
+                                                 alt="{{ $driver->full_name ?? __('messages.profile_photo') }}"
+                                                 class="rounded-circle"
+                                                 style="width: 100%; height: 100%; object-fit: cover;">
                                         @else
                                             <i class="bi bi-person-fill text-primary" style="font-size: 4rem;"></i>
                                         @endif

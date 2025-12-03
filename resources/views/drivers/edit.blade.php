@@ -160,14 +160,10 @@
                             @enderror
                             @if($driver->profile_photo_path)
                                 <div class="d-flex align-items-center gap-3 mt-2">
-                                    @if($driver->profile_photo_path)
-                                    <img src="{{ $driver->profile_photo_path ? asset('storage/' . $driver->profile_photo_path) : asset('images/default-profile.png') }}" 
+                                    <img src="{{ route('drivers.profile-photo', $driver) }}" 
                                          alt="{{ $driver->full_name ?? __('messages.profile_photo') }}" 
                                          class="rounded-circle" 
                                          style="width: 70px; height: 70px; object-fit: cover;">
-                                    @else
-                                        <i class="bi bi-person-gear text-primary" style="font-size: 4rem;"></i>
-                                    @endif
                                     <div class="form-check">
                                         <input class="form-check-input" type="checkbox" value="1" id="remove_photo" name="remove_photo">
                                         <label class="form-check-label" for="remove_photo">

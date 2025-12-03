@@ -60,6 +60,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/drivers/activities/import', [DriversController::class, 'importActivities'])->name('drivers.activities.import');
     Route::get('/drivers/alerts', [DriversController::class, 'alerts'])->name('drivers.alerts');
     Route::get('/drivers/alerts/export', [DriversController::class, 'exportAlerts'])->name('drivers.alerts.export');
+    Route::get('/drivers/{driver}/profile-photo', [DriversController::class, 'showProfilePhoto'])->name('drivers.profile-photo');
     Route::get('/drivers/{driver}', [DriversController::class, 'show'])->name('drivers.show');
     Route::get('/drivers/{driver}/edit', [DriversController::class, 'edit'])->name('drivers.edit');
     Route::patch('/drivers/{driver}', [DriversController::class, 'update'])->name('drivers.update');

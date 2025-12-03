@@ -2079,6 +2079,35 @@ class DriversController extends Controller
         }
     }
 
+    /**
+     * Serve the driver's profile photo through the application.
+     */
+    public function showProfilePhoto(Driver $driver)
+    {
+        try {
+            $path = $driver->profile_photo_path;
+
+            if (! $path) {
+                abort(404);
+            }
+
+            $disk = Storage::disk('public');
+
+            if (! $disk->exists($path)) {
+                abort(404);
+            }
+
+            return response()->file($disk->path($path));
+        } catch (\Throwable $e) {
+            Log::error('Failed to serve driver profile photo', [
+                'driver_id' => $driver->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            abort(500);
+        }
+    }
+
     private function findDriverDocumentByToken(Driver $driver, string $token): ?array
     {
         $path = $this->decodeDocumentToken($token);

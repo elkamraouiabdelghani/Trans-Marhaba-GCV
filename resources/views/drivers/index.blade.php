@@ -172,10 +172,13 @@
                                     <td class="py-3 px-4">
                                         <div class="d-flex align-items-center">
                                             @if($driver->profile_photo_path)
-                                                <img src="{{ $driver->profile_photo_path ? asset('storage/' . $driver->profile_photo_path) : asset('images/default-profile.png') }}" alt="{{ $driver->full_name ?? __('messages.profile_photo') }}" class="rounded-circle me-3" style="width: 40px; height: 40px; object-fit: cover;">
+                                                <img src="{{ route('drivers.profile-photo', $driver) }}"
+                                                     alt="{{ $driver->full_name ?? __('messages.profile_photo') }}"
+                                                     class="rounded-circle me-3"
+                                                     style="width: 40px; height: 40px; object-fit: cover;">
                                             @else
                                                 <div class="bg-primary bg-opacity-10 rounded-circle px-2 py-1 me-3">
-                                                <i class="bi bi-person text-primary"></i>
+                                                    <i class="bi bi-person text-primary"></i>
                                                 </div>
                                             @endif
                                             <div class="flex-grow-1">
