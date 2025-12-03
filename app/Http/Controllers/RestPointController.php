@@ -5,14 +5,21 @@ namespace App\Http\Controllers;
 use App\Exports\RestPointsExport;
 use App\Http\Requests\RestPointRequest;
 use App\Models\RestPoint;
+use App\Models\RestPointChecklist;
+use App\Models\RestPointChecklistCategory;
+use App\Models\RestPointChecklistItem;
+use App\Models\RestPointChecklistItemAnswer;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
+use Illuminate\Support\Carbon;
 use Maatwebsite\Excel\Facades\Excel;
 use Throwable;
 
@@ -40,6 +47,7 @@ class RestPointController extends Controller
             }
 
             $restPointsQuery = RestPoint::query()
+                ->with('latestChecklist')
                 ->orderByDesc('created_at');
 
             // Filter by type
@@ -95,6 +103,50 @@ class RestPointController extends Controller
 
 
     /**
+     * Show the form for creating a new rest point
+     */
+    public function create(Request $request): View|RedirectResponse
+    {
+        try {
+            // Check if table exists, if not redirect back to index with message
+            if (!Schema::hasTable('rest_points')) {
+                return redirect()
+                    ->route('rest-points.index')
+                    ->with('error', __('messages.error_creating_rest_point') ?? 'Error creating rest point. Please run the migration: php artisan migrate');
+            }
+
+            // Load active categories with their active items for checklist
+            $categories = RestPointChecklistCategory::where('is_active', true)
+                ->with(['items' => function ($query) {
+                    $query->where('is_active', true);
+                }])
+                ->orderBy('name')
+                ->get();
+
+            return view('rest-points.create', [
+                'types' => [
+                    'area' => __('messages.area') ?? 'Area',
+                    'station' => __('messages.station') ?? 'Station',
+                    'parking' => __('messages.parking') ?? 'Parking',
+                    'other' => __('messages.other') ?? 'Other',
+                ],
+                'categories' => $categories,
+                'backUrl' => route('rest-points.index'),
+            ]);
+        } catch (Throwable $exception) {
+            Log::error('Failed to load rest point create form', [
+                'error' => $exception->getMessage(),
+                'trace' => $exception->getTraceAsString(),
+            ]);
+
+            return redirect()
+                ->route('rest-points.index')
+                ->with('error', __('messages.error_creating_rest_point') ?? 'Error creating rest point.');
+        }
+    }
+
+
+    /**
      * Store a newly created rest point
      */
     public function store(RestPointRequest $request): RedirectResponse
@@ -117,18 +169,115 @@ class RestPointController extends Controller
                     ->with('error', __('messages.location_required') ?? 'Please select a location on the map before submitting.');
             }
 
-            $restPoint = RestPoint::create([
-                'name' => $request->input('name'),
-                'type' => $request->input('type'),
-                'latitude' => (float) $latitude,
-                'longitude' => (float) $longitude,
-                'description' => $request->input('description'),
-                'created_by' => Auth::id(),
-            ]);
+            // Start database transaction
+            DB::beginTransaction();
 
-            return redirect()
-                ->route('rest-points.index')
-                ->with('success', __('messages.rest_point_created') ?? 'Rest point created successfully.');
+            try {
+                // Create rest point
+                $restPoint = RestPoint::create([
+                    'name' => $request->input('name'),
+                    'type' => $request->input('type'),
+                    'latitude' => (float) $latitude,
+                    'longitude' => (float) $longitude,
+                    'description' => $request->input('description'),
+                    'created_by' => Auth::id(),
+                ]);
+
+                // Validate and create checklist if provided
+                $checklistData = $request->input('checklist', []);
+                
+                if (!empty($checklistData)) {
+                    // Get all active items to validate against
+                    $activeItems = RestPointChecklistItem::where('is_active', true)
+                        ->pluck('id')
+                        ->toArray();
+
+                    // Validate that all active items have answers
+                    $submittedItemIds = array_keys($checklistData);
+                    $missingItems = array_diff($activeItems, $submittedItemIds);
+                    
+                    if (!empty($missingItems)) {
+                        DB::rollBack();
+                        return back()
+                            ->withInput()
+                            ->with('error', __('messages.checklist_incomplete') ?? 'Please complete all checklist items before submitting.');
+                    }
+
+                    // Validate each answer
+                    foreach ($checklistData as $itemId => $answerData) {
+                        if (!in_array($itemId, $activeItems)) {
+                            DB::rollBack();
+                            return back()
+                                ->withInput()
+                                ->with('error', __('messages.invalid_checklist_item') ?? 'Invalid checklist item detected.');
+                        }
+
+                        if (!isset($answerData['is_checked']) || !in_array($answerData['is_checked'], ['0', '1'])) {
+                            DB::rollBack();
+                            return back()
+                                ->withInput()
+                                ->with('error', __('messages.checklist_answer_required') ?? 'Please provide a Yes/No answer for all checklist items.');
+                        }
+                    }
+
+                    // Get status from request (default to 'accepted')
+                    $checklistStatus = $request->input('checklist_status', 'accepted');
+                    if (!in_array($checklistStatus, ['pending', 'accepted', 'rejected'])) {
+                        $checklistStatus = 'accepted';
+                    }
+
+                    // Handle file uploads
+                    $documents = [];
+                    if ($request->hasFile('checklist_documents')) {
+                        foreach ($request->file('checklist_documents') as $file) {
+                            if ($file->isValid()) {
+                                $path = $file->store('rest-points/checklists', 'public');
+                                $documents[] = $path;
+                            }
+                        }
+                    }
+
+                    // Create checklist record
+                    $checklist = RestPointChecklist::create([
+                        'rest_point_id' => $restPoint->id,
+                        'completed_by' => Auth::id(),
+                        'completed_at' => now(),
+                        'status' => $checklistStatus,
+                        'notes' => $request->input('checklist_notes'),
+                        'documents' => !empty($documents) ? $documents : null,
+                    ]);
+
+                    // Create answers for each item
+                    foreach ($checklistData as $itemId => $answerData) {
+                        RestPointChecklistItemAnswer::create([
+                            'rest_points_checklist_id' => $checklist->id,
+                            'rest_points_checklist_item_id' => $itemId,
+                            'is_checked' => $answerData['is_checked'] === '1',
+                            'comment' => !empty($answerData['comment']) ? $answerData['comment'] : null,
+                        ]);
+                    }
+                } else {
+                    // No checklist data provided, but it's required
+                    // Check if there are any active categories/items
+                    $hasActiveItems = RestPointChecklistItem::where('is_active', true)->exists();
+                    
+                    if ($hasActiveItems) {
+                        DB::rollBack();
+                        return back()
+                            ->withInput()
+                            ->with('error', __('messages.checklist_required') ?? 'Checklist is required. Please complete all checklist items.');
+                    }
+                }
+
+                DB::commit();
+
+                return redirect()
+                    ->route('rest-points.index')
+                    ->with('success', __('messages.rest_point_created') ?? 'Rest point created successfully.');
+            } catch (Throwable $transactionException) {
+                DB::rollBack();
+                throw $transactionException;
+            }
         } catch (\Illuminate\Validation\ValidationException $e) {
             // Re-throw validation exceptions so they're handled properly
             throw $e;
@@ -154,6 +303,60 @@ class RestPointController extends Controller
         }
     }
 
+    /**
+     * Show the form for editing the specified rest point
+     */
+    public function edit(RestPoint $restPoint): View|RedirectResponse
+    {
+        try {
+            // Load active categories with their active items for checklist
+            $categories = RestPointChecklistCategory::where('is_active', true)
+                ->with(['items' => function ($query) {
+                    $query->where('is_active', true);
+                }])
+                ->orderBy('name')
+                ->get();
+
+            // Load latest checklist (if any) with answers
+            $existingChecklist = RestPointChecklist::where('rest_point_id', $restPoint->id)
+                ->with('answers')
+                ->orderByDesc('completed_at')
+                ->first();
+
+            // Map answers by item ID for easy access in view
+            $answersByItemId = [];
+            if ($existingChecklist) {
+                foreach ($existingChecklist->answers as $answer) {
+                    $answersByItemId[$answer->rest_points_checklist_item_id] = $answer;
+                }
+            }
+
+            return view('rest-points.edit', [
+                'restPoint' => $restPoint,
+                'types' => [
+                    'area' => __('messages.area') ?? 'Area',
+                    'station' => __('messages.station') ?? 'Station',
+                    'parking' => __('messages.parking') ?? 'Parking',
+                    'other' => __('messages.other') ?? 'Other',
+                ],
+                'categories' => $categories,
+                'existingChecklist' => $existingChecklist,
+                'answersByItemId' => $answersByItemId,
+                'backUrl' => route('rest-points.index'),
+            ]);
+        } catch (Throwable $exception) {
+            Log::error('Failed to load rest point edit form', [
+                'error' => $exception->getMessage(),
+                'rest_point_id' => $restPoint->id,
+                'trace' => $exception->getTraceAsString(),
+            ]);
+
+            return redirect()
+                ->route('rest-points.index')
+                ->with('error', __('messages.error_updating_rest_point') ?? 'Error loading rest point edit form.');
+        }
+    }
+
 
     /**
      * Update the specified rest point
@@ -161,26 +364,629 @@ class RestPointController extends Controller
     public function update(RestPointRequest $request, RestPoint $restPoint): RedirectResponse
     {
         try {
-            $restPoint->update([
-                'name' => $request->input('name'),
-                'type' => $request->input('type'),
-                'latitude' => $request->input('latitude'),
-                'longitude' => $request->input('longitude'),
-                'description' => $request->input('description'),
-            ]);
+            // Validate coordinates are set
+            $latitude = $request->input('latitude');
+            $longitude = $request->input('longitude');
+            
+            if (empty($latitude) || empty($longitude)) {
+                return back()
+                    ->withInput()
+                    ->with('error', __('messages.location_required') ?? 'Please select a location on the map before submitting.');
+            }
 
-            return redirect()
-                ->route('rest-points.index')
-                ->with('success', __('messages.rest_point_updated') ?? 'Rest point updated successfully.');
+            // Start database transaction
+            DB::beginTransaction();
+
+            try {
+                Log::info('Updating rest point', [
+                    'rest_point_id' => $restPoint->id,
+                    'has_checklist_data' => $request->has('checklist'),
+                    'checklist_count' => count($request->input('checklist', [])),
+                ]);
+                // Update rest point
+                $restPoint->update([
+                    'name' => $request->input('name'),
+                    'type' => $request->input('type'),
+                    'latitude' => (float) $latitude,
+                    'longitude' => (float) $longitude,
+                    'description' => $request->input('description'),
+                ]);
+
+                // Handle checklist data
+                $checklistData = $request->input('checklist', []);
+                
+                Log::info('Processing checklist data', [
+                    'checklist_data_count' => count($checklistData),
+                    'checklist_keys' => array_keys($checklistData),
+                ]);
+                
+                if (!empty($checklistData)) {
+                    // Get all active items to validate against (normalize to integers)
+                    $activeItems = RestPointChecklistItem::where('is_active', true)
+                        ->pluck('id')
+                        ->map(fn($id) => (int)$id)
+                        ->toArray();
+
+                    // Validate that all active items have answers
+                    // Normalize submitted keys to integers for comparison
+                    $submittedItemIds = array_map('intval', array_keys($checklistData));
+                    $missingItems = array_diff($activeItems, $submittedItemIds);
+                    
+                    if (!empty($missingItems)) {
+                        DB::rollBack();
+                        Log::warning('Checklist incomplete', [
+                            'missing_items' => $missingItems,
+                            'submitted_items' => $submittedItemIds,
+                            'active_items' => $activeItems,
+                        ]);
+                        return back()
+                            ->withInput()
+                            ->with('error', __('messages.checklist_incomplete') ?? 'Please complete all checklist items before submitting.');
+                    }
+
+                    // Validate each answer
+                    foreach ($checklistData as $itemId => $answerData) {
+                        $itemIdInt = (int)$itemId;
+                        if (!in_array($itemIdInt, $activeItems, true)) {
+                            DB::rollBack();
+                            Log::warning('Invalid checklist item', [
+                                'item_id' => $itemId,
+                                'item_id_int' => $itemIdInt,
+                                'active_items' => $activeItems,
+                            ]);
+                            return back()
+                                ->withInput()
+                                ->with('error', __('messages.invalid_checklist_item') ?? 'Invalid checklist item detected.');
+                        }
+
+                        if (!isset($answerData['is_checked']) || !in_array($answerData['is_checked'], ['0', '1'], true)) {
+                            DB::rollBack();
+                            Log::warning('Missing checklist answer', [
+                                'item_id' => $itemId,
+                                'answer_data' => $answerData,
+                            ]);
+                            return back()
+                                ->withInput()
+                                ->with('error', __('messages.checklist_answer_required') ?? 'Please provide a Yes/No answer for all checklist items.');
+                        }
+                    }
+
+                    // Get or create checklist
+                    $checklist = RestPointChecklist::where('rest_point_id', $restPoint->id)->first();
+                    
+                    if (! $checklist) {
+                        // Create new checklist if it doesn't exist
+                        // Get status from request (default to 'accepted')
+                        $checklistStatus = $request->input('checklist_status', 'accepted');
+                        if (!in_array($checklistStatus, ['pending', 'accepted', 'rejected'])) {
+                            $checklistStatus = 'accepted';
+                        }
+
+                        // Handle file uploads
+                        $documents = [];
+                        if ($request->hasFile('checklist_documents')) {
+                            foreach ($request->file('checklist_documents') as $file) {
+                                if ($file->isValid()) {
+                                    $path = $file->store('rest-points/checklists', 'public');
+                                    $documents[] = $path;
+                                }
+                            }
+                        }
+
+                        try {
+                            $checklist = RestPointChecklist::create([
+                                'rest_point_id' => $restPoint->id,
+                                'completed_by' => Auth::id(),
+                                'completed_at' => now(),
+                                'status' => $checklistStatus,
+                                'notes' => $request->input('checklist_notes'),
+                                'documents' => ! empty($documents) ? $documents : null,
+                            ]);
+                            
+                            Log::info('Created new checklist for rest point', [
+                                'rest_point_id' => $restPoint->id,
+                                'checklist_id' => $checklist->id,
+                            ]);
+                        } catch (Throwable $checklistException) {
+                            DB::rollBack();
+                            Log::error('Failed to create checklist', [
+                                'rest_point_id' => $restPoint->id,
+                                'error' => $checklistException->getMessage(),
+                                'trace' => $checklistException->getTraceAsString(),
+                            ]);
+                            throw $checklistException;
+                        }
+                    } else {
+                        // Update existing checklist
+                        // Get status from request (default to existing status or 'accepted')
+                        $checklistStatus = $request->input('checklist_status', $checklist->status ?? 'accepted');
+                        if (!in_array($checklistStatus, ['pending', 'accepted', 'rejected'])) {
+                            $checklistStatus = $checklist->status ?? 'accepted';
+                        }
+
+                        // Handle existing documents (keep ones that weren't removed)
+                        $existingDocuments = $checklist->documents ?? [];
+                        $keptDocuments = $request->input('existing_documents');
+
+                        // If the field is completely missing, assume user did not change existing documents
+                        if ($keptDocuments === null) {
+                            $finalDocuments = $existingDocuments;
+                            $removedDocuments = [];
+                        } else {
+                            $keptDocuments = is_array($keptDocuments) ? $keptDocuments : [];
+                            $finalDocuments = array_values(array_intersect($existingDocuments, $keptDocuments));
+                            $removedDocuments = array_diff($existingDocuments, $keptDocuments);
+                        }
+
+                        // Handle new file uploads
+                        if ($request->hasFile('checklist_documents')) {
+                            foreach ($request->file('checklist_documents') as $file) {
+                                if ($file->isValid()) {
+                                    $path = $file->store('rest-points/checklists', 'public');
+                                    $finalDocuments[] = $path;
+                                }
+                            }
+                        }
+
+                        // Delete removed documents from storage
+                        if (!empty($removedDocuments)) {
+                            foreach ($removedDocuments as $docPath) {
+                                if (Storage::disk('public')->exists($docPath)) {
+                                    Storage::disk('public')->delete($docPath);
+                                }
+                            }
+                        }
+
+                        try {
+                            $checklist->update([
+                                'completed_by' => Auth::id(),
+                                'completed_at' => now(),
+                                'status' => $checklistStatus,
+                                'notes' => $request->input('checklist_notes'),
+                                'documents' => ! empty($finalDocuments) ? $finalDocuments : null,
+                            ]);
+                            
+                            Log::info('Updated existing checklist', [
+                                'rest_point_id' => $restPoint->id,
+                                'checklist_id' => $checklist->id,
+                            ]);
+                        } catch (Throwable $checklistException) {
+                            DB::rollBack();
+                            Log::error('Failed to update checklist', [
+                                'rest_point_id' => $restPoint->id,
+                                'checklist_id' => $checklist->id,
+                                'error' => $checklistException->getMessage(),
+                                'trace' => $checklistException->getTraceAsString(),
+                            ]);
+                            throw $checklistException;
+                        }
+                    }
+
+                    // Update or create answers for each item
+                    // This will update existing answers or create new ones if they don't exist
+                    foreach ($checklistData as $itemId => $answerData) {
+                        // Ensure itemId is an integer
+                        $itemIdInt = (int)$itemId;
+                        
+                        try {
+                            RestPointChecklistItemAnswer::updateOrCreate(
+                                [
+                                    'rest_points_checklist_id' => $checklist->id,
+                                    'rest_points_checklist_item_id' => $itemIdInt,
+                                ],
+                                [
+                                    'is_checked' => $answerData['is_checked'] === '1',
+                                    'comment' => !empty($answerData['comment']) ? trim($answerData['comment']) : null,
+                                ]
+                            );
+                        } catch (Throwable $answerException) {
+                            DB::rollBack();
+                            Log::error('Failed to save checklist answer', [
+                                'rest_point_id' => $restPoint->id,
+                                'checklist_id' => $checklist->id,
+                                'item_id' => $itemIdInt,
+                                'error' => $answerException->getMessage(),
+                                'trace' => $answerException->getTraceAsString(),
+                            ]);
+                            throw $answerException;
+                        }
+                    }
+                    
+                    Log::info('Checklist answers processed successfully', [
+                        'rest_point_id' => $restPoint->id,
+                        'checklist_id' => $checklist->id,
+                        'answers_count' => count($checklistData),
+                    ]);
+                } else {
+                    // No checklist data provided, but it's required
+                    // Check if there are any active categories/items
+                    $hasActiveItems = RestPointChecklistItem::where('is_active', true)->exists();
+                    
+                    if ($hasActiveItems) {
+                        DB::rollBack();
+                        return back()
+                            ->withInput()
+                            ->with('error', __('messages.checklist_required') ?? 'Checklist is required. Please complete all checklist items.');
+                    }
+                }
+
+                DB::commit();
+
+                Log::info('Rest point updated successfully', [
+                    'rest_point_id' => $restPoint->id,
+                ]);
+
+                return redirect()
+                    ->route('rest-points.show', $restPoint)
+                    ->with('success', __('messages.rest_point_updated') ?? 'Rest point updated successfully.');
+            } catch (Throwable $transactionException) {
+                DB::rollBack();
+                
+                Log::error('Transaction failed during rest point update', [
+                    'rest_point_id' => $restPoint->id,
+                    'error' => $transactionException->getMessage(),
+                    'trace' => $transactionException->getTraceAsString(),
+                ]);
+                
+                throw $transactionException;
+            }
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Re-throw validation exceptions so they're handled properly
+            throw $e;
         } catch (Throwable $exception) {
             Log::error('Failed to update rest point', [
                 'error' => $exception->getMessage(),
                 'rest_point_id' => $restPoint->id,
+                'file' => $exception->getFile(),
+                'line' => $exception->getLine(),
                 'data' => $request->except(['_token', '_method']),
+                'trace' => $exception->getTraceAsString(),
             ]);
+            
+            $errorMessage = __('messages.error_updating_rest_point') ?? 'Error updating rest point.';
+            
+            // Include actual error message in debug mode
+            if (config('app.debug')) {
+                $errorMessage .= ' ' . $exception->getMessage();
+            }
+            
             return back()
                 ->withInput()
-                ->with('error', __('messages.error_updating_rest_point') ?? 'Error updating rest point.');
+                ->with('error', $errorMessage);
+        }
+    }
+
+    /**
+     * Display the specified rest point
+     */
+    public function show(RestPoint $restPoint): View|RedirectResponse
+    {
+        try {
+            // Load rest point with relationships
+            $restPoint->load(['createdBy', 'checklists']);
+
+            // Get the latest checklist with relationships
+            $checklist = RestPointChecklist::where('rest_point_id', $restPoint->id)
+                ->with([
+                    'completedByUser',
+                    'answers.item',
+                ])
+                ->latest('completed_at')
+                ->first();
+
+            // Load full checklist history for this rest point
+            $checklistsHistory = RestPointChecklist::where('rest_point_id', $restPoint->id)
+                ->orderByDesc('completed_at')
+                ->get();
+
+            // Load categories with items for displaying checklist results
+            $categories = RestPointChecklistCategory::where('is_active', true)
+                ->with(['items' => function ($query) {
+                    $query->where('is_active', true);
+                }])
+                ->orderBy('name')
+                ->get();
+
+            // Map answers by item ID for easy access
+            $answersByItemId = [];
+            if ($checklist && $checklist->answers) {
+                foreach ($checklist->answers as $answer) {
+                    $answersByItemId[$answer->rest_points_checklist_item_id] = $answer;
+                }
+            }
+
+            return view('rest-points.show', [
+                'restPoint' => $restPoint,
+                'checklist' => $checklist,
+                'checklistsHistory' => $checklistsHistory,
+                'categories' => $categories,
+                'answersByItemId' => $answersByItemId,
+                'types' => [
+                    'area' => __('messages.area') ?? 'Area',
+                    'station' => __('messages.station') ?? 'Station',
+                    'parking' => __('messages.parking') ?? 'Parking',
+                    'other' => __('messages.other') ?? 'Other',
+                ],
+            ]);
+        } catch (Throwable $exception) {
+            Log::error('Failed to load rest point show page', [
+                'error' => $exception->getMessage(),
+                'rest_point_id' => $restPoint->id,
+                'trace' => $exception->getTraceAsString(),
+            ]);
+
+            return redirect()
+                ->route('rest-points.index')
+                ->with('error', __('messages.error_loading_rest_point') ?? 'Error loading rest point details.');
+        }
+    }
+
+    /**
+     * Yearly planning view for rest point inspections
+     */
+    public function planning(Request $request): View|RedirectResponse
+    {
+        try {
+            $year = (int) $request->input('year', now()->year);
+
+            // Determine available years based on checklist completion dates
+            // and their next-inspection due dates (completed_at + 6 months)
+            $completedDates = RestPointChecklist::query()
+                ->whereNotNull('completed_at')
+                ->pluck('completed_at');
+
+            if ($completedDates->isEmpty()) {
+                $minYear = $maxYear = $year;
+            } else {
+                $minYear = $completedDates
+                    ->map(fn ($dt) => Carbon::parse($dt)->year)
+                    ->min();
+
+                $maxCompletedYear = $completedDates
+                    ->map(fn ($dt) => Carbon::parse($dt)->year)
+                    ->max();
+
+                $maxDueYear = $completedDates
+                    ->map(fn ($dt) => Carbon::parse($dt)->addMonthsNoOverflow(6)->year)
+                    ->max();
+
+                $maxYear = max($maxCompletedYear, $maxDueYear);
+            }
+
+            if ($year < $minYear) {
+                $year = $minYear;
+            } elseif ($year > $maxYear) {
+                $year = $maxYear;
+            }
+
+            $years = range($minYear, $maxYear);
+
+            // Load all rest points with all their checklists
+            $restPoints = RestPoint::with(['checklists' => function ($query) {
+                $query->orderBy('completed_at');
+            }])
+                ->orderBy('name')
+                ->get();
+
+            // Build planning data matrix
+            $planningData = [];
+            $totalPlanned = 0;
+            $totalRealized = 0;
+
+            foreach ($restPoints as $restPoint) {
+                // Realized: number of checklists completed in this month/year
+                $realized = array_fill(1, 12, 0);
+                // Planned: number of checklists whose next due date falls in this month/year
+                $planned = array_fill(1, 12, 0);
+
+                foreach ($restPoint->checklists as $checklist) {
+                    if (! $checklist->completed_at) {
+                        continue;
+                    }
+
+                    // Realized: checklist completed in this month of selected year
+                    if ((int) $checklist->completed_at->year === $year) {
+                        $month = (int) $checklist->completed_at->month;
+                        $realized[$month]++;
+                    }
+
+                    // Planned: due date 6 months after effective inspection date
+                    $effective = $checklist->effective_inspection_date;
+                    if ($effective instanceof Carbon) {
+                        $due = $effective->copy()->addMonthsNoOverflow(6);
+                        if ((int) $due->year === $year) {
+                            $planned[(int) $due->month]++;
+                        }
+                    }
+                }
+
+                // Ensure that every realized checklist is also counted as planned
+                // (every realization is assumed to be planned before).
+                // Also compute NJ (total realized) per month.
+                $nj = [];
+                for ($m = 1; $m <= 12; $m++) {
+                    $realizedCount = $realized[$m] ?? 0;
+                    $plannedCount = $planned[$m] ?? 0;
+
+                    // P must be at least R
+                    if ($realizedCount > $plannedCount) {
+                        $planned[$m] = $realizedCount;
+                    }
+
+                    // NJ = total realized in that month
+                    $nj[$m] = $realizedCount;
+                }
+
+                // Accumulate global stats while we build rows
+                for ($m = 1; $m <= 12; $m++) {
+                    $totalPlanned += $planned[$m] ?? 0;
+                    $totalRealized += $realized[$m] ?? 0;
+                }
+
+                $planningData[] = [
+                    'restPoint' => $restPoint,
+                    'realized' => $realized,
+                    'planned' => $planned,
+                    'nj' => $nj,
+                ];
+            }
+
+            $percentage = $totalPlanned > 0
+                ? round(($totalRealized / $totalPlanned) * 100, 1)
+                : 0;
+
+            // Month labels
+            $months = [];
+            for ($m = 1; $m <= 12; $m++) {
+                $months[$m] = Carbon::createFromDate($year, $m, 1)->translatedFormat('F');
+            }
+
+            return view('rest-points.planning', [
+                'year' => $year,
+                'years' => $years,
+                'months' => $months,
+                'planningData' => $planningData,
+            ]);
+        } catch (Throwable $exception) {
+            Log::error('Failed to load rest points planning view', [
+                'error' => $exception->getMessage(),
+                'trace' => $exception->getTraceAsString(),
+            ]);
+
+            return redirect()
+                ->route('rest-points.index')
+                ->with('error', __('messages.error_loading_rest_points') ?? 'Error loading rest points planning.');
+        }
+    }
+
+    /**
+     * Export rest points yearly planning to PDF
+     */
+    public function planningPdf(Request $request)
+    {
+        try {
+            $year = (int) $request->input('year', now()->year);
+
+            // Reuse same data preparation as planning()
+            $completedDates = RestPointChecklist::query()
+                ->whereNotNull('completed_at')
+                ->pluck('completed_at');
+
+            if ($completedDates->isEmpty()) {
+                $minYear = $maxYear = $year;
+            } else {
+                $minYear = $completedDates
+                    ->map(fn ($dt) => Carbon::parse($dt)->year)
+                    ->min();
+
+                $maxCompletedYear = $completedDates
+                    ->map(fn ($dt) => Carbon::parse($dt)->year)
+                    ->max();
+
+                $maxDueYear = $completedDates
+                    ->map(fn ($dt) => Carbon::parse($dt)->addMonthsNoOverflow(6)->year)
+                    ->max();
+
+                $maxYear = max($maxCompletedYear, $maxDueYear);
+            }
+
+            if ($year < $minYear) {
+                $year = $minYear;
+            } elseif ($year > $maxYear) {
+                $year = $maxYear;
+            }
+
+            // Load all rest points with all their checklists
+            $restPoints = RestPoint::with(['checklists' => function ($query) {
+                $query->orderBy('completed_at');
+            }])
+                ->orderBy('name')
+                ->get();
+
+            $planningData = [];
+            $totalPlanned = 0;
+            $totalRealized = 0;
+
+            foreach ($restPoints as $restPoint) {
+                $realized = array_fill(1, 12, 0);
+                $planned = array_fill(1, 12, 0);
+
+                foreach ($restPoint->checklists as $checklist) {
+                    if (! $checklist->completed_at) {
+                        continue;
+                    }
+
+                    if ((int) $checklist->completed_at->year === $year) {
+                        $month = (int) $checklist->completed_at->month;
+                        $realized[$month]++;
+                    }
+
+                    $effective = $checklist->effective_inspection_date;
+                    if ($effective instanceof Carbon) {
+                        $due = $effective->copy()->addMonthsNoOverflow(6);
+                        if ((int) $due->year === $year) {
+                            $planned[(int) $due->month]++;
+                        }
+                    }
+                }
+
+                $nj = [];
+                for ($m = 1; $m <= 12; $m++) {
+                    $realizedCount = $realized[$m] ?? 0;
+                    $plannedCount = $planned[$m] ?? 0;
+
+                    if ($realizedCount > $plannedCount) {
+                        $planned[$m] = $realizedCount;
+                    }
+
+                    $nj[$m] = $realizedCount;
+                }
+
+                // Accumulate global stats while we build rows
+                for ($m = 1; $m <= 12; $m++) {
+                    $totalPlanned += $planned[$m] ?? 0;
+                    $totalRealized += $realized[$m] ?? 0;
+                }
+
+                $planningData[] = [
+                    'restPoint' => $restPoint,
+                    'realized' => $realized,
+                    'planned' => $planned,
+                    'nj' => $nj,
+                ];
+            }
+
+            $percentage = $totalPlanned > 0
+                ? round(($totalRealized / $totalPlanned) * 100, 1)
+                : 0;
+
+            // Month labels
+            $months = [];
+            for ($m = 1; $m <= 12; $m++) {
+                $months[$m] = Carbon::createFromDate($year, $m, 1)->translatedFormat('F');
+            }
+
+            $pdf = Pdf::loadView('rest-points.pdf.planning', [
+                'year' => $year,
+                'months' => $months,
+                'planningData' => $planningData,
+                'stats' => [
+                    'planned' => $totalPlanned,
+                    'realized' => $totalRealized,
+                    'percentage' => $percentage,
+                ],
+            ])->setPaper('a3', 'landscape');
+
+            $fileName = 'rest-points-planning-' . $year . '-' . now()->format('Ymd_His') . '.pdf';
+
+            return $pdf->download($fileName);
+        } catch (Throwable $exception) {
+            Log::error('Failed to export rest points planning PDF', [
+                'error' => $exception->getMessage(),
+                'trace' => $exception->getTraceAsString(),
+            ]);
+
+            return back()->with('error', __('messages.error_exporting_pdf') ?? 'Error exporting planning PDF.');
         }
     }
 
@@ -404,16 +1210,45 @@ class RestPointController extends Controller
     public function destroy(RestPoint $restPoint): RedirectResponse
     {
         try {
+            DB::beginTransaction();
+
+            // Delete all related checklists, their answers, and documents
+            $restPoint->load(['checklists.answers']);
+
+            foreach ($restPoint->checklists as $checklist) {
+                // Delete checklist documents from storage
+                if (is_array($checklist->documents) && ! empty($checklist->documents)) {
+                    foreach ($checklist->documents as $docPath) {
+                        if ($docPath && Storage::disk('public')->exists($docPath)) {
+                            Storage::disk('public')->delete($docPath);
+                        }
+                    }
+                }
+
+                // Delete answers
+                $checklist->answers()->delete();
+
+                // Delete checklist itself
+                $checklist->delete();
+            }
+
+            // Finally delete the rest point
             $restPoint->delete();
+
+            DB::commit();
 
             return redirect()
                 ->route('rest-points.index')
-                ->with('success', __('messages.rest_point_deleted') ?? 'Rest point deleted successfully.');
+                ->with('success', __('messages.rest_point_deleted') ?? 'Rest point and related data deleted successfully.');
         } catch (Throwable $exception) {
-            Log::error('Failed to delete rest point', [
+            DB::rollBack();
+
+            Log::error('Failed to delete rest point and related data', [
                 'error' => $exception->getMessage(),
                 'rest_point_id' => $restPoint->id,
+                'trace' => $exception->getTraceAsString(),
             ]);
+
             return back()->with('error', __('messages.error_deleting_rest_point') ?? 'Error deleting rest point.');
         }
     }

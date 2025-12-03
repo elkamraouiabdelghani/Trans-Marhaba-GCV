@@ -21,6 +21,9 @@ use App\Http\Controllers\ViolationTypeController;
 use App\Http\Controllers\DriverViolationController;
 use App\Http\Controllers\ExportCenterController;
 use App\Http\Controllers\RestPointController;
+use App\Http\Controllers\RestPointChecklistController;
+use App\Http\Controllers\RestPointChecklistCategoryController;
+use App\Http\Controllers\RestPointChecklistItemController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Storage;
@@ -210,7 +213,36 @@ Route::middleware('auth')->group(function () {
     // Rest Points
     Route::get('/rest-points/export', [RestPointController::class, 'export'])->name('rest-points.export');
     Route::match(['get', 'post'], '/rest-points/export-pdf', [RestPointController::class, 'exportPdf'])->name('rest-points.export-pdf');
-    Route::resource('rest-points', RestPointController::class)->except(['create', 'edit', 'show']);
+    Route::get('/rest-points/planning', [RestPointController::class, 'planning'])->name('rest-points.planning');
+    Route::get('/rest-points/planning/pdf', [RestPointController::class, 'planningPdf'])->name('rest-points.planning.pdf');
+    Route::resource('rest-points', RestPointController::class);
+    Route::get('/rest-points/{rest_point}/checklists/create', [RestPointChecklistController::class, 'create'])->name('rest-points.checklists.create');
+    Route::post('/rest-points/{rest_point}/checklists', [RestPointChecklistController::class, 'store'])->name('rest-points.checklists.store');
+    Route::get('/rest-points/{rest_point}/checklists/{checklist}', [RestPointChecklistController::class, 'show'])->name('rest-points.checklists.show');
+    Route::match(['get', 'post'], '/rest-points/{rest_point}/checklists/{checklist}/pdf', [RestPointChecklistController::class, 'pdf'])->name('rest-points.checklists.pdf');
+    
+    // Rest Points Checklist Categories (CRUD)
+    Route::resource('rest-points-checklist-categories', RestPointChecklistCategoryController::class)
+        ->except(['create', 'edit'])
+        ->parameters(['rest-points-checklist-categories' => 'category'])
+        ->names([
+            'index' => 'rest-points.checklists.categories.index',
+            'store' => 'rest-points.checklists.categories.store',
+            'show' => 'rest-points.checklists.categories.show',
+            'update' => 'rest-points.checklists.categories.update',
+            'destroy' => 'rest-points.checklists.categories.destroy',
+        ]);
+    Route::post('/rest-points-checklist-categories/{category}/toggle-status', [RestPointChecklistCategoryController::class, 'toggleStatus'])->name('rest-points.checklists.categories.toggle-status');
+    
+    // Rest Points Checklist Items (CRUD - only store, update, destroy via modals)
+    Route::resource('rest-points-checklist-items', RestPointChecklistItemController::class)
+        ->except(['index', 'create', 'edit', 'show'])
+        ->parameters(['rest-points-checklist-items' => 'item'])
+        ->names([
+            'store' => 'rest-points.checklists.items.store',
+            'update' => 'rest-points.checklists.items.update',
+            'destroy' => 'rest-points.checklists.items.destroy',
+        ]);
     
 });
 

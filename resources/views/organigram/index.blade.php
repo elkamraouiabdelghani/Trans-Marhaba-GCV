@@ -20,7 +20,7 @@
                             <small class="text-muted">{{ __('messages.manage_organigram_description') ?? 'Manage company structure members.' }}</small>
                         </div>
                         <div class="d-flex align-items-center gap-2">
-                            <a href="{{ route('organigram.download') }}" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener">
+                            <a href="{{ route('organigram.download') }}" class="btn btn-outline-secondary btn-sm">
                                 <i class="bi bi-download me-1"></i>
                                 {{ __('messages.download_organigram') ?? 'Download PDF' }}
                             </a>

@@ -89,4 +89,12 @@ class User extends Authenticatable
     {
         return $this->morphMany(Changement::class, 'subject');
     }
+
+    /**
+     * Rest point checklists completed by this user.
+     */
+    public function restPointChecklists(): HasMany
+    {
+        return $this->hasMany(RestPointChecklist::class, 'completed_by');
+    }
 }

@@ -116,12 +116,6 @@
                 <span class="sidebar-text">{{ __('messages.violations') }}</span>
             </a>
         </li>
-        {{-- <li class="mb-2">
-            <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2">
-                <i class="bi bi-shield-check me-2 text-gray-600 sidebar-icon"></i>
-                <span class="sidebar-text">{{ __('messages.score_points') }}</span>
-            </a>
-        </li> --}}
         <li class="mb-2">
             <a href="{{ route('drivers.activities.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2">
                 <i class="bi bi-clock-history me-2 text-gray-600 sidebar-icon"></i>
@@ -135,10 +129,32 @@
             </a>
         </li>
         <li class="mb-2">
-            <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2">
-                <i class="bi bi-journal-check me-2 text-gray-600 sidebar-icon"></i>
-                <span class="sidebar-text">{{ __('messages.action_plan') }}</span>
+            <a href="#"
+               class="text-dark text-decoration-none d-flex align-items-center p-2 {{ (request()->routeIs('rest-points.*') || request()->routeIs('rest-points.checklists.categories.*')) ? 'active' : '' }}"
+               data-bs-toggle="collapse"
+               data-bs-target="#restPointsSubmenu"
+               aria-expanded="{{ (request()->routeIs('rest-points.*') || request()->routeIs('rest-points.checklists.categories.*')) ? 'true' : 'false' }}"
+               aria-controls="restPointsSubmenu">
+                <i class="bi bi-geo-alt-fill me-2 text-gray-600 sidebar-icon"></i>
+                <span class="sidebar-text">{{ __('messages.rest_points') ?? 'Rest Points' }}</span>
+                <i class="bi bi-chevron-down ms-auto sidebar-icon"></i>
             </a>
+            <ul class="collapse list-unstyled ms-3 {{ (request()->routeIs('rest-points.*') || request()->routeIs('rest-points.checklists.categories.*')) ? 'show' : '' }}" id="restPointsSubmenu">
+                <li class="mb-1">
+                    <a href="{{ route('rest-points.index') }}"
+                       class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('rest-points.*') ? 'active' : '' }}">
+                        <i class="bi bi-geo-alt me-2 text-gray-600 sidebar-icon"></i>
+                        <span class="sidebar-text">{{ __('messages.rest_points') ?? 'Rest Points' }}</span>
+                    </a>
+                </li>
+                <li class="mb-1">
+                    <a href="{{ route('rest-points.checklists.categories.index') }}"
+                       class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('rest-points.checklists.categories.*') ? 'active' : '' }}">
+                        <i class="bi bi-list-check me-2 text-gray-600 sidebar-icon"></i>
+                        <span class="sidebar-text">{{ __('messages.checklist') ?? 'Check List' }}</span>
+                    </a>
+                </li>
+            </ul>
         </li>
         <li class="mb-2">
             <a href="{{ route('organigram.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('organigram.*') ? 'active' : '' }}">
@@ -219,6 +235,8 @@
                         {{ __('messages.administration_roles') }}
                     @elseif(request()->routeIs('export-center.*'))
                         {{ __('messages.export_center') }}
+                    @elseif(request()->routeIs('rest-points.*') || request()->routeIs('rest-points.checklists.categories.*'))
+                        {{ __('messages.rest_points') }}
                     @endif
                 </span>
             </div>
@@ -290,12 +308,6 @@
                             <span class="sidebar-text">{{ __('messages.tbt_formations') }}</span>
                         </a>
                     </li>
-                    {{-- <li class="mb-1">
-                        <a href="{{ route('formation-processes.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('formation-processes.*') ? 'active' : '' }}">
-                            <i class="bi bi-book-half me-2 text-gray-600 sidebar-icon"></i>
-                            <span class="sidebar-text">{{ __('messages.formation_processes') }}</span>
-                        </a>
-                    </li> --}}
                 </ul>
             </li>
             <li class="mb-2">
@@ -355,12 +367,6 @@
                     <span class="sidebar-text">{{ __('messages.violations_by_type') }}</span>
                 </a>
             </li>
-            {{-- <li class="mb-2">
-                <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2">
-                    <i class="bi bi-shield-check me-2 text-gray-600 sidebar-icon"></i>
-                    <span class="sidebar-text">{{ __('messages.score_points') }}</span>
-                </a>
-            </li> --}}
             <li class="mb-2">
                 <a href="{{ route('drivers.activities.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2">
                     <i class="bi bi-clock-history me-2 text-gray-600 sidebar-icon"></i>
@@ -374,10 +380,32 @@
                 </a>
             </li>
             <li class="mb-2">
-                <a href="#" class="text-dark text-decoration-none d-flex align-items-center p-2">
-                    <i class="bi bi-journal-check me-2 text-gray-600 sidebar-icon"></i>
-                    <span class="sidebar-text">{{ __('messages.action_plan') }}</span>
+                <a href="#"
+                   class="text-dark text-decoration-none d-flex align-items-center p-2 {{ (request()->routeIs('rest-points.*') || request()->routeIs('rest-points.checklists.categories.*')) ? 'active' : '' }}"
+                   data-bs-toggle="collapse"
+                   data-bs-target="#restPointsSubmenu"
+                   aria-expanded="{{ (request()->routeIs('rest-points.*') || request()->routeIs('rest-points.checklists.categories.*')) ? 'true' : 'false' }}"
+                   aria-controls="restPointsSubmenu">
+                    <i class="bi bi-geo-alt-fill me-2 text-gray-600 sidebar-icon"></i>
+                    <span class="sidebar-text">{{ __('messages.rest_points') ?? 'Rest Points' }}</span>
+                    <i class="bi bi-chevron-down ms-auto sidebar-icon"></i>
                 </a>
+                <ul class="collapse list-unstyled ms-3 {{ (request()->routeIs('rest-points.*') || request()->routeIs('rest-points.checklists.categories.*')) ? 'show' : '' }}" id="restPointsSubmenu">
+                    <li class="mb-1">
+                        <a href="{{ route('rest-points.index') }}"
+                           class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('rest-points.*') ? 'active' : '' }}">
+                            <i class="bi bi-geo-alt me-2 text-gray-600 sidebar-icon"></i>
+                            <span class="sidebar-text">{{ __('messages.rest_points') ?? 'Rest Points' }}</span>
+                        </a>
+                    </li>
+                    <li class="mb-1">
+                        <a href="{{ route('rest-points.checklists.categories.index') }}"
+                           class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('rest-points.checklists.categories.*') ? 'active' : '' }}">
+                            <i class="bi bi-list-check me-2 text-gray-600 sidebar-icon"></i>
+                            <span class="sidebar-text">{{ __('messages.checklist') ?? 'Check List' }}</span>
+                        </a>
+                    </li>
+                </ul>
             </li>
             <li class="mb-2">
                 <a href="{{ route('organigram.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('organigram.*') ? 'active' : '' }}">

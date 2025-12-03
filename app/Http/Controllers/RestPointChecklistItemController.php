@@ -1,0 +1,84 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\RestPointChecklistItem;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Throwable;
+
+class RestPointChecklistItemController extends Controller
+{
+    public function store(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'rest_points_checklist_category_id' => ['required', 'exists:rest_points_checklist_categories,id'],
+            'label' => ['required', 'string', 'max:255'],
+            'is_active' => ['nullable', 'boolean'],
+        ]);
+
+        $validated['is_active'] = $request->has('is_active') ? $request->boolean('is_active') : false;
+
+        try {
+            $item = RestPointChecklistItem::create($validated);
+
+            return redirect()
+                ->route('rest-points.checklists.categories.show', $validated['rest_points_checklist_category_id'])
+                ->with('success', __('messages.checklist_item_created') ?? 'Checklist item created successfully.');
+        } catch (Throwable $th) {
+            report($th);
+
+            return back()->withInput()->with('error', __('messages.error_creating_checklist_item') ?? 'Error creating checklist item.');
+        }
+    }
+
+    public function update(Request $request, RestPointChecklistItem $item): RedirectResponse
+    {
+        $validated = $request->validate([
+            'rest_points_checklist_category_id' => ['required', 'exists:rest_points_checklist_categories,id'],
+            'label' => ['required', 'string', 'max:255'],
+            'is_active' => ['nullable', 'boolean'],
+        ]);
+
+        $validated['is_active'] = $request->has('is_active') ? $request->boolean('is_active') : false;
+
+        try {
+            $item->update($validated);
+
+            return redirect()
+                ->route('rest-points.checklists.categories.show', $validated['rest_points_checklist_category_id'])
+                ->with('success', __('messages.checklist_item_updated') ?? 'Checklist item updated successfully.');
+        } catch (Throwable $th) {
+            report($th);
+
+            return back()->withInput()->with('error', __('messages.error_updating_checklist_item') ?? 'Error updating checklist item.');
+        }
+    }
+
+    public function destroy(Request $request, RestPointChecklistItem $item): RedirectResponse
+    {
+        try {
+            // Get category ID before deleting the item
+            $categoryId = $item->rest_points_checklist_category_id;
+
+            // Use transaction to ensure data integrity
+            DB::transaction(function () use ($item) {
+                // Delete all answers for this item first
+                $item->answers()->delete();
+
+                // Now delete the item
+                $item->delete();
+            });
+
+            return redirect()
+                ->route('rest-points.checklists.categories.show', $categoryId)
+                ->with('success', __('messages.checklist_item_deleted') ?? 'Checklist item deleted successfully.');
+        } catch (Throwable $th) {
+            report($th);
+
+            return back()->with('error', __('messages.error_deleting_checklist_item') ?? 'Error deleting checklist item.');
+        }
+    }
+}
+

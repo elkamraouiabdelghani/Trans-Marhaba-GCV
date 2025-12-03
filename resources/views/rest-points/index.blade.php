@@ -36,12 +36,12 @@
         <!-- Filters -->
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-body p-4">
-                <div class="d-flex justify-content-between align-items-center mb-2">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-2">
                     <h2 class="mb-0 fw-bold text-dark fs-4">
                         <i class="bi bi-geo-alt-fill me-2 text-primary"></i>
                         {{ __('messages.rest_points') ?? 'Rest Points' }}
                     </h2>
-                    <div class="d-flex flex-column flex-md-row gap-2 gap-md-3">
+                    <div class="d-flex flex-column flex-md-row gap-2 gap-md-3 mt-2 mt-md-0">
                         <button type="button" id="exportPdfBtn" class="btn btn-sm btn-danger">
                             <i class="bi bi-file-earmark-pdf me-2"></i>
                             {{ __('messages.export_pdf') ?? 'Export Map PDF' }}
@@ -50,10 +50,14 @@
                             <i class="bi bi-file-earmark-excel me-2"></i>
                             {{ __('messages.export_excel') ?? 'Export to Excel' }}
                         </a>
-                        <button type="button" class="btn btn-sm btn-dark" data-bs-toggle="modal" data-bs-target="#createRestPointModal">
+                        <a href="{{ route('rest-points.planning') }}" class="btn btn-sm btn-info">
+                            <i class="bi bi-calendar-check me-2"></i>
+                            {{ __('messages.planning') ?? 'Planning' }}
+                        </a>
+                        <a href="{{ route('rest-points.create') }}" class="btn btn-sm btn-dark">
                             <i class="bi bi-plus-circle me-2"></i>
                             {{ __('messages.add_rest_point') ?? 'Add Rest Point' }}
-                        </button>
+                        </a>
                     </div>
                 </div>
                 <form action="{{ route('rest-points.index') }}" method="GET" id="restPointsFiltersForm">
@@ -120,8 +124,9 @@
                                 <th class="ps-3">{{ __('messages.name') ?? 'Name' }}</th>
                                 <th>{{ __('messages.type') ?? 'Type' }}</th>
                                 <th>{{ __('messages.coordinates') ?? 'Coordinates' }}</th>
+                                <th>{{ __('messages.last_inspection') ?? 'Last inspection' }}</th>
+                                <th>{{ __('messages.next_inspection_due') ?? 'Next due' }}</th>
                                 <th>{{ __('messages.created_at') ?? 'Created At' }}</th>
-                                <th>{{ __('messages.updated_at') ?? 'Updated At' }}</th>
                                 <th class="text-end pe-3">{{ __('messages.actions') ?? 'Actions' }}</th>
                             </tr>
                         </thead>
@@ -145,40 +150,54 @@
                                         </small>
                                     </td>
                                     <td>
+                                        @if($restPoint->last_inspection_date)
+                                            <div class="d-flex flex-column">
+                                                <span class="text-muted">
+                                                    {{ $restPoint->last_inspection_date->format('d/m/Y') }}
+                                                </span>
+                                                @php
+                                                    $status = $restPoint->inspection_status;
+                                                    $badgeClass = $status === 'overdue' ? 'bg-danger' : 'bg-success';
+                                                    $label = $status === 'overdue'
+                                                        ? __('messages.overdue') ?? 'Overdue'
+                                                        : __('messages.on_time') ?? 'On time';
+                                                @endphp
+                                                <span class="badge {{ $badgeClass }} mt-1">
+                                                    {{ $label }}
+                                                </span>
+                                            </div>
+                                        @else
+                                            <span class="badge bg-secondary">
+                                                {{ __('messages.no_inspection') ?? 'No inspection' }}
+                                            </span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if($restPoint->next_inspection_due_at)
+                                            <span class="text-muted">
+                                                {{ $restPoint->next_inspection_due_at->format('d/m/Y') }}
+                                            </span>
+                                        @else
+                                            <span class="text-muted">-</span>
+                                        @endif
+                                    </td>
+                                    <td>
                                         <span class="text-muted">
                                             {{ $restPoint->created_at->format('d/m/Y H:i') }}
                                         </span>
                                     </td>
-                                    <td>
-                                        <span class="text-muted">
-                                            {{ $restPoint->updated_at->format('d/m/Y H:i') }}
-                                        </span>
-                                    </td>
                                     <td class="text-end pe-3">
                                         <div class="btn-group" role="group">
-                                            <button type="button" 
-                                                    class="btn btn-sm btn-outline-primary" 
-                                                    title="{{ __('messages.edit') ?? 'Edit' }}"
-                                                    data-bs-toggle="modal" 
-                                                    data-bs-target="#editRestPointModal"
-                                                    data-rest-point-id="{{ $restPoint->id }}"
-                                                    data-rest-point-name="{{ $restPoint->name }}"
-                                                    data-rest-point-type="{{ $restPoint->type }}"
-                                                    data-rest-point-latitude="{{ $restPoint->latitude }}"
-                                                    data-rest-point-longitude="{{ $restPoint->longitude }}"
-                                                    data-rest-point-description="{{ $restPoint->description ?? '' }}">
+                                            <a href="{{ route('rest-points.show', $restPoint) }}"
+                                               class="btn btn-sm btn-outline-primary"
+                                               title="{{ __('messages.view') ?? 'View' }}">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a href="{{ route('rest-points.edit', $restPoint) }}"
+                                               class="btn btn-sm btn-outline-warning"
+                                               title="{{ __('messages.edit') ?? 'Edit' }}">
                                                 <i class="bi bi-pencil"></i>
-                                            </button>
-                                            <button type="button" 
-                                                    class="btn btn-sm btn-outline-danger" 
-                                                    title="{{ __('messages.delete') ?? 'Delete' }}"
-                                                    data-bs-toggle="modal" 
-                                                    data-bs-target="#deleteRestPointModal"
-                                                    data-rest-point-id="{{ $restPoint->id }}"
-                                                    data-rest-point-name="{{ $restPoint->name }}"
-                                                    data-delete-url="{{ route('rest-points.destroy', $restPoint) }}">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
+                                            </a>
                                         </div>
                                     </td>
                                 </tr>
@@ -205,202 +224,6 @@
     </div>
 </x-app-layout>
 
-<!-- Create Rest Point Modal -->
-<div class="modal fade" id="createRestPointModal" tabindex="-1" aria-labelledby="createRestPointModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="createRestPointModalLabel">
-                    <i class="bi bi-plus-circle me-2"></i>{{ __('messages.add_rest_point') ?? 'Add Rest Point' }}
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form action="{{ route('rest-points.store') }}" method="POST" id="createRestPointForm">
-                @csrf
-                @if($errors->any() && old('_token'))
-                    <div class="alert alert-danger mx-3 mt-3 mb-0">
-                        <ul class="mb-0">
-                            @foreach($errors->all() as $error)
-                                <li>{{ $error }}</li>
-                            @endforeach
-                        </ul>
-                    </div>
-                @endif
-                <div class="modal-body">
-                    <div class="row g-3">
-                        <div class="col-12">
-                            <label for="create_name" class="form-label fw-semibold">{{ __('messages.name') ?? 'Name' }} <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control @error('name') is-invalid @enderror" id="create_name" name="name" value="{{ old('name') }}" required>
-                            @error('name')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div class="col-12">
-                            <label for="create_type" class="form-label fw-semibold">{{ __('messages.type') ?? 'Type' }} <span class="text-danger">*</span></label>
-                            <select class="form-select @error('type') is-invalid @enderror" id="create_type" name="type" required>
-                                <option value="">{{ __('messages.select_type') ?? 'Select Type' }}</option>
-                                @foreach($types as $key => $label)
-                                    <option value="{{ $key }}" @selected(old('type') === $key)>{{ $label }}</option>
-                                @endforeach
-                            </select>
-                            @error('type')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div class="col-12">
-                            <label class="form-label fw-semibold">{{ __('messages.location') ?? 'Location' }} <span class="text-danger">*</span></label>
-                            <div id="create-location-map" style="width: 100%; height: 300px; border-radius: 0.5rem; border: 1px solid #dee2e6; margin-bottom: 0.5rem;"></div>
-                            <input type="hidden" name="latitude" id="create_latitude" value="{{ old('latitude') }}" required>
-                            <input type="hidden" name="longitude" id="create_longitude" value="{{ old('longitude') }}" required>
-                            <small class="text-muted d-block mt-1" id="create-location-coordinates-label">
-                                @if(old('latitude') && old('longitude'))
-                                    {{ __('messages.location_coords_label') ?? 'Coordinates' }}: <span class="fw-semibold">{{ old('latitude') }}, {{ old('longitude') }}</span>
-                                @else
-                                    {{ __('messages.location_map_help') ?? 'Click on the map to set the coordinates.' }}
-                                @endif
-                            </small>
-                            @error('latitude')
-                                <div class="text-danger small mt-1">{{ $message }}</div>
-                            @enderror
-                            @error('longitude')
-                                <div class="text-danger small mt-1">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div class="col-12">
-                            <label for="create_description" class="form-label fw-semibold">{{ __('messages.description') ?? 'Description' }}</label>
-                            <textarea class="form-control @error('description') is-invalid @enderror" id="create_description" name="description" rows="3">{{ old('description') }}</textarea>
-                            @error('description')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('messages.cancel') ?? 'Cancel' }}</button>
-                    <button type="submit" class="btn btn-dark">{{ __('messages.create') ?? 'Create' }}</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- Edit Rest Point Modal -->
-<div class="modal fade" id="editRestPointModal" tabindex="-1" aria-labelledby="editRestPointModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="editRestPointModalLabel">
-                    <i class="bi bi-pencil me-2"></i>{{ __('messages.edit_rest_point') ?? 'Edit Rest Point' }}
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form action="" method="POST" id="editRestPointForm">
-                @csrf
-                @method('PUT')
-                @if($errors->any() && old('_token') && old('_method') === 'PUT')
-                    <div class="alert alert-danger mx-3 mt-3 mb-0">
-                        <ul class="mb-0">
-                            @foreach($errors->all() as $error)
-                                <li>{{ $error }}</li>
-                            @endforeach
-                        </ul>
-                    </div>
-                @endif
-                <div class="modal-body">
-                    <div class="row g-3">
-                        <div class="col-12">
-                            <label for="edit_name" class="form-label fw-semibold">{{ __('messages.name') ?? 'Name' }} <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control @error('name') is-invalid @enderror" id="edit_name" name="name" required>
-                            @error('name')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div class="col-12">
-                            <label for="edit_type" class="form-label fw-semibold">{{ __('messages.type') ?? 'Type' }} <span class="text-danger">*</span></label>
-                            <select class="form-select @error('type') is-invalid @enderror" id="edit_type" name="type" required>
-                                <option value="">{{ __('messages.select_type') ?? 'Select Type' }}</option>
-                                @foreach($types as $key => $label)
-                                    <option value="{{ $key }}">{{ $label }}</option>
-                                @endforeach
-                            </select>
-                            @error('type')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div class="col-12">
-                            <label class="form-label fw-semibold">{{ __('messages.location') ?? 'Location' }} <span class="text-danger">*</span></label>
-                            <div id="edit-location-map" style="width: 100%; height: 300px; border-radius: 0.5rem; border: 1px solid #dee2e6; margin-bottom: 0.5rem;"></div>
-                            <input type="hidden" name="latitude" id="edit_latitude" required>
-                            <input type="hidden" name="longitude" id="edit_longitude" required>
-                            <small class="text-muted d-block mt-1" id="edit-location-coordinates-label">
-                                {{ __('messages.location_map_help') ?? 'Click on the map to set the coordinates.' }}
-                            </small>
-                            @error('latitude')
-                                <div class="text-danger small mt-1">{{ $message }}</div>
-                            @enderror
-                            @error('longitude')
-                                <div class="text-danger small mt-1">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div class="col-12">
-                            <label for="edit_description" class="form-label fw-semibold">{{ __('messages.description') ?? 'Description' }}</label>
-                            <textarea class="form-control @error('description') is-invalid @enderror" id="edit_description" name="description" rows="3"></textarea>
-                            @error('description')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('messages.cancel') ?? 'Cancel' }}</button>
-                    <button type="submit" class="btn btn-dark">{{ __('messages.update') ?? 'Update' }}</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- Delete Confirmation Modal -->
-<div class="modal fade" id="deleteRestPointModal" tabindex="-1" aria-labelledby="deleteRestPointModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title" id="deleteRestPointModalLabel">
-                    <i class="bi bi-exclamation-triangle me-2"></i>{{ __('messages.confirm_delete') ?? 'Confirm Delete' }}
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <p class="mb-0">
-                    {{ __('messages.confirm_delete_rest_point') ?? 'Are you sure you want to delete this rest point?' }}
-                    <strong id="delete-rest-point-name"></strong>?
-                </p>
-                <p class="text-muted small mt-2 mb-0">
-                    {{ __('messages.delete_warning') ?? 'This action cannot be undone.' }}
-                </p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    {{ __('messages.cancel') ?? 'Cancel' }}
-                </button>
-                <form id="deleteRestPointForm" method="POST" class="d-inline">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit" class="btn btn-danger">
-                        <i class="bi bi-trash me-2"></i>{{ __('messages.delete') ?? 'Delete' }}
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
 <!-- Leaflet CSS and JS -->
 <link
     rel="stylesheet"
@@ -416,45 +239,6 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    // Auto-open create modal if there are validation errors
-    @if($errors->any() && old('_token') && !old('_method'))
-        const createModal = new bootstrap.Modal(document.getElementById('createRestPointModal'));
-        createModal.show();
-    @endif
-
-    // Auto-open edit modal if there are validation errors
-    @if($errors->any() && old('_token') && old('_method') === 'PUT')
-        const editModal = new bootstrap.Modal(document.getElementById('editRestPointModal'));
-        editModal.show();
-    @endif
-
-    // ========== Delete Confirmation Modal ==========
-    const deleteRestPointModal = document.getElementById('deleteRestPointModal');
-    if (deleteRestPointModal) {
-        deleteRestPointModal.addEventListener('show.bs.modal', function (event) {
-            const button = event.relatedTarget;
-            const restPointId = button.getAttribute('data-rest-point-id');
-            const restPointName = button.getAttribute('data-rest-point-name');
-            const deleteUrl = button.getAttribute('data-delete-url');
-
-            const form = document.getElementById('deleteRestPointForm');
-            const nameElement = document.getElementById('delete-rest-point-name');
-
-            if (form) {
-                form.action = deleteUrl;
-            }
-
-            if (nameElement) {
-                nameElement.textContent = restPointName ? ' "' + restPointName + '"' : '';
-            }
-        });
-    }
-
-    if (!window.L) {
-        console.error('Leaflet library not loaded');
-        return;
-    }
-
     // ========== Main Map (Index Page) ==========
     const mapContainer = document.getElementById('rest-points-map');
     if (mapContainer) {
@@ -465,18 +249,15 @@ document.addEventListener('DOMContentLoaded', function () {
         }).addTo(map);
 
         const restPoints = @json($allRestPoints);
-        const typeColors = {
-            'area': '#28a745',
-            'station': '#007bff',
-            'parking': '#ffc107',
-            'other': '#6c757d'
-        };
-
         function createCustomIcon(type) {
-            const color = typeColors[type] || typeColors['other'];
+            const color = '#28a745'; // same green for all rest points
             return L.divIcon({
                 className: 'custom-marker',
-                html: `<div style="background-color: ${color}; width: 30px; height: 30px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"></div>`,
+                html: `
+                    <div class="custom-marker-pin" style="background-color: ${color};">
+                        <span class="custom-marker-letter">P</span>
+                    </div>
+                `,
                 iconSize: [30, 30],
                 iconAnchor: [15, 30],
                 popupAnchor: [0, -30]
@@ -519,187 +300,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // ========== Create Rest Point Modal Map ==========
-    let createMap = null;
-    let createMarker = null;
-
-    const createRestPointModal = document.getElementById('createRestPointModal');
-    if (createRestPointModal) {
-        createRestPointModal.addEventListener('shown.bs.modal', function () {
-            if (!createMap) {
-                const mapContainer = document.getElementById('create-location-map');
-                if (!mapContainer) return;
-                
-                createMap = L.map(mapContainer).setView([33.5731, -7.5898], 7);
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    maxZoom: 19,
-                    attribution: '&copy; OpenStreetMap contributors',
-                }).addTo(createMap);
-
-                const latInput = document.getElementById('create_latitude');
-                const lngInput = document.getElementById('create_longitude');
-                const coordsLabel = document.getElementById('create-location-coordinates-label');
-
-                if (latInput && lngInput && latInput.value && lngInput.value) {
-                    const lat = parseFloat(latInput.value);
-                    const lng = parseFloat(lngInput.value);
-                    createMap.setView([lat, lng], 13);
-                    createMarker = L.marker([lat, lng]).addTo(createMap);
-                }
-
-                createMap.on('click', function (e) {
-                    const lat = e.latlng.lat;
-                    const lng = e.latlng.lng;
-
-                    if (createMarker) {
-                        createMarker.setLatLng([lat, lng]);
-                    } else {
-                        createMarker = L.marker([lat, lng]).addTo(createMap);
-                    }
-
-                    if (latInput) {
-                        latInput.value = lat.toFixed(6);
-                        latInput.setAttribute('value', lat.toFixed(6));
-                    }
-                    if (lngInput) {
-                        lngInput.value = lng.toFixed(6);
-                        lngInput.setAttribute('value', lng.toFixed(6));
-                    }
-                    if (coordsLabel) {
-                        const label = @json(__('messages.location_coords_label') ?? 'Coordinates');
-                        coordsLabel.innerHTML = label + ': <span class="fw-semibold">' + lat.toFixed(6) + ', ' + lng.toFixed(6) + '</span>';
-                    }
-                    
-                    console.log('Map clicked - Latitude:', lat.toFixed(6), 'Longitude:', lng.toFixed(6));
-                });
-            } else {
-                createMap.invalidateSize();
-            }
-        });
-    }
-
-    // ========== Form Validation ==========
-    const createForm = document.getElementById('createRestPointForm');
-    if (createForm) {
-        createForm.addEventListener('submit', function(e) {
-            const lat = document.getElementById('create_latitude').value;
-            const lng = document.getElementById('create_longitude').value;
-            
-            console.log('Form submission - Latitude:', lat, 'Longitude:', lng);
-            
-            if (!lat || !lng || lat === '' || lng === '') {
-                e.preventDefault();
-                alert(@json(__('messages.location_required') ?? 'Please select a location on the map before submitting.'));
-                return false;
-            }
-        });
-    }
-
-    const editForm = document.getElementById('editRestPointForm');
-    if (editForm) {
-        editForm.addEventListener('submit', function(e) {
-            const lat = document.getElementById('edit_latitude').value;
-            const lng = document.getElementById('edit_longitude').value;
-            
-            if (!lat || !lng) {
-                e.preventDefault();
-                alert(@json(__('messages.location_required') ?? 'Please select a location on the map before submitting.'));
-                return false;
-            }
-        });
-    }
-
-    // ========== Edit Rest Point Modal Map ==========
-    let editMap = null;
-    let editMarker = null;
-
-    // ========== Edit Rest Point Modal ==========
-    const editRestPointModal = document.getElementById('editRestPointModal');
-    if (editRestPointModal) {
-        editRestPointModal.addEventListener('show.bs.modal', function (event) {
-            const button = event.relatedTarget;
-            const restPointId = button.getAttribute('data-rest-point-id');
-            const name = button.getAttribute('data-rest-point-name');
-            const type = button.getAttribute('data-rest-point-type');
-            const latitude = button.getAttribute('data-rest-point-latitude');
-            const longitude = button.getAttribute('data-rest-point-longitude');
-            const description = button.getAttribute('data-rest-point-description');
-
-            const form = document.getElementById('editRestPointForm');
-            form.action = @json(url('/rest-points')) + '/' + restPointId;
-
-            document.getElementById('edit_name').value = name || '';
-            document.getElementById('edit_type').value = type || '';
-            document.getElementById('edit_latitude').value = latitude || '';
-            document.getElementById('edit_longitude').value = longitude || '';
-            document.getElementById('edit_description').value = description || '';
-
-            const coordsLabel = document.getElementById('edit-location-coordinates-label');
-            if (latitude && longitude && coordsLabel) {
-                const label = @json(__('messages.location_coords_label') ?? 'Coordinates');
-                coordsLabel.innerHTML = label + ': <span class="fw-semibold">' + parseFloat(latitude).toFixed(6) + ', ' + parseFloat(longitude).toFixed(6) + '</span>';
-            } else if (coordsLabel) {
-                coordsLabel.innerHTML = @json(__('messages.location_map_help') ?? 'Click on the map to set the coordinates.');
-            }
-        });
-
-        editRestPointModal.addEventListener('shown.bs.modal', function () {
-            if (!editMap) {
-                const mapContainer = document.getElementById('edit-location-map');
-                if (!mapContainer) return;
-                
-                editMap = L.map(mapContainer).setView([33.5731, -7.5898], 7);
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    maxZoom: 19,
-                    attribution: '&copy; OpenStreetMap contributors',
-                }).addTo(editMap);
-
-                const latInput = document.getElementById('edit_latitude');
-                const lngInput = document.getElementById('edit_longitude');
-                const coordsLabel = document.getElementById('edit-location-coordinates-label');
-
-                function updateMarkerAndInputs(lat, lng) {
-                    if (editMarker) {
-                        editMarker.setLatLng([lat, lng]);
-                    } else {
-                        editMarker = L.marker([lat, lng]).addTo(editMap);
-                    }
-
-                    if (latInput) latInput.value = lat.toFixed(6);
-                    if (lngInput) lngInput.value = lng.toFixed(6);
-                    if (coordsLabel) {
-                        const label = @json(__('messages.location_coords_label') ?? 'Coordinates');
-                        coordsLabel.innerHTML = label + ': <span class="fw-semibold">' + lat.toFixed(6) + ', ' + lng.toFixed(6) + '</span>';
-                    }
-                }
-
-                if (latInput && lngInput && latInput.value && lngInput.value) {
-                    const lat = parseFloat(latInput.value);
-                    const lng = parseFloat(lngInput.value);
-                    editMap.setView([lat, lng], 13);
-                    updateMarkerAndInputs(lat, lng);
-                }
-
-                editMap.on('click', function (e) {
-                    updateMarkerAndInputs(e.latlng.lat, e.latlng.lng);
-                });
-            } else {
-                editMap.invalidateSize();
-                const latInput = document.getElementById('edit_latitude');
-                const lngInput = document.getElementById('edit_longitude');
-                if (latInput && lngInput && latInput.value && lngInput.value) {
-                    const lat = parseFloat(latInput.value);
-                    const lng = parseFloat(lngInput.value);
-                    editMap.setView([lat, lng], 13);
-                    if (editMarker) {
-                        editMarker.setLatLng([lat, lng]);
-                    } else {
-                        editMarker = L.marker([lat, lng]).addTo(editMap);
-                    }
-                }
-            }
-        });
-    }
 });
 
 // ========== PDF Export with Map Screenshot ==========
@@ -802,6 +402,26 @@ function initPdfExport() {
 .custom-marker {
     background: transparent !important;
     border: none !important;
+}
+
+.custom-marker-pin {
+    width: 30px;
+    height: 30px;
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+    border: 3px solid #ffffff;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.custom-marker-letter {
+    transform: rotate(45deg);
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 14px;
 }
 </style>
 
