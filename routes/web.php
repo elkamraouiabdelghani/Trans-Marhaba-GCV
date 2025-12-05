@@ -72,6 +72,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/drivers/{driver}/formations/quick-store', [DriversController::class, 'storeQuickFormation'])->name('drivers.formations.quick-store');
     Route::get('/driver-formations/{driverFormation}/certificate', [DriversController::class, 'downloadFormationCertificate'])->name('drivers.formations.download-certificate');
     Route::post('/drivers/{driver}/activities', [DriversController::class, 'storeActivity'])->name('drivers.activities.store');
+    Route::delete('/drivers/activities/{activity}', [DriversController::class, 'deleteActivity'])->name('drivers.activities.delete');
     Route::get('/drivers/{driver}/activities/export-pdf', [DriversController::class, 'exportTimelinePDF'])->name('drivers.activities.export-pdf');
     Route::get('/drivers/{driver}/activities/export-csv', [DriversController::class, 'exportTimelineCSV'])->name('drivers.activities.export-csv');
     Route::get('/drivers/{driver}/violations/export-pdf', [DriversController::class, 'exportViolationsPDF'])->name('drivers.violations.export-pdf');

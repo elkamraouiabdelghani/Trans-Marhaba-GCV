@@ -22,6 +22,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -251,6 +252,7 @@ class DriversController extends Controller
             'totalViolations',
             'totalDrivingHoursThisWeek',
             'timelineData',
+            'activities', // Pass individual activities for delete functionality
             'violationTypes',
             'statusOptions',
             'violationTypeId',
@@ -277,7 +279,8 @@ class DriversController extends Controller
         $dateTo = $request->get('date_to');
         $search = trim((string) $request->get('search'));
 
-        $driversList = Driver::select('id', 'full_name')
+        $driversList = Driver::select('id', 'full_name', 'flotte_id')
+            ->with('flotte:id,name')
             ->orderByRaw("CASE WHEN (full_name IS NULL OR full_name = '') THEN 1 ELSE 0 END")
             ->orderBy('full_name')
             ->orderBy('id')
@@ -373,16 +376,74 @@ class DriversController extends Controller
                 return back()->with('error', __('messages.import_no_rows') ?? 'No data rows found in the file.');
             }
 
-            [$headerIndex, $sheetRows, $missingColumn] = $this->resolveHeaderIndex($sheetRows);
-            if (!$headerIndex) {
-                [$headerIndex, $sheetRows] = $this->fallbackHeaderIndex($sheetRows);
-                if (!$headerIndex) {
-                    $columnName = $missingColumn ?? __('messages.import_required_headers') ?? 'required headers';
-                    return back()->with('error', __('messages.import_missing_column', ['column' => $columnName]) ?? 'Unable to detect required columns.');
-                }
+            // Skip first 4 rows (header is in row 5, which is index 4 in Excel)
+            // Excel row 5 = index 4, so we skip indices 0-3
+            $rowsBeforeHeader = array_slice($sheetRows, 0, 4);
+            
+            if (count($sheetRows) < 5) {
+                return back()->with('error', 'File must have at least 5 rows (header row is in row 5).');
             }
 
+            // Row 5 (index 4) is the header row
+            $headerRow = $sheetRows[4] ?? [];
+            
+            // Data rows start from row 6 (index 5)
+            $dataRows = array_slice($sheetRows, 5);
+
+            if (empty($headerRow)) {
+                return back()->with('error', 'Header row (row 5) is empty.');
+            }
+
+            if (empty($dataRows)) {
+                return back()->with('error', 'No data rows found after header row.');
+            }
+
+            // Normalize header row to build index
+            $normalizedHeaders = array_map(fn ($value) => $this->normalizeImportHeader($value), $headerRow);
+            $headerIndex = $this->buildHeaderIndex($normalizedHeaders);
+            
+            // Verify we found the required columns (only check required ones, not optional)
+            $required = $this->requiredActivityColumns();
+            $requiredOnly = [
+                'date' => 'date',
+                'chauffeur' => 'chauffeur',
+                'first_trip_start_time' => 'premireheurededbutdutrajet',
+                'last_trip_end_time' => 'heuredefinduderniertrajet',
+                'driving_time' => 'tempsdeconduitehhmmss',
+                'rest_time' => 'tempsdattentehhmmss',
+            ];
+            $missingColumns = [];
+            foreach ($requiredOnly as $key => $normalizedColumn) {
+                if (!array_key_exists($normalizedColumn, $headerIndex)) {
+                    $missingColumns[] = $key;
+                }
+            }
+            
+            if (!empty($missingColumns)) {
+                $rawHeaders = array_filter($headerRow, fn($h) => $h !== null && trim((string)$h) !== '');
+                $foundHeaders = array_keys($headerIndex);
+                $errorMessage = "Missing required columns: " . implode(', ', $missingColumns);
+                $errorMessage .= ". Found headers: " . implode(', ', array_slice($rawHeaders, 0, 12));
+                $errorMessage .= ". Found normalized: " . implode(', ', array_slice($foundHeaders, 0, 12));
+                $errorMessage .= ". Required normalized: " . implode(', ', array_values($requiredOnly));
+                return back()->with('error', $errorMessage);
+            }
+            
+            // Use data rows for processing
+            $sheetRows = $dataRows;
+
+            // Log header index for debugging
+            Log::info('Import header detection', [
+                'header_index_keys' => array_keys($headerIndex),
+                'required_columns' => array_values($this->requiredActivityColumns()),
+            ]);
+
             $driverLookup = $this->buildDriverLookup();
+            
+            Log::info('Import driver lookup', [
+                'total_drivers' => count($driverLookup),
+                'sample_drivers' => array_slice(array_map(fn($d) => $d['original_name'], $driverLookup), 0, 5),
+            ]);
 
             $rowsToInsert = [];
             $errors = [];
@@ -393,11 +454,37 @@ class DriversController extends Controller
                     continue;
                 }
 
+                // Skip if this row looks like a header row (contains "Date" or "Chauffeur" as first values)
+                $firstCell = trim((string) ($rawRow[0] ?? ''));
+                $secondCell = trim((string) ($rawRow[1] ?? ''));
+                $normalizedFirst = $this->normalizeImportHeader($firstCell);
+                $normalizedSecond = $this->normalizeImportHeader($secondCell);
+                
+                // If first cell is "date" or second cell is "chauffeur", skip this row (it's likely the header)
+                if ($normalizedFirst === 'date' || $normalizedSecond === 'chauffeur') {
+                    continue;
+                }
+
                 $processed++;
-                $rowNumber = $rowIndex + 2;
+                // Row number in Excel: rowIndex 0 = Excel row 6 (after skipping 4 rows + header row 5)
+                // So rowIndex 0 = Excel row 6, rowIndex 1 = Excel row 7, etc.
+                $rowNumber = $rowIndex + 6;
 
                 try {
+                    // Map the row using header index
                     $mappedRow = $this->mapActivityRow($rawRow, $headerIndex);
+                    
+                    // Log the mapped row for debugging (first few rows only)
+                    if ($processed <= 3) {
+                        Log::info('Import row mapping', [
+                            'row_number' => $rowNumber,
+                            'mapped_row_keys' => array_keys($mappedRow),
+                            'mapped_row_values' => array_map(function($v) {
+                                return is_string($v) && strlen($v) > 50 ? substr($v, 0, 50) . '...' : $v;
+                            }, $mappedRow),
+                        ]);
+                    }
+                    
                     $transformed = $this->transformActivityRow($mappedRow, $driverLookup, $rowNumber);
 
                     if ($transformed === null) {
@@ -406,7 +493,18 @@ class DriversController extends Controller
 
                     $rowsToInsert[] = $transformed;
                 } catch (\Throwable $e) {
-                    $errors[] = "Row {$rowNumber}: {$e->getMessage()}";
+                    $errorMsg = $e->getMessage();
+                    $errors[] = "Row {$rowNumber}: {$errorMsg}";
+                    
+                    // Log detailed error for first few failures
+                    if (count($errors) <= 5) {
+                        Log::warning('Import row error', [
+                            'row_number' => $rowNumber,
+                            'error' => $errorMsg,
+                            'raw_row_sample' => array_slice($rawRow, 0, 10),
+                            'mapped_row' => $mappedRow ?? null,
+                        ]);
+                    }
                 }
             }
 
@@ -635,7 +733,7 @@ class DriversController extends Controller
                 'work_time' => $timeRule,
                 'driving_time' => $timeRule,
                 'rest_time' => $timeRule,
-                'rest_daily' => $timeRule,
+                'rest_daily' => ['nullable', 'regex:/^\d{2}:\d{2}(:\d{2})?$/'],
                 'raison' => ['nullable', 'string', 'max:1000'],
                 'start_location' => ['nullable', 'string', 'max:255'],
                 'overnight_location' => ['nullable', 'string', 'max:255'],
@@ -668,7 +766,8 @@ class DriversController extends Controller
             $data['driver_name'] = $data['driver_name'] ?? ($driver->full_name ?? $driver->name ?? null);
             $data['flotte'] = $data['flotte'] ?? ($driver->flotte->name ?? null);
 
-            DriverActivity::create([
+            // Create the new activity first (rest_daily will be null, calculated when next activity is added)
+            $newActivity = DriverActivity::create([
                 'driver_id' => $driver->id,
                 'activity_date' => $data['activity_date'],
                 'flotte' => $data['flotte'] ?? null,
@@ -679,11 +778,106 @@ class DriversController extends Controller
                 'work_time' => $data['work_time'],
                 'driving_time' => $data['driving_time'],
                 'rest_time' => $data['rest_time'],
-                'rest_daily' => $data['rest_daily'],
+                'rest_daily' => null, // Will be calculated when next activity is added
                 'raison' => $data['raison'] ?? null,
                 'start_location' => $data['start_location'] ?? null,
                 'overnight_location' => $data['overnight_location'] ?? null,
             ]);
+
+            // Now find the previous activity (the one before the one we just created) to calculate rest_daily
+            // Convert activity_date to string for comparison if needed
+            $newActivityDate = is_string($newActivity->activity_date) 
+                ? $newActivity->activity_date 
+                : (is_object($newActivity->activity_date) && method_exists($newActivity->activity_date, 'format') 
+                    ? $newActivity->activity_date->format('Y-m-d') 
+                    : (string)$newActivity->activity_date);
+            
+            $newStartTime = is_string($newActivity->start_time) 
+                ? $newActivity->start_time 
+                : (is_object($newActivity->start_time) && method_exists($newActivity->start_time, 'format') 
+                    ? $newActivity->start_time->format('H:i:s') 
+                    : (string)$newActivity->start_time);
+
+            // Find the previous activity (excluding the one we just created)
+            $previousActivity = DriverActivity::where('driver_id', $driver->id)
+                ->where('id', '!=', $newActivity->id) // Exclude the activity we just created
+                ->where(function($query) use ($newActivityDate, $newStartTime) {
+                    // Previous day activities (any activity from a previous day)
+                    $query->where('activity_date', '<', $newActivityDate)
+                        // Or same day but ended before this one starts
+                        ->orWhere(function($q) use ($newActivityDate, $newStartTime) {
+                            $q->whereDate('activity_date', '=', $newActivityDate)
+                              ->where('end_time', '<=', $newStartTime);
+                        });
+                })
+                ->orderBy('activity_date', 'desc')
+                ->orderBy('end_time', 'desc')
+                ->first();
+
+            // If we found a previous activity, calculate rest_daily for it
+            if ($previousActivity && $previousActivity->end_time) {
+                // Format dates properly for calculation
+                $previousActivityDate = $previousActivity->activity_date instanceof \Carbon\Carbon 
+                    ? $previousActivity->activity_date->format('Y-m-d')
+                    : (is_string($previousActivity->activity_date) 
+                        ? $previousActivity->activity_date 
+                        : ($previousActivity->activity_date ? (string)$previousActivity->activity_date : null));
+                
+                // Format times properly
+                $previousEndTime = $previousActivity->end_time instanceof \DateTime 
+                    ? $previousActivity->end_time->format('H:i:s')
+                    : (is_string($previousActivity->end_time) 
+                        ? $previousActivity->end_time 
+                        : ($previousActivity->end_time ? (string)$previousActivity->end_time : null));
+
+                if ($previousActivityDate && $previousEndTime && $newActivityDate && $newStartTime) {
+                    // Calculate rest_daily: time between previous activity's end_time and new activity's start_time
+                    $restDaily = $this->calculateTimeDifference($previousEndTime, $newStartTime, $previousActivityDate, $newActivityDate);
+                
+                    if ($restDaily) {
+                        $previousActivity->rest_daily = $restDaily;
+                        $previousActivity->save();
+                        
+                        Log::info('Updated rest_daily for previous activity', [
+                            'previous_activity_id' => $previousActivity->id,
+                            'new_activity_id' => $newActivity->id,
+                            'driver_id' => $driver->id,
+                            'rest_daily' => $restDaily,
+                            'previous_end_time' => $previousEndTime,
+                            'new_start_time' => $newStartTime,
+                            'previous_activity_date' => $previousActivityDate,
+                            'new_activity_date' => $newActivityDate,
+                        ]);
+                    } else {
+                        Log::warning('Failed to calculate rest_daily (returned null)', [
+                            'previous_activity_id' => $previousActivity->id,
+                            'new_activity_id' => $newActivity->id,
+                            'driver_id' => $driver->id,
+                            'previous_end_time' => $previousEndTime,
+                            'new_start_time' => $newStartTime,
+                            'previous_activity_date' => $previousActivityDate,
+                            'new_activity_date' => $newActivityDate,
+                        ]);
+                    }
+                } else {
+                    Log::warning('Missing required data to calculate rest_daily', [
+                        'previous_activity_id' => $previousActivity->id ?? null,
+                        'new_activity_id' => $newActivity->id,
+                        'driver_id' => $driver->id,
+                        'previous_activity_date' => $previousActivityDate,
+                        'previous_end_time' => $previousEndTime,
+                        'new_activity_date' => $newActivityDate,
+                        'new_start_time' => $newStartTime,
+                    ]);
+                }
+            } else {
+                Log::info('No previous activity found to calculate rest_daily', [
+                    'driver_id' => $driver->id,
+                    'new_activity_id' => $newActivity->id,
+                    'new_activity_date' => $newActivityDate,
+                    'new_start_time' => $newStartTime,
+                ]);
+            }
 
             Log::info('Driver activity stored', [
                 'driver_id' => $driver->id,
@@ -692,8 +886,7 @@ class DriversController extends Controller
                 'driving_time' => $data['driving_time'],
             ]);
 
-            return redirect()
-                ->route('drivers.show', $driver)
+            return back()
                 ->with('success', __('messages.activity_saved_successfully') ?? 'Activity saved successfully.');
         } catch (\Throwable $e) {
             Log::error('Failed to store driver activity', [
@@ -705,6 +898,36 @@ class DriversController extends Controller
                 ->withInput()
                 ->with('open_activity_modal', true)
                 ->with('error', __('messages.error_saving_activity') ?? 'An error occurred while saving the activity.');
+        }
+    }
+
+    /**
+     * Delete a driver activity.
+     */
+    public function deleteActivity(DriverActivity $activity): RedirectResponse
+    {
+        // Restrict to admin role
+        if (Auth::user()->role !== 'admin') {
+            return back()->with('error', __('messages.unauthorized') ?? 'Unauthorized action.');
+        }
+
+        try {
+            $driverId = $activity->driver_id;
+            $activity->delete();
+
+            Log::info('Driver activity deleted', [
+                'activity_id' => $activity->id,
+                'driver_id' => $driverId,
+            ]);
+
+            return back()->with('success', __('messages.activity_deleted_successfully') ?? 'Activity deleted successfully.');
+        } catch (\Throwable $e) {
+            Log::error('Failed to delete driver activity', [
+                'activity_id' => $activity->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', __('messages.error_deleting_activity') ?? 'Error deleting activity.');
         }
     }
 
@@ -1133,7 +1356,13 @@ class DriversController extends Controller
 
     private function normalizeImportHeader(?string $value): string
     {
+        if ($value === null) {
+            return '';
+        }
+        
+        // Trim whitespace, convert to lowercase, remove all non-alphanumeric characters
         return Str::of((string) $value)
+            ->trim()
             ->lower()
             ->replaceMatches('/[^a-z0-9]/', '')
             ->__toString();
@@ -1156,11 +1385,21 @@ class DriversController extends Controller
     {
         $required = $this->requiredActivityColumns();
         $lastMissing = null;
+        $rowsCopy = $rows; // Keep copy for iteration
 
-        while (!empty($rows)) {
-            $potentialHeader = array_shift($rows);
+        foreach ($rowsCopy as $rowIndex => $potentialHeader) {
+            // Skip empty rows
+            if ($this->isRowEmpty($potentialHeader)) {
+                continue;
+            }
+
             $normalized = array_map(fn ($value) => $this->normalizeImportHeader($value), $potentialHeader);
             $headerIndex = $this->buildHeaderIndex($normalized);
+
+            // Skip if no headers found after normalization
+            if (empty($headerIndex)) {
+                continue;
+            }
 
             $allPresent = true;
             foreach ($required as $columnKey => $columnLabel) {
@@ -1172,7 +1411,10 @@ class DriversController extends Controller
             }
 
             if ($allPresent) {
-                return [$headerIndex, $rows, null];
+                // Remove all rows up to and including the header row
+                // $rowIndex is the index in $rowsCopy, which is the same as $rows
+                $remainingRows = array_slice($rows, $rowIndex + 1);
+                return [$headerIndex, $remainingRows, null];
             }
         }
 
@@ -1216,24 +1458,33 @@ class DriversController extends Controller
     {
         return [
             'date' => 'date',
-            'asset_description' => 'assetdescription',
-            'first_trip_start_time' => 'firsttripstarttime',
-            'last_trip_end_time' => 'lasttripendtime',
-            'driving_time' => 'drivingtimehhmmss',
-            'standing_time' => 'standingtimehhmmss',
-            'duration' => 'durationhhmmss',
-            'idle_time' => 'idletimehhmmss',
+            'chauffeur' => 'chauffeur',
+            'first_trip_start_time' => 'premireheurededbutdutrajet', // "Première heure de début du trajet" → "premireheurededbutdutrajet"
+            'last_trip_end_time' => 'heuredefinduderniertrajet', // "Heure de fin du dernier trajet" → "heuredefinduderniertrajet"
+            'driving_time' => 'tempsdeconduitehhmmss', // "Temps de conduite (hh:mm:ss)" → "tempsdeconduitehhmmss"
+            'rest_time' => 'tempsdattentehhmmss', // "Temps d'attente (hh:mm:ss)" → "tempsdattentehhmmss"
         ];
     }
 
     private function mapActivityRow(array $row, array $headerIndex): array
     {
         $map = $this->requiredActivityColumns();
+        
+        // Add optional columns
+        $map['work_time'] = 'durehhmmss'; // "durée (hh:mm:ss)" → "durehhmmss" (é removed)
+        $map['rest_daily'] = 'durederalentihhmmss'; // "Durée de ralenti (hh:mm:ss)" → "durederalentihhmmss"
+        
         $mapped = [];
 
         foreach ($map as $key => $normalizedColumn) {
             $columnPosition = $headerIndex[$normalizedColumn] ?? null;
-            $mapped[$key] = $columnPosition !== null ? ($row[$columnPosition] ?? null) : null;
+            if ($columnPosition !== null && isset($row[$columnPosition])) {
+                $value = $row[$columnPosition];
+                // Convert to string and trim if it's not null
+                $mapped[$key] = $value !== null ? trim((string) $value) : null;
+            } else {
+                $mapped[$key] = null;
+            }
         }
 
         return $mapped;
@@ -1243,26 +1494,23 @@ class DriversController extends Controller
     {
         $date = $this->parseImportDate($row['date'] ?? null);
         if (!$date) {
-            throw new \InvalidArgumentException(__('messages.import_invalid_date') ?? 'Invalid date value provided.');
+            $dateValue = $row['date'] ?? 'empty';
+            throw new \InvalidArgumentException("Invalid date value: '{$dateValue}'. Expected format: dd/mm/yyyy, yyyy-mm-dd, or Excel date number.");
         }
 
-        $assetDescription = trim((string) ($row['asset_description'] ?? ''));
-        if ($assetDescription === '') {
-            throw new \InvalidArgumentException(__('messages.import_missing_asset_description') ?? 'Asset Description is required.');
+        // Get driver name directly from 'Chauffeur' column
+        $driverName = trim((string) ($row['chauffeur'] ?? ''));
+        if ($driverName === '' || $driverName === null) {
+            throw new \InvalidArgumentException('Driver name (Chauffeur column) is required.');
         }
 
-        [$vehicleLabel, $driverLabel] = $this->extractVehicleAndDriver($assetDescription);
-        if (!$driverLabel) {
-            throw new \InvalidArgumentException(__('messages.import_missing_driver_name') ?? 'Driver name missing in Asset Description.');
-        }
-
-        // Try multiple variations of the driver name for matching
+        // Try multiple variations of the driver name for matching (using lowercase normalized names)
         $driverKeys = [
-            $this->normalizeDriverName($driverLabel),
+            $this->normalizeDriverName($driverName),
         ];
 
         // Try reversed name order
-        $nameParts = preg_split('/\s+/', trim($driverLabel), 2);
+        $nameParts = preg_split('/\s+/', trim($driverName), 2);
         if (count($nameParts) === 2) {
             $driverKeys[] = $this->normalizeDriverName($nameParts[1] . ' ' . $nameParts[0]);
         }
@@ -1278,7 +1526,7 @@ class DriversController extends Controller
 
         // If still not found, try fuzzy matching (contains check and word matching)
         if (!$driver) {
-            $normalizedSearch = $this->normalizeDriverName($driverLabel);
+            $normalizedSearch = $this->normalizeDriverName($driverName);
             $searchWords = array_filter(explode(' ', $normalizedSearch), fn($w) => strlen($w) >= 2);
             
             $bestMatch = null;
@@ -1319,39 +1567,57 @@ class DriversController extends Controller
             // Log available driver names for debugging (first 10 only to avoid spam)
             $availableNames = array_slice(array_map(fn($d) => $d['original_name'], $driverLookup), 0, 10);
             Log::warning('Driver not found during import', [
-                'searched_name' => $driverLabel,
-                'normalized_search' => $this->normalizeDriverName($driverLabel),
+                'searched_name' => $driverName,
+                'normalized_search' => $this->normalizeDriverName($driverName),
                 'available_drivers_sample' => $availableNames,
                 'total_drivers' => count($driverLookup),
             ]);
             
-            throw new \InvalidArgumentException(__('messages.import_driver_not_found', ['driver' => $driverLabel]) ?? "Driver '{$driverLabel}' not found.");
+            $sampleDrivers = implode(', ', array_slice($availableNames, 0, 5));
+            throw new \InvalidArgumentException("Driver '{$driverName}' not found in database. Sample drivers: {$sampleDrivers}...");
         }
 
+        // Get time values from French headers
         $startTime = $this->normalizeImportTime($row['first_trip_start_time'] ?? null);
         $endTime = $this->normalizeImportTime($row['last_trip_end_time'] ?? null);
 
-        if (!$startTime || !$endTime) {
-            throw new \InvalidArgumentException(__('messages.import_missing_time_values') ?? 'Start time and end time are required.');
+        if (!$startTime) {
+            throw new \InvalidArgumentException("Start time (Première heure de début du trajet) is required. Value: " . ($row['first_trip_start_time'] ?? 'empty'));
+        }
+        
+        if (!$endTime) {
+            throw new \InvalidArgumentException("End time (Heure de fin du dernier trajet) is required. Value: " . ($row['last_trip_end_time'] ?? 'empty'));
         }
 
-        $workTime = $this->normalizeImportTime($row['duration'] ?? null, allowNull: true);
         $drivingTime = $this->normalizeImportTime($row['driving_time'] ?? null, allowNull: true);
-        $standingTime = $this->normalizeImportTime($row['standing_time'] ?? null, allowNull: true);
-        $idleTime = $this->normalizeImportTime($row['idle_time'] ?? null, allowNull: true);
+        $restTime = $this->normalizeImportTime($row['rest_time'] ?? null, allowNull: true);
+        $restDaily = $this->normalizeImportTime($row['rest_daily'] ?? null, allowNull: true);
+
+        // Try to get work_time from "durée" column, otherwise calculate as sum of driving_time + rest_time
+        $workTime = $this->normalizeImportTime($row['work_time'] ?? null, allowNull: true);
+        if (!$workTime) {
+            // Calculate work_time as sum of driving_time + rest_time if not provided
+            $workTime = $this->addTimeValues($drivingTime, $restTime);
+        }
+
+        // Build asset_description: driver_name - vehicle_license_plate (or just driver_name if no vehicle)
+        $vehicleLicensePlate = $driver['vehicle_license_plate'] ?? null;
+        $assetDescription = $vehicleLicensePlate 
+            ? $driver['original_name'] . ' - ' . $vehicleLicensePlate
+            : $driver['original_name'];
 
         return [
             'driver_id' => $driver['id'],
             'activity_date' => $date->toDateString(),
             'flotte' => $driver['flotte'],
             'asset_description' => $assetDescription,
-            'driver_name' => $driver['original_name'] ?? $driverLabel,
+            'driver_name' => $driver['original_name'],
             'start_time' => $startTime,
             'end_time' => $endTime,
             'work_time' => $workTime,
             'driving_time' => $drivingTime,
-            'rest_time' => $standingTime,
-            'rest_daily' => $idleTime,
+            'rest_time' => $restTime,
+            'rest_daily' => $restDaily,
             'raison' => null,
             'start_location' => null,
             'overnight_location' => null,
@@ -1366,26 +1632,81 @@ class DriversController extends Controller
             return null;
         }
 
+        // Handle Excel numeric date format (serial number)
         if (is_numeric($value)) {
             try {
+                // Excel dates are serial numbers where 1 = 1900-01-01
+                // But PhpSpreadsheet handles this correctly
                 $dateTime = ExcelDate::excelToDateTimeObject($value);
                 return Carbon::instance($dateTime);
             } catch (\Throwable $e) {
+                // Try as Unix timestamp if Excel date conversion fails
+                try {
+                    $timestamp = (int) $value;
+                    if ($timestamp > 0 && $timestamp < 2147483647) { // Valid Unix timestamp range
+                        return Carbon::createFromTimestamp($timestamp);
+                    }
+                } catch (\Throwable $e2) {
+                    return null;
+                }
                 return null;
             }
         }
 
         $value = trim((string) $value);
-        $formats = ['d/m/Y', 'd-m-Y', 'Y-m-d', 'm/d/Y'];
+        
+        // Try Carbon's flexible parser first (handles many formats automatically)
+        try {
+            $date = Carbon::parse($value);
+            if ($date && $date->year > 1900 && $date->year < 2100) {
+                return $date;
+            }
+        } catch (\Throwable $e) {
+            // Continue to try specific formats
+        }
+
+        // Try specific date formats (including single digit day/month)
+        // Note: 'd' = day with leading zero, 'j' = day without leading zero
+        //       'm' = month with leading zero, 'n' = month without leading zero
+        // Priority: Most common formats first, especially d/n/Y for "12/3/2025" format
+        $formats = [
+            // Most common: d/n/Y handles "12/3/2025" (day with zero, month without zero)
+            'd/n/Y', 'd/n/y', 'd-n-Y', 'd-n-y',
+            // Standard formats with leading zeros
+            'd/m/Y', 'd-m-Y', 'Y-m-d', 'm/d/Y',
+            'd/m/y', 'd-m-y', 'y-m-d', 'm/d/y',
+            // Single digit day (j = day without leading zero)
+            'j/m/Y', 'j-m-Y', 'j/m/y', 'j-m-y',
+            'j/n/Y', 'j-n-Y', 'j/n/y', 'j-n-y',
+            // Dot separator
+            'd.m.Y', 'd.m.y', 'j.m.Y', 'j.m.y', 'd.n.Y', 'd.n.y', 'j.n.Y', 'j.n.y',
+            // Slash with different orders
+            'Y/m/d', 'y/m/d', 'Y/m/j', 'y/m/j',
+            // Text formats
+            'd M Y', 'd M y', 'M d Y', 'M d y',
+            'd F Y', 'd F y', 'F d Y', 'F d y',
+            'j M Y', 'j M y', 'M j Y', 'M j y',
+        ];
+        
         foreach ($formats as $format) {
             try {
                 $date = Carbon::createFromFormat($format, $value);
-                if ($date !== false) {
+                if ($date !== false && $date->year > 1900 && $date->year < 2100) {
                     return $date;
                 }
             } catch (\Throwable $e) {
                 continue;
             }
+        }
+
+        // Last attempt: try to parse as natural language date
+        try {
+            $date = Carbon::parse($value);
+            if ($date && $date->year > 1900 && $date->year < 2100) {
+                return $date;
+            }
+        } catch (\Throwable $e) {
+            // Ignore and return null
         }
 
         return null;
@@ -1422,6 +1743,59 @@ class DriversController extends Controller
         }
 
         return $allowNull ? null : null;
+    }
+
+    private function addTimeValues(?string $time1, ?string $time2): ?string
+    {
+        // If both are null, return null
+        if ($time1 === null && $time2 === null) {
+            return null;
+        }
+
+        // If one is null, return the non-null value
+        if ($time1 === null) {
+            return $time2;
+        }
+        if ($time2 === null) {
+            return $time1;
+        }
+
+        // Parse both times to seconds
+        $seconds1 = $this->timeToSeconds($time1);
+        $seconds2 = $this->timeToSeconds($time2);
+
+        if ($seconds1 === null || $seconds2 === null) {
+            return null;
+        }
+
+        // Add seconds together
+        $totalSeconds = $seconds1 + $seconds2;
+
+        // Convert back to HH:MM:SS format
+        $hours = intdiv($totalSeconds, 3600);
+        $minutes = intdiv($totalSeconds % 3600, 60);
+        $seconds = $totalSeconds % 60;
+
+        return sprintf('%02d:%02d:%02d', $hours, $minutes, $seconds);
+    }
+
+    private function timeToSeconds(?string $time): ?int
+    {
+        if ($time === null || $time === '') {
+            return null;
+        }
+
+        // Handle HH:MM:SS or HH:MM format
+        $parts = explode(':', trim($time));
+        if (count($parts) < 2) {
+            return null;
+        }
+
+        $hours = (int) ($parts[0] ?? 0);
+        $minutes = (int) ($parts[1] ?? 0);
+        $seconds = (int) ($parts[2] ?? 0);
+
+        return ($hours * 3600) + ($minutes * 60) + $seconds;
     }
 
     private function extractVehicleAndDriver(string $assetDescription): array
@@ -1462,7 +1836,7 @@ class DriversController extends Controller
 
     private function buildDriverLookup(): array
     {
-        $drivers = Driver::with('flotte:id,name')->get();
+        $drivers = Driver::with(['flotte:id,name', 'assignedVehicle:id,license_plate'])->get();
         $lookup = [];
 
         foreach ($drivers as $driver) {
@@ -1492,6 +1866,7 @@ class DriversController extends Controller
                 'id' => $driver->id,
                 'flotte' => $driver->flotte->name ?? null,
                 'original_name' => $fullName,
+                'vehicle_license_plate' => $driver->assignedVehicle->license_plate ?? null,
             ];
 
             foreach ($keys as $key) {
@@ -2180,24 +2555,78 @@ class DriversController extends Controller
 
             // Remove document from array
             unset($documents[$index]);
-            $documents = array_values($documents); // Re-index array
 
-            $driver->update(['documents' => $documents]);
+            // Save updated documents array
+            $driver->documents = array_values($documents); // Re-index array
+            $driver->save();
 
-            Log::info('Driver document deleted', [
-                'driver_id' => $driver->id,
-                'document_index' => $index,
-            ]);
-
-            return back()->with('success', __('messages.document_deleted_successfully'));
+            return back()->with('success', __('messages.document_deleted_successfully') ?? 'Document deleted successfully.');
         } catch (\Throwable $e) {
             Log::error('Failed to delete driver document', [
                 'driver_id' => $driver->id,
-                'document_index' => $index,
+                'index' => $index,
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', __('messages.error_deleting_document'));
+            return back()->with('error', __('messages.error_deleting_document') ?? 'Error deleting document.');
+        }
+    }
+
+    /**
+     * Calculate time difference between end_time of last activity and start_time of new activity
+     * Handles cases where activities span across days
+     */
+    private function calculateTimeDifference(string $endTime, string $startTime, $endDate, $startDate): ?string
+    {
+        try {
+            // Ensure dates are in Y-m-d format
+            $endDateStr = is_string($endDate) ? $endDate : (is_object($endDate) && method_exists($endDate, 'format') ? $endDate->format('Y-m-d') : (string)$endDate);
+            $startDateStr = is_string($startDate) ? $startDate : (is_object($startDate) && method_exists($startDate, 'format') ? $startDate->format('Y-m-d') : (string)$startDate);
+            
+            // Ensure times are in H:i:s format
+            $endTimeStr = is_string($endTime) ? $endTime : (is_object($endTime) && method_exists($endTime, 'format') ? $endTime->format('H:i:s') : (string)$endTime);
+            $startTimeStr = is_string($startTime) ? $startTime : (is_object($startTime) && method_exists($startTime, 'format') ? $startTime->format('H:i:s') : (string)$startTime);
+
+            // Parse the times with dates
+            $endDateTime = Carbon::parse($endDateStr . ' ' . $endTimeStr);
+            $startDateTime = Carbon::parse($startDateStr . ' ' . $startTimeStr);
+
+            // If start is before or equal to end on the same day, it means we've crossed midnight
+            // Add 24 hours to start time
+            if ($startDateTime->lte($endDateTime)) {
+                $startDateTime->addDay();
+            }
+
+            // Calculate the difference in seconds
+            $diffInSeconds = $startDateTime->diffInSeconds($endDateTime);
+
+            // Convert to HH:MM:SS format
+            $hours = floor($diffInSeconds / 3600);
+            $minutes = floor(($diffInSeconds % 3600) / 60);
+            $seconds = $diffInSeconds % 60;
+
+            $result = sprintf('%02d:%02d:%02d', $hours, $minutes, $seconds);
+            
+            Log::info('Calculated rest_daily', [
+                'end_date' => $endDateStr,
+                'end_time' => $endTimeStr,
+                'start_date' => $startDateStr,
+                'start_time' => $startTimeStr,
+                'rest_daily' => $result,
+                'diff_seconds' => $diffInSeconds,
+            ]);
+
+            return $result;
+        } catch (\Throwable $e) {
+            Log::error('Failed to calculate rest_daily', [
+                'end_time' => $endTime,
+                'start_time' => $startTime,
+                'end_date' => $endDate,
+                'start_date' => $startDate,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return null;
         }
     }
 }

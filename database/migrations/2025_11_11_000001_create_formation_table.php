@@ -16,7 +16,7 @@ return new class extends Migration
             $table->enum('type', ['mondatory', 'optionnel', 'complimentaire', 'other'])->default('mondatory');
             $table->foreignId('flotte_id')->nullable()->constrained('flottes')->nullOnDelete();
             $table->enum('delivery_type', ['interne', 'externe'])->default('interne');
-            $table->string('theme')->unique();
+            $table->string('theme');
             $table->string('participant')->nullable();
             $table->date('realizing_date')->nullable();
             $table->unsignedSmallInteger('duree')->nullable();

@@ -324,6 +324,9 @@
                                     <th>{{ __('messages.rest_daily') ?? 'Daily Rest' }}</th>
                                     <th>{{ __('messages.status') }}</th>
                                     <th>{{ __('messages.violations') ?? 'Violations' }}</th>
+                                    @if(Auth::user()->role === 'admin')
+                                        <th class="text-center">{{ __('messages.actions') }}</th>
+                                    @endif
                                 </tr>
                             </thead>
                             <tbody>
@@ -374,6 +377,32 @@
                                                 </div>
                                             @endif
                                         </td>
+                                        @if(Auth::user()->role === 'admin')
+                                            <td class="text-center">
+                                                @php
+                                                    // Find activities for this day
+                                                    $dayActivities = ($activities ?? collect())->filter(function($activity) use ($day) {
+                                                        $activityDate = $activity->activity_date instanceof \Carbon\Carbon 
+                                                            ? $activity->activity_date->format('Y-m-d')
+                                                            : (is_string($activity->activity_date) 
+                                                                ? $activity->activity_date 
+                                                                : \Carbon\Carbon::parse($activity->activity_date)->format('Y-m-d'));
+                                                        return $activityDate === $day['date'];
+                                                    });
+                                                @endphp
+                                                @if($dayActivities->isNotEmpty())
+                                                    <div class="d-flex gap-1 justify-content-center">
+                                                        @foreach($dayActivities as $activity)
+                                                            <button type="button" class="btn btn-sm btn-outline-danger" title="{{ __('messages.delete') ?? 'Delete' }} - {{ optional($activity->start_time)->format('H:i') }}" data-bs-toggle="modal" data-bs-target="#deleteActivityModal" data-activity-id="{{ $activity->id }}" data-activity-date="{{ optional($activity->activity_date)->format('d/m/Y') }}" data-activity-time="{{ optional($activity->start_time)->format('H:i') }}">
+                                                                <i class="bi bi-trash"></i>
+                                                            </button>
+                                                        @endforeach
+                                                    </div>
+                                                @else
+                                                    <span class="text-muted">—</span>
+                                                @endif
+                                            </td>
+                                        @endif
                                     </tr>
                                 @endforeach
                             </tbody>
@@ -1065,7 +1094,7 @@
                                 @enderror
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label">{{ __('messages.rest_daily') ?? 'Repos journalier' }}<span class="text-danger">*</span></label>
+                                <label class="form-label">{{ __('messages.rest_daily') ?? 'Repos journalier' }}</label>
                                 <input type="text"
                                        inputmode="numeric"
                                        pattern="^\d{2}:\d{2}(:\d{2})?$"
@@ -1081,6 +1110,7 @@
                             <div class="col-md-4">
                                 <label class="form-label">{{ __('messages.flotte') ?? 'Flotte' }}</label>
                                 <input type="text"
+                                       id="activity-flotte"
                                        name="flotte"
                                        class="form-control @error('flotte') is-invalid @enderror"
                                        value="{{ old('flotte', optional($driver->flotte)->name) }}">
@@ -1519,5 +1549,60 @@
         });
     </script>
     @endpush
+
+    <!-- Delete Activity Confirmation Modal -->
+    @if(Auth::user()->role === 'admin')
+    <div class="modal fade" id="deleteActivityModal" tabindex="-1" aria-labelledby="deleteActivityModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="deleteActivityModalLabel">
+                        <i class="bi bi-exclamation-triangle text-warning me-2"></i>
+                        {{ __('messages.confirm_delete') ?? 'Confirm Delete' }}
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>{{ __('messages.confirm_delete_activity') ?? 'Are you sure you want to delete this activity?' }}</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        {{ __('messages.cancel') ?? 'Cancel' }}
+                    </button>
+                    <form id="deleteActivityForm" method="POST" class="d-inline">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-trash me-1"></i>
+                            {{ __('messages.delete') ?? 'Delete' }}
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const deleteModal = document.getElementById('deleteActivityModal');
+            if (deleteModal) {
+                deleteModal.addEventListener('show.bs.modal', function(event) {
+                    const button = event.relatedTarget;
+                    const activityId = button.getAttribute('data-activity-id');
+                    const activityDate = button.getAttribute('data-activity-date');
+                    const activityTime = button.getAttribute('data-activity-time');
+                    
+                    const form = deleteModal.querySelector('#deleteActivityForm');
+                    const info = deleteModal.querySelector('#deleteActivityInfo');
+                    
+                    form.action = '{{ route("drivers.activities.delete", ":id") }}'.replace(':id', activityId);
+                    info.textContent = activityDate && activityTime 
+                        ? `Activity on ${activityDate} at ${activityTime}` 
+                        : `Activity ID: ${activityId}`;
+                });
+            }
+        });
+    </script>
+    @endif
 </x-app-layout>
 

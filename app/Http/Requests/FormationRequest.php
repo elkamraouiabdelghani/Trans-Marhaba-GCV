@@ -31,7 +31,6 @@ class FormationRequest extends FormRequest
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('formations', 'theme')->ignore($formationId),
             ],
             'duree' => ['nullable', 'integer', 'min:0'],
             'realizing_date' => ['nullable', 'date'],
