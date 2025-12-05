@@ -56,7 +56,7 @@
                                         {{ $monthFormations->count() }}
                                     </span>
                                 </div>
-                                <div class="card-body p-3">
+                                <div class="card-body p-3" style="max-height: 400px; overflow-y: auto;">
                                     @forelse($monthFormations as $formation)
                                         @php
                                             $status = $formation->status === 'realized' ? 'success' : 'warning';
