@@ -228,7 +228,7 @@ class FormationController extends Controller
                 }
             }
 
-        $formations = $formationsQuery->orderBy('theme')->get();
+        $formations = $formationsQuery->orderBy('realizing_date', 'desc')->get();
 
             // Build graph data (always show when filters are applied, even with 0 counts)
             $graphData = null;
