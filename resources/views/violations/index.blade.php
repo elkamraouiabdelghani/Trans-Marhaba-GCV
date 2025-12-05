@@ -210,7 +210,7 @@
                                     </td>
                                     <td>
                                         <div class="fw-semibold">
-                                            {{ $violation->driver?->flotte?->name ?? '-' }}
+                                            {{ $violation->flotte?->name ?? '-' }}
                                         </div>
                                     </td>
                                     <td>

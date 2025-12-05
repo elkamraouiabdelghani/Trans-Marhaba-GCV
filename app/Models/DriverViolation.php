@@ -14,6 +14,7 @@ class DriverViolation extends Model
 
     protected $fillable = [
         'driver_id',
+        'flotte_id',
         'violation_type_id',
         'violation_date',
         'violation_time',
@@ -72,6 +73,14 @@ class DriverViolation extends Model
     public function vehicle(): BelongsTo
     {
         return $this->belongsTo(Vehicle::class);
+    }
+
+    /**
+     * Get the flotte associated with this violation
+     */
+    public function flotte(): BelongsTo
+    {
+        return $this->belongsTo(Flotte::class);
     }
 
     /**
@@ -136,5 +145,33 @@ class DriverViolation extends Model
         return $this->update([
             'status' => 'rejected',
         ]);
+    }
+
+    /**
+     * Boot the model and set up event listeners
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        // Automatically set flotte_id from driver's flotte when creating
+        static::creating(function ($violation) {
+            if ($violation->driver_id && !$violation->flotte_id) {
+                $driver = Driver::find($violation->driver_id);
+                if ($driver && $driver->flotte_id) {
+                    $violation->flotte_id = $driver->flotte_id;
+                }
+            }
+        });
+
+        // Automatically update flotte_id from driver's flotte when updating driver_id
+        static::updating(function ($violation) {
+            if ($violation->isDirty('driver_id')) {
+                $driver = Driver::find($violation->driver_id);
+                if ($driver && $driver->flotte_id) {
+                    $violation->flotte_id = $driver->flotte_id;
+                }
+            }
+        });
     }
 }

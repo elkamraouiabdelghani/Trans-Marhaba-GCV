@@ -61,4 +61,12 @@ class Flotte extends Model
     {
         return $this->hasMany(CoachingSession::class);
     }
+
+    /**
+     * Get all driver violations for the flotte.
+     */
+    public function driverViolations()
+    {
+        return $this->hasMany(DriverViolation::class);
+    }
 }

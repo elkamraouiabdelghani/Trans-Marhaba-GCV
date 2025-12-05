@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('driver_violations', function (Blueprint $table) {
             $table->id();
             $table->foreignId('driver_id')->constrained('drivers')->onDelete('cascade');
+            $table->foreignId('flotte_id')->nullable()->constrained('flottes')->onDelete('set null');
             $table->foreignId('violation_type_id')->nullable()->constrained('violation_types')->onDelete('set null');
             $table->date('violation_date');
             $table->time('violation_time')->nullable();

@@ -26,7 +26,7 @@ class DriverViolationController extends Controller
     {
         try {
             $violationsQuery = DriverViolation::query()
-                ->with(['driver.flotte', 'violationType', 'vehicle'])
+                ->with(['driver.flotte', 'flotte', 'violationType', 'vehicle'])
                 ->orderByDesc('violation_date')
                 ->orderByDesc('id'); // ensure stable ordering when dates are identical
 
@@ -40,9 +40,7 @@ class DriverViolationController extends Controller
             }
 
             if ($request->filled('flotte_id')) {
-                $violationsQuery->whereHas('driver', function ($query) use ($request) {
-                    $query->where('flotte_id', $request->input('flotte_id'));
-                });
+                $violationsQuery->where('flotte_id', $request->input('flotte_id'));
             }
 
             if ($request->filled('date_from')) {
@@ -210,6 +208,14 @@ class DriverViolationController extends Controller
             $validated['status'] = $validated['status'] ?? 'pending';
             $validated['created_by'] = Auth::id();
 
+            // Automatically set flotte_id from driver's flotte
+            if (isset($validated['driver_id'])) {
+                $driver = Driver::find($validated['driver_id']);
+                if ($driver && $driver->flotte_id) {
+                    $validated['flotte_id'] = $driver->flotte_id;
+                }
+            }
+
             // Handle evidence upload for inline action-plan fields
             if ($request->hasFile('evidence')) {
                 $file = $request->file('evidence');
@@ -350,6 +356,14 @@ class DriverViolationController extends Controller
         $validated = $request->validated();
 
         try {
+            // Automatically set flotte_id from driver's flotte if driver_id is being updated
+            if (isset($validated['driver_id'])) {
+                $driver = Driver::find($validated['driver_id']);
+                if ($driver && $driver->flotte_id) {
+                    $validated['flotte_id'] = $driver->flotte_id;
+                }
+            }
+
             // Handle document upload (multi-file input, store first file)
             if ($request->hasFile('document')) {
                 $files = $request->file('document');
