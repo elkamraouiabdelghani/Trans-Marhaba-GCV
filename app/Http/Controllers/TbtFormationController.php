@@ -51,7 +51,8 @@ class TbtFormationController extends Controller
         $plannedCount = (clone $baseQuery)->where('status', 'planned')->count();
         $realizedPercentage = $totalCount > 0 ? round(($realizedCount / $totalCount) * 100, 1) : 0;
 
-        $formations = $baseQuery->orderBy('year', 'desc')
+        $formations = $baseQuery->orderBy('month', 'desc')
+            ->orderBy('week_start_date', 'desc')
             ->paginate(20);
 
         $stats = [

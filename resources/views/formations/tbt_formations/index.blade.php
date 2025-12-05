@@ -228,7 +228,7 @@
                             </tbody>
                         </table>
                     </div>
-                    <div class="d-flex justify-content-center mt-3">
+                    <div class="d-flex justify-content-end mt-3">
                         {{ $formations->links() }}
                     </div>
                 @else
@@ -243,6 +243,7 @@
                 @endif
             </div>
         </div>
+        
         <!-- Mark as Realized Confirmation Modal -->
         <div class="modal fade" id="confirmRealizedModal" tabindex="-1" aria-labelledby="confirmRealizedModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
