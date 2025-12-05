@@ -806,6 +806,102 @@
             </div>
         </div>
 
+        <!-- TBT Formations Table (only for integrated/non-terminated drivers) -->
+        @php
+            $driverStatusValue = strtolower((string)($driver->status ?? $driver->statu ?? $driver->state ?? ''));
+            $isTerminated = $driverStatusValue === 'terminated';
+        @endphp
+        @if(!$isTerminated)
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-0 py-3">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <h5 class="mb-0 text-dark fw-bold">
+                            <i class="bi bi-calendar-week me-2 text-primary"></i>
+                            {{ __('messages.tbt_formations_title') ?? 'TBT Formations' }}
+                        </h5>
+                        <form method="GET" action="{{ route('drivers.show', $driver) }}" class="d-flex gap-2 align-items-center">
+                            @foreach(request()->except('tbt_year') as $key => $value)
+                                <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+                            @endforeach
+                            <label for="tbt_year" class="form-label small mb-0 me-2">{{ __('messages.tbt_formation_year') ?? 'Year' }}:</label>
+                            <select name="tbt_year" id="tbt_year" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
+                                @foreach($tbtFormationYears ?? [] as $year)
+                                    <option value="{{ $year }}" {{ (string)$tbtFormationYear === (string)$year ? 'selected' : '' }}>
+                                        {{ $year }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </form>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0 align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="border-0 py-3 px-4">{{ __('messages.tbt_formation_title') ?? 'Title' }}</th>
+                                    <th class="border-0 py-3 px-4">{{ __('messages.tbt_formation_month') ?? 'Month' }}</th>
+                                    <th class="border-0 py-3 px-4">{{ __('messages.tbt_formation_week') ?? 'Week' }}</th>
+                                    <th class="border-0 py-3 px-4">{{ __('messages.tbt_formation_status') ?? 'Status' }}</th>
+                                    <th class="border-0 py-3 px-4">{{ __('messages.tbt_formation_active') ?? 'Active' }}</th>
+                                    <th class="border-0 py-3 px-4">{{ __('messages.description') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($tbtFormations ?? [] as $tbtFormation)
+                                    <tr class="border-bottom">
+                                        <td class="py-3 px-4">
+                                            <strong class="text-dark">{{ $tbtFormation->title }}</strong>
+                                        </td>
+                                        <td class="py-3 px-4">
+                                            {{ \Carbon\Carbon::create($tbtFormation->year, $tbtFormation->month, 1)->locale('fr')->monthName }}
+                                        </td>
+                                        <td class="py-3 px-4">
+                                            <small>
+                                                {{ \Carbon\Carbon::parse($tbtFormation->week_start_date)->format('d/m') }} - 
+                                                {{ \Carbon\Carbon::parse($tbtFormation->week_end_date)->format('d/m') }}
+                                            </small>
+                                        </td>
+                                        <td class="py-3 px-4">
+                                            @php
+                                                $statusClass = $tbtFormation->status === 'realized' ? 'bg-success' : 'bg-warning text-dark';
+                                                $statusLabel = $tbtFormation->status === 'realized'
+                                                    ? __('messages.tbt_formation_status_realized') ?? 'Realized'
+                                                    : __('messages.tbt_formation_status_planned') ?? 'Planned';
+                                            @endphp
+                                            <span class="badge {{ $statusClass }}">{{ $statusLabel }}</span>
+                                        </td>
+                                        <td class="py-3 px-4">
+                                            @if($tbtFormation->is_active)
+                                                <span class="badge bg-success">{{ __('messages.tbt_formation_active_status') ?? 'Active' }}</span>
+                                            @else
+                                                <span class="badge bg-secondary">{{ __('messages.tbt_formation_inactive_status') ?? 'Inactive' }}</span>
+                                            @endif
+                                        </td>
+                                        <td class="py-3 px-4">
+                                            <small class="text-muted">
+                                                {{ $tbtFormation->description ? Str::limit($tbtFormation->description, 100) : __('messages.not_available') }}
+                                            </small>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="6" class="text-center py-5">
+                                            <div class="text-muted">
+                                                <i class="bi bi-calendar-x display-1 mb-3"></i>
+                                                <h5 class="mb-2">{{ __('messages.tbt_formation_no_formations') ?? 'No TBT Formations Found' }}</h5>
+                                                <p class="mb-0">{{ __('messages.no_tbt_formations_for_year', ['year' => $tbtFormationYear ?? date('Y')]) ?? 'No TBT formations found for this year.' }}</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        @endif
+
         <!-- Quick Formation Modal -->
         <div class="modal fade" id="quickFormationModal" tabindex="-1" aria-labelledby="quickFormationModalLabel" aria-hidden="true">
             <div class="modal-dialog">

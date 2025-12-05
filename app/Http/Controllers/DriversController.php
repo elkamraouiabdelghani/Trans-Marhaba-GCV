@@ -224,6 +224,24 @@ class DriversController extends Controller
             ->orderBy('theme')
             ->get();
 
+        // Get TBT formations for the current year (default)
+        $tbtFormationYear = $request->get('tbt_year', $currentYear);
+        $tbtFormations = \App\Models\TbtFormation::where('year', $tbtFormationYear)
+            ->orderBy('month', 'asc')
+            ->orderBy('week_start_date', 'asc')
+            ->get();
+
+        // Get available years for TBT formations filter
+        $tbtFormationYears = \App\Models\TbtFormation::select('year')
+            ->distinct()
+            ->orderBy('year', 'desc')
+            ->pluck('year');
+
+        if (!$tbtFormationYears->contains($tbtFormationYear)) {
+            $tbtFormationYears->push($tbtFormationYear);
+            $tbtFormationYears = $tbtFormationYears->sortDesc()->values();
+        }
+
         $dateFrom = $dateFromInput;
         $dateTo = $dateToInput;
 
@@ -245,7 +263,10 @@ class DriversController extends Controller
             'formationsCatalog',
             'warningAlerts',
             'criticalAlerts',
-            'violationFilters'
+            'violationFilters',
+            'tbtFormations',
+            'tbtFormationYear',
+            'tbtFormationYears'
         ));
     }
 
