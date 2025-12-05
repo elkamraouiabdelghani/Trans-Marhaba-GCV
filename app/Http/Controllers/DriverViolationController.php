@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\DriverViolationRequest;
 use App\Models\Driver;
 use App\Models\DriverViolation;
+use App\Models\Flotte;
 use App\Models\ViolationType;
 use App\Models\Vehicle;
 use Illuminate\Http\RedirectResponse;
@@ -25,7 +26,7 @@ class DriverViolationController extends Controller
     {
         try {
             $violationsQuery = DriverViolation::query()
-                ->with(['driver', 'violationType', 'vehicle'])
+                ->with(['driver.flotte', 'violationType', 'vehicle'])
                 ->orderByDesc('violation_date')
                 ->orderByDesc('id'); // ensure stable ordering when dates are identical
 
@@ -38,8 +39,10 @@ class DriverViolationController extends Controller
                 $violationsQuery->where('violation_type_id', $request->input('violation_type_id'));
             }
 
-            if ($request->filled('driver_id')) {
-                $violationsQuery->where('driver_id', $request->input('driver_id'));
+            if ($request->filled('flotte_id')) {
+                $violationsQuery->whereHas('driver', function ($query) use ($request) {
+                    $query->where('flotte_id', $request->input('flotte_id'));
+                });
             }
 
             if ($request->filled('date_from')) {
@@ -71,7 +74,7 @@ class DriverViolationController extends Controller
 
             return view('violations.index', [
                 'violations' => $violations,
-                'drivers' => Driver::orderBy('full_name')->pluck('full_name', 'id'),
+                'flottes' => Flotte::orderBy('name')->pluck('name', 'id'),
                 'violationTypes' => ViolationType::active()->orderBy('name')->pluck('name', 'id'),
                 'statuses' => [
                     'pending' => __('messages.pending'),
@@ -81,7 +84,7 @@ class DriverViolationController extends Controller
                 'filters' => $request->all([
                     'status',
                     'violation_type_id',
-                    'driver_id',
+                    'flotte_id',
                     'date_from',
                     'date_to',
                     'search',

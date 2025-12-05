@@ -18,6 +18,17 @@
                 </a>
             </div>
         </div>
+        
+        @if(session('success'))
+            <div class="alert alert-success">
+                {{ session('success') }}
+            </div>
+        @endif
+        @if(session('error'))
+            <div class="alert alert-danger">
+                {{ session('error') }}
+            </div>
+        @endif
 
         <div class="row justify-content-center">
             <div class="col-lg-10 col-xl-10">
@@ -67,18 +78,28 @@
                                     <label class="form-label fw-semibold">
                                         {{ __('messages.location') ?? 'Location' }} <span class="text-danger">*</span>
                                     </label>
-                                    <div id="create-location-map"
-                                         style="width: 100%; height: 350px; border-radius: 0.5rem; border: 1px solid #dee2e6; margin-bottom: 0.5rem;"></div>
-                                    <input type="hidden" name="latitude" id="create_latitude" value="{{ old('latitude') }}" required>
-                                    <input type="hidden" name="longitude" id="create_longitude" value="{{ old('longitude') }}" required>
-                                    <small class="text-muted d-block mt-1" id="create-location-coordinates-label">
-                                        @if(old('latitude') && old('longitude'))
-                                            {{ __('messages.location_coords_label') ?? 'Coordinates' }}:
-                                            <span class="fw-semibold">{{ old('latitude') }}, {{ old('longitude') }}</span>
-                                        @else
-                                            {{ __('messages.location_map_help') ?? 'Click on the map to set the coordinates.' }}
-                                        @endif
-                                    </small>
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <div>
+                                            <input type="hidden" name="latitude" id="create_latitude" value="{{ old('latitude') }}" required>
+                                            <input type="hidden" name="longitude" id="create_longitude" value="{{ old('longitude') }}" required>
+                                            <small class="text-muted d-block" id="create-location-coordinates-label">
+                                                @if(old('latitude') && old('longitude'))
+                                                    {{ __('messages.location_coords_label') ?? 'Coordinates' }}:
+                                                    <span class="fw-semibold">{{ old('latitude') }}, {{ old('longitude') }}</span>
+                                                @else
+                                                    {{ __('messages.location_map_help') ?? 'Use the button below to select location on map.' }}
+                                                @endif
+                                            </small>
+                                        </div>
+                                        <button type="button" 
+                                                class="btn btn-sm btn-primary" 
+                                                id="selectLocationBtn"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#selectLocationModal">
+                                            <i class="bi bi-geo-alt me-1"></i>
+                                            {{ __('messages.select_on_map') ?? 'Select on Map' }}
+                                        </button>
+                                    </div>
                                     @error('latitude')
                                         <div class="text-danger small mt-1">{{ $message }}</div>
                                     @enderror
@@ -107,10 +128,9 @@
                                         <h5 class="fw-bold mb-3">
                                             <i class="bi bi-list-check me-2 text-primary"></i>
                                             {{ __('messages.checklist') ?? 'Checklist' }}
-                                            <span class="text-danger">*</span>
                                         </h5>
                                         <p class="text-muted mb-4">
-                                            {{ __('messages.checklist_required_help') ?? 'Please complete the checklist for this rest point. All items are required.' }}
+                                            {{ __('messages.checklist_optional_help') ?? 'Checklist is optional. Fill only the items you want for this rest point.' }}
                                         </p>
 
                                         <div class="accordion" id="checklistAccordion">
@@ -158,7 +178,6 @@
                                                                                                    name="checklist[{{ $item->id }}][is_checked]" 
                                                                                                    id="item_{{ $item->id }}_yes" 
                                                                                                    value="1" 
-                                                                                                   required
                                                                                                    {{ old("checklist.{$item->id}.is_checked") === '1' ? 'checked' : '' }}>
                                                                                             <label class="btn btn-outline-success btn-sm" for="item_{{ $item->id }}_yes">
                                                                                                 <i class="bi bi-check-circle"></i> {{ __('messages.yes') ?? 'Yes' }}
@@ -169,7 +188,6 @@
                                                                                                    id="item_{{ $item->id }}_no" 
                                                                                                    name="checklist[{{ $item->id }}][is_checked]" 
                                                                                                    value="0" 
-                                                                                                   required
                                                                                                    {{ old("checklist.{$item->id}.is_checked") === '0' ? 'checked' : '' }}>
                                                                                             <label class="btn btn-outline-danger btn-sm" for="item_{{ $item->id }}_no">
                                                                                                 <i class="bi bi-x-circle"></i> {{ __('messages.no') ?? 'No' }}
@@ -318,6 +336,124 @@
             </div>
         </div>
     </div>
+
+    <!-- Select Location Modal -->
+    <div class="modal fade" id="selectLocationModal" tabindex="-1" aria-labelledby="selectLocationModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="selectLocationModalLabel">
+                        {{ __('messages.select_location') ?? 'Select Location' }}
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Mode selector inside modal -->
+                    <div class="mb-3">
+                        <div class="btn-group btn-group-sm mb-2" role="group" aria-label="Location input mode">
+                            <button type="button" class="btn btn-outline-secondary active" data-location-mode="address">
+                                {{ __('messages.address') ?? 'Address' }}
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" data-location-mode="place">
+                                {{ __('messages.location') ?? 'Location' }}
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" data-location-mode="latlng">
+                                {{ __('messages.coordinates') ?? 'Lat / Lng' }}
+                            </button>
+                        </div>
+
+                        <!-- Address mode -->
+                        <div class="mb-2 location-mode-block" id="address-block">
+                            <label for="address_input" class="form-label small mb-1">
+                                {{ __('messages.address') ?? 'Address' }}
+                            </label>
+                            <div class="input-group input-group-sm">
+                                <input type="text"
+                                       id="address_input"
+                                       class="form-control"
+                                       placeholder="Ex: Boulevard Mohammed V, Casablanca">
+                                <button class="btn btn-outline-primary" type="button" id="address_search">
+                                    <i class="bi bi-search"></i>
+                                </button>
+                            </div>
+                            <small class="text-muted">
+                                {{ __('messages.location_help') ?? 'Type an address then search, or click on the map.' }}
+                            </small>
+                            <div class="text-danger small mt-1 d-none" id="address_error"></div>
+                        </div>
+
+                        <!-- Place / free-text location mode -->
+                        <div class="mb-2 location-mode-block d-none" id="place-block">
+                            <label for="place_input" class="form-label small mb-1">
+                                {{ __('messages.location') ?? 'Location' }}
+                            </label>
+                            <div class="input-group input-group-sm">
+                                <input type="text"
+                                       id="place_input"
+                                       class="form-control"
+                                       placeholder="Ex: Rest area near Rabat, highway km 22">
+                                <button class="btn btn-outline-primary" type="button" id="place_search">
+                                    <i class="bi bi-search"></i>
+                                </button>
+                            </div>
+                            <small class="text-muted">
+                                {{ __('messages.location_help') ?? 'Type a location name then search, or click on the map.' }}
+                            </small>
+                            <div class="text-danger small mt-1 d-none" id="place_error"></div>
+                        </div>
+
+                        <!-- Lat/Lng mode -->
+                        <div class="mb-2 location-mode-block d-none" id="latlng-block">
+                            <label class="form-label small mb-1">
+                                {{ __('messages.coordinates') ?? 'Coordinates' }}
+                            </label>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <input type="number"
+                                           step="0.000001"
+                                           class="form-control form-control-sm"
+                                           id="lat_input"
+                                           placeholder="Lat (e.g. 33.573100)">
+                                </div>
+                                <div class="col-6">
+                                    <input type="number"
+                                           step="0.000001"
+                                           class="form-control form-control-sm"
+                                           id="lng_input"
+                                           placeholder="Lng (e.g. -7.589800)">
+                                </div>
+                            </div>
+                            <div class="mt-1">
+                                <button type="button" class="btn btn-outline-primary btn-sm" id="latlng_apply">
+                                    {{ __('messages.apply') ?? 'Apply' }}
+                                </button>
+                            </div>
+                            <small class="text-muted d-block">
+                                {{ __('messages.location_coords_hint') ?? 'Latitude between -90 and 90, longitude between -180 and 180.' }}
+                            </small>
+                            <div class="text-danger small mt-1 d-none" id="latlng_error"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <small class="text-muted" id="location-coordinates-label">
+                            {{ __('messages.location_map_help') ?? 'Click on the map to set the coordinates.' }}
+                        </small>
+                    </div>
+
+                    <div id="location-map" style="width: 100%; height: 400px; border-radius: 0.5rem;"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        {{ __('messages.cancel') ?? 'Cancel' }}
+                    </button>
+                    <button type="button" class="btn btn-primary" id="confirmLocation" data-bs-dismiss="modal">
+                        {{ __('messages.confirm') ?? 'Confirm' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </x-app-layout>
 
 <!-- Leaflet CSS and JS -->
@@ -340,34 +476,89 @@ document.addEventListener('DOMContentLoaded', function () {
         return;
     }
 
-    const mapContainer = document.getElementById('create-location-map');
-    if (!mapContainer) {
-        return;
+    // Geocoding function using Nominatim (OpenStreetMap)
+    async function geocodeQuery(query) {
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`;
+        const response = await fetch(url, {
+            headers: {
+                'User-Agent': 'GCV Application'
+            }
+        });
+        if (!response.ok) {
+            throw new Error('Geocoding service unavailable');
+        }
+        const data = await response.json();
+        if (!data || data.length === 0) {
+            throw new Error('Location not found');
+        }
+        return {
+            lat: parseFloat(data[0].lat),
+            lng: parseFloat(data[0].lon)
+        };
     }
 
-    const map = L.map(mapContainer).setView([33.5731, -7.5898], 7);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '&copy; OpenStreetMap contributors',
-    }).addTo(map);
-
-    let marker = null;
+    // Modal map and marker
+    let locationMap = null;
+    let locationMarker = null;
     const latInput = document.getElementById('create_latitude');
     const lngInput = document.getElementById('create_longitude');
     const coordsLabel = document.getElementById('create-location-coordinates-label');
 
-    if (latInput && lngInput && latInput.value && lngInput.value) {
-        const lat = parseFloat(latInput.value);
-        const lng = parseFloat(lngInput.value);
-        map.setView([lat, lng], 13);
-        marker = L.marker([lat, lng]).addTo(map);
+    // Initialize modal map when modal is shown
+    const selectLocationModal = document.getElementById('selectLocationModal');
+    if (selectLocationModal) {
+        selectLocationModal.addEventListener('shown.bs.modal', function () {
+            if (!locationMap) {
+                const mapContainer = document.getElementById('location-map');
+                if (!mapContainer) return;
+
+                let initialLat = 33.5731;
+                let initialLng = -7.5898;
+                let initialZoom = 7;
+
+                if (latInput && lngInput && latInput.value && lngInput.value) {
+                    initialLat = parseFloat(latInput.value);
+                    initialLng = parseFloat(lngInput.value);
+                    initialZoom = 13;
+                }
+
+                locationMap = L.map(mapContainer).setView([initialLat, initialLng], initialZoom);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '&copy; OpenStreetMap contributors',
+                }).addTo(locationMap);
+
+                if (latInput && lngInput && latInput.value && lngInput.value) {
+                    const lat = parseFloat(latInput.value);
+                    const lng = parseFloat(lngInput.value);
+                    locationMarker = L.marker([lat, lng]).addTo(locationMap);
+                }
+
+                locationMap.on('click', function (e) {
+                    setLocationCoordinates(e.latlng.lat, e.latlng.lng);
+                });
+            } else {
+                // Update map view if coordinates exist
+                if (latInput && lngInput && latInput.value && lngInput.value) {
+                    const lat = parseFloat(latInput.value);
+                    const lng = parseFloat(lngInput.value);
+                    locationMap.setView([lat, lng], 13);
+                    if (locationMarker) {
+                        locationMarker.setLatLng([lat, lng]);
+                    } else {
+                        locationMarker = L.marker([lat, lng]).addTo(locationMap);
+                    }
+                }
+            }
+        });
     }
 
-    function updateCoords(lat, lng) {
-        if (marker) {
-            marker.setLatLng([lat, lng]);
-        } else {
-            marker = L.marker([lat, lng]).addTo(map);
+    // Function to set coordinates
+    function setLocationCoordinates(lat, lng) {
+        if (locationMarker) {
+            locationMarker.setLatLng([lat, lng]);
+        } else if (locationMap) {
+            locationMarker = L.marker([lat, lng]).addTo(locationMap);
         }
 
         if (latInput) {
@@ -380,12 +571,126 @@ document.addEventListener('DOMContentLoaded', function () {
             const label = @json(__('messages.location_coords_label') ?? 'Coordinates');
             coordsLabel.innerHTML = label + ': <span class="fw-semibold">' + lat.toFixed(6) + ', ' + lng.toFixed(6) + '</span>';
         }
+
+        // Update label in modal
+        const modalLabel = document.getElementById('location-coordinates-label');
+        if (modalLabel) {
+            const labelText = @json(__('messages.location_coords_label') ?? 'Coordinates');
+            modalLabel.innerHTML = labelText + ': <span class="fw-semibold">' + lat.toFixed(6) + ', ' + lng.toFixed(6) + '</span>';
+        }
     }
 
-    map.on('click', function (e) {
-        updateCoords(e.latlng.lat, e.latlng.lng);
+    // Location mode switching
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('button[data-location-mode]');
+        if (!btn) return;
+
+        const mode = btn.getAttribute('data-location-mode');
+        if (!mode) return;
+
+        const scope = btn.closest('.modal');
+        if (!scope) return;
+
+        // Toggle active class
+        const group = btn.parentElement;
+        if (group) {
+            Array.from(group.querySelectorAll('button[data-location-mode]')).forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+
+        // Hide all blocks, show selected one
+        const blocks = scope.querySelectorAll('.location-mode-block');
+        blocks.forEach(block => block.classList.add('d-none'));
+
+        const selectedId = mode + '-block';
+        const selectedBlock = scope.querySelector('#' + selectedId);
+        if (selectedBlock) {
+            selectedBlock.classList.remove('d-none');
+        }
     });
 
+    // Geocoding handlers
+    async function handleGeocodeClick(inputId, errorId) {
+        const input = document.getElementById(inputId);
+        const errorEl = document.getElementById(errorId);
+        if (errorEl) {
+            errorEl.classList.add('d-none');
+            errorEl.textContent = '';
+        }
+        if (!input) return;
+        const query = input.value.trim();
+        if (!query) return;
+
+        try {
+            const { lat, lng } = await geocodeQuery(query);
+            setLocationCoordinates(lat, lng);
+            if (locationMap) {
+                locationMap.setView([lat, lng], 13);
+            }
+        } catch (err) {
+            if (errorEl) {
+                errorEl.textContent = err.message || 'Unable to find this location.';
+                errorEl.classList.remove('d-none');
+            }
+        }
+    }
+
+    document.getElementById('address_search')?.addEventListener('click', function () {
+        handleGeocodeClick('address_input', 'address_error');
+    });
+
+    document.getElementById('place_search')?.addEventListener('click', function () {
+        handleGeocodeClick('place_input', 'place_error');
+    });
+
+    // Lat/Lng Apply handler
+    function validateLatLng(lat, lng) {
+        if (Number.isNaN(lat) || Number.isNaN(lng)) {
+            return 'Both latitude and longitude are required.';
+        }
+        if (lat < -90 || lat > 90) {
+            return 'Latitude must be between -90 and 90.';
+        }
+        if (lng < -180 || lng > 180) {
+            return 'Longitude must be between -180 and 180.';
+        }
+        return null;
+    }
+
+    document.getElementById('latlng_apply')?.addEventListener('click', function () {
+        const latInputEl = document.getElementById('lat_input');
+        const lngInputEl = document.getElementById('lng_input');
+        const errorEl = document.getElementById('latlng_error');
+        if (errorEl) {
+            errorEl.classList.add('d-none');
+            errorEl.textContent = '';
+        }
+        if (!latInputEl || !lngInputEl) return;
+        const lat = parseFloat(latInputEl.value);
+        const lng = parseFloat(lngInputEl.value);
+        const err = validateLatLng(lat, lng);
+        if (err) {
+            if (errorEl) {
+                errorEl.textContent = err;
+                errorEl.classList.remove('d-none');
+            }
+            return;
+        }
+        setLocationCoordinates(lat, lng);
+        if (locationMap) {
+            locationMap.setView([lat, lng], 13);
+        }
+    });
+
+    // Confirm button handler
+    document.getElementById('confirmLocation')?.addEventListener('click', function () {
+        if (!latInput || !lngInput || !latInput.value || !lngInput.value) {
+            alert(@json(__('messages.location_required') ?? 'Please select a location on the map before confirming.'));
+            return;
+        }
+    });
+
+    // Form validation
     const form = document.getElementById('createRestPointForm');
     if (form) {
         form.addEventListener('submit', function (e) {
@@ -395,39 +700,6 @@ document.addEventListener('DOMContentLoaded', function () {
             if (!lat || !lng) {
                 e.preventDefault();
                 alert(@json(__('messages.location_required') ?? 'Please select a location on the map before submitting.'));
-                return false;
-            }
-
-            // Validate checklist - ensure all items have yes/no selected
-            const checklistInputs = form.querySelectorAll('input[name^="checklist["][name$="[is_checked]"]');
-            const unansweredItems = [];
-            
-            checklistInputs.forEach(function(input) {
-                const itemId = input.name.match(/checklist\[(\d+)\]/)[1];
-                const itemName = form.querySelector('label[for="item_' + itemId + '_yes"]')?.closest('tr')?.querySelector('label.fw-semibold')?.textContent?.trim() || 'Item ' + itemId;
-                
-                // Check if this item has a checked radio button
-                const itemGroup = form.querySelectorAll('input[name="' + input.name + '"]');
-                const isAnswered = Array.from(itemGroup).some(radio => radio.checked);
-                
-                if (!isAnswered) {
-                    unansweredItems.push(itemName);
-                }
-            });
-
-            if (unansweredItems.length > 0) {
-                e.preventDefault();
-                const message = @json(__('messages.checklist_answer_required') ?? 'Please provide a Yes/No answer for all checklist items.') + '\n\n' + 
-                               unansweredItems.map(item => '- ' + item).join('\n');
-                alert(message);
-                
-                // Scroll to first unanswered item
-                const firstUnanswered = form.querySelector('input[name^="checklist["][name$="[is_checked]"]:not(:checked)');
-                if (firstUnanswered) {
-                    firstUnanswered.closest('.accordion-item')?.querySelector('.accordion-button')?.click();
-                    firstUnanswered.closest('tr')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-                
                 return false;
             }
         });

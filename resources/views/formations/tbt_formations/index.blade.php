@@ -218,6 +218,9 @@
                                                 <a href="{{ route('tbt-formations.edit', $formation) }}" class="btn btn-outline-primary" title="{{ __('messages.tbt_formation_edit') }}">
                                                     <i class="bi bi-pencil"></i>
                                                 </a>
+                                                <button type="button" class="btn btn-outline-danger" title="{{ __('messages.tbt_formation_delete') }}" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal" data-formation-id="{{ $formation->id }}" data-formation-name="{{ $formation->title }}">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
@@ -264,6 +267,32 @@
                 </div>
             </div>
         </div>
+
+        <!-- Delete Confirmation Modal -->
+        <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title text-white" id="confirmDeleteModalLabel">{{ __('messages.confirm_delete') }}</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p id="confirmDeleteMessage">{{ __('messages.tbt_formation_confirm_delete') }}</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('messages.cancel') }}</button>
+                        <form id="deleteForm" method="POST" style="display: inline;">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash me-1"></i>
+                                {{ __('messages.tbt_formation_delete') }}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     @push('scripts')
@@ -284,6 +313,26 @@
                         realizedForm.action = `{{ url('tbt-formations') }}/${formationId}/mark-realized`;
                         if (realizedMessage && formationName) {
                             realizedMessage.textContent = realizedMessageTemplate.replace(':name', formationName);
+                        }
+                    }
+                });
+            }
+
+            const deleteModal = document.getElementById('confirmDeleteModal');
+            const deleteForm = document.getElementById('deleteForm');
+            const deleteMessage = document.getElementById('confirmDeleteMessage');
+            const deleteMessageTemplate = @json(__('messages.tbt_formation_confirm_delete'));
+
+            if (deleteModal && deleteForm) {
+                deleteModal.addEventListener('show.bs.modal', function (event) {
+                    const triggerButton = event.relatedTarget;
+                    const formationId = triggerButton ? triggerButton.getAttribute('data-formation-id') : null;
+                    const formationName = triggerButton ? triggerButton.getAttribute('data-formation-name') : null;
+
+                    if (formationId) {
+                        deleteForm.action = `{{ url('tbt-formations') }}/${formationId}`;
+                        if (deleteMessage && formationName) {
+                            deleteMessage.textContent = deleteMessageTemplate + ' "' + formationName + '" ?';
                         }
                     }
                 });

@@ -254,57 +254,140 @@ class TbtFormationController extends Controller
             ->orderBy('year', 'desc')
             ->pluck('year');
 
-        // If no formations exist for the selected year, add current year to available years
-        if (!$availableYears->contains($year)) {
-            $availableYears->push($year)->sortDesc();
+        // Add one year before the minimum and one year after the maximum
+        if ($availableYears->isNotEmpty()) {
+            $minYear = $availableYears->min();
+            $maxYear = $availableYears->max();
+            
+            // Add year before minimum
+            if (!$availableYears->contains($minYear - 1)) {
+                $availableYears->push($minYear - 1);
+            }
+            
+            // Add year after maximum
+            if (!$availableYears->contains($maxYear + 1)) {
+                $availableYears->push($maxYear + 1);
+            }
         }
 
+        // If no formations exist, ensure current year and adjacent years are included
+        if ($availableYears->isEmpty()) {
+            $currentYear = (int) date('Y');
+            $availableYears->push($currentYear - 1);
+            $availableYears->push($currentYear);
+            $availableYears->push($currentYear + 1);
+        } else {
+            // Ensure the selected year is included
+            if (!$availableYears->contains($year)) {
+                $availableYears->push($year);
+            }
+        }
+
+        // Sort in descending order
+        $availableYears = $availableYears->sortDesc()->values();
+
         // Build calendar grid data structure
+        // First, collect all weeks for the entire year
+        $allWeeks = [];
+        $yearStart = Carbon::create($year, 1, 1)->startOfWeek(Carbon::MONDAY);
+        $yearEnd = Carbon::create($year, 12, 31)->endOfWeek(Carbon::SUNDAY);
+        
+        $currentDate = $yearStart->copy();
+        $currentWeek = [];
+        
+        while ($currentDate <= $yearEnd) {
+            $currentWeek[] = [
+                'date' => $currentDate->copy(),
+                'day' => $currentDate->day,
+                'month' => $currentDate->month,
+                'isWeekend' => $currentDate->isWeekend(),
+            ];
+            
+            if (count($currentWeek) == 7) {
+                // Determine which month this week belongs to (month with most days)
+                // Only consider months in the target year
+                $monthCounts = [];
+                foreach ($currentWeek as $day) {
+                    $dayYear = $day['date']->year;
+                    $month = $day['month'];
+                    // Only count days that are in the target year
+                    if ($dayYear == $year) {
+                        $monthCounts[$month] = ($monthCounts[$month] ?? 0) + 1;
+                    }
+                }
+                
+                // Only assign to a month if the week has at least one day in the target year
+                if (!empty($monthCounts)) {
+                    $dominantMonth = array_search(max($monthCounts), $monthCounts);
+                    
+                    // Add week with its dominant month
+                    $allWeeks[] = [
+                        'week' => $currentWeek,
+                        'month' => $dominantMonth,
+                        'weekStart' => $currentWeek[0]['date'],
+                        'weekEnd' => $currentWeek[6]['date'],
+                    ];
+                }
+                
+                $currentWeek = [];
+            }
+            
+            $currentDate->addDay();
+        }
+        
+        // Handle remaining days if any
+        if (count($currentWeek) > 0) {
+            // Only consider months in the target year
+            $monthCounts = [];
+            foreach ($currentWeek as $day) {
+                $dayYear = $day['date']->year;
+                $month = $day['month'];
+                // Only count days that are in the target year
+                if ($dayYear == $year) {
+                    $monthCounts[$month] = ($monthCounts[$month] ?? 0) + 1;
+                }
+            }
+            
+            // Only assign to a month if the week has at least one day in the target year
+            if (!empty($monthCounts)) {
+                $dominantMonth = array_search(max($monthCounts), $monthCounts);
+                
+                $allWeeks[] = [
+                    'week' => $currentWeek,
+                    'month' => $dominantMonth,
+                    'weekStart' => $currentWeek[0]['date'],
+                    'weekEnd' => $currentWeek[count($currentWeek) - 1]['date'],
+                ];
+            }
+        }
+        
+        // Now organize weeks by month
         $calendarData = [];
         for ($month = 1; $month <= 12; $month++) {
             $firstDay = Carbon::create($year, $month, 1);
             $lastDay = $firstDay->copy()->endOfMonth();
-            $startDate = $firstDay->copy()->startOfWeek(Carbon::MONDAY);
-            $endDate = $lastDay->copy()->endOfWeek(Carbon::SUNDAY);
             
-            // Get all days in the month (including partial weeks)
-            $days = [];
-            $currentDate = $startDate->copy();
-            while ($currentDate <= $endDate) {
-                $days[] = [
-                    'date' => $currentDate->copy(),
-                    'day' => $currentDate->day,
-                    'isInMonth' => $currentDate->month == $month,
-                    'isWeekend' => $currentDate->isWeekend(),
-                ];
-                $currentDate->addDay();
-            }
-            
-            // Group days into weeks
-            $weeks = [];
-            $currentWeek = [];
-            foreach ($days as $day) {
-                $currentWeek[] = $day;
-                if (count($currentWeek) == 7) {
-                    $weeks[] = $currentWeek;
-                    $currentWeek = [];
-                }
-            }
-            if (count($currentWeek) > 0) {
-                $weeks[] = $currentWeek;
-            }
-
-            // Avoid duplicating weeks that already belong to the previous month
-            if (!empty($weeks)) {
-                $firstWeekStart = $weeks[0][0]['date'];
-                if ($firstWeekStart->year == $year && $firstWeekStart->month < $month) {
-                    array_shift($weeks);
+            // Get weeks that belong to this month
+            $monthWeeks = [];
+            foreach ($allWeeks as $weekData) {
+                if ($weekData['month'] == $month) {
+                    // Format week days for display
+                    $formattedWeek = [];
+                    foreach ($weekData['week'] as $day) {
+                        $formattedWeek[] = [
+                            'date' => $day['date'],
+                            'day' => $day['day'],
+                            'isInMonth' => $day['month'] == $month,
+                            'isWeekend' => $day['isWeekend'],
+                        ];
+                    }
+                    $monthWeeks[] = $formattedWeek;
                 }
             }
             
             // Match formations to weeks
             $monthFormations = $formations->where('month', $month);
-            foreach ($weeks as $weekIndex => &$week) {
+            foreach ($monthWeeks as $weekIndex => &$week) {
                 if (count($week) > 0) {
                     $weekStart = $week[0]['date'];
                     $weekEnd = (count($week) == 7 && isset($week[6])) 
@@ -324,7 +407,7 @@ class TbtFormationController extends Controller
             $calendarData[$month] = [
                 'name' => Carbon::create($year, $month, 1)->locale('fr')->monthName,
                 'shortName' => Carbon::create($year, $month, 1)->locale('fr')->shortMonthName . '-' . substr($year, -2),
-                'weeks' => $weeks,
+                'weeks' => $monthWeeks,
                 'firstDay' => $firstDay,
                 'lastDay' => $lastDay,
             ];
@@ -347,51 +430,107 @@ class TbtFormationController extends Controller
             ->get();
 
         // Build calendar grid data structure (same as planning method)
+        // First, collect all weeks for the entire year
+        $allWeeks = [];
+        $yearStart = Carbon::create($year, 1, 1)->startOfWeek(Carbon::MONDAY);
+        $yearEnd = Carbon::create($year, 12, 31)->endOfWeek(Carbon::SUNDAY);
+        
+        $currentDate = $yearStart->copy();
+        $currentWeek = [];
+        
+        while ($currentDate <= $yearEnd) {
+            $currentWeek[] = [
+                'date' => $currentDate->copy(),
+                'day' => $currentDate->day,
+                'month' => $currentDate->month,
+                'isWeekend' => $currentDate->isWeekend(),
+            ];
+            
+            if (count($currentWeek) == 7) {
+                // Determine which month this week belongs to (month with most days)
+                // Only consider months in the target year
+                $monthCounts = [];
+                foreach ($currentWeek as $day) {
+                    $dayYear = $day['date']->year;
+                    $month = $day['month'];
+                    // Only count days that are in the target year
+                    if ($dayYear == $year) {
+                        $monthCounts[$month] = ($monthCounts[$month] ?? 0) + 1;
+                    }
+                }
+                
+                // Only assign to a month if the week has at least one day in the target year
+                if (!empty($monthCounts)) {
+                    $dominantMonth = array_search(max($monthCounts), $monthCounts);
+                    
+                    // Add week with its dominant month
+                    $allWeeks[] = [
+                        'week' => $currentWeek,
+                        'month' => $dominantMonth,
+                        'weekStart' => $currentWeek[0]['date'],
+                        'weekEnd' => $currentWeek[6]['date'],
+                    ];
+                }
+                
+                $currentWeek = [];
+            }
+            
+            $currentDate->addDay();
+        }
+        
+        // Handle remaining days if any
+        if (count($currentWeek) > 0) {
+            // Only consider months in the target year
+            $monthCounts = [];
+            foreach ($currentWeek as $day) {
+                $dayYear = $day['date']->year;
+                $month = $day['month'];
+                // Only count days that are in the target year
+                if ($dayYear == $year) {
+                    $monthCounts[$month] = ($monthCounts[$month] ?? 0) + 1;
+                }
+            }
+            
+            // Only assign to a month if the week has at least one day in the target year
+            if (!empty($monthCounts)) {
+                $dominantMonth = array_search(max($monthCounts), $monthCounts);
+                
+                $allWeeks[] = [
+                    'week' => $currentWeek,
+                    'month' => $dominantMonth,
+                    'weekStart' => $currentWeek[0]['date'],
+                    'weekEnd' => $currentWeek[count($currentWeek) - 1]['date'],
+                ];
+            }
+        }
+        
+        // Now organize weeks by month
         $calendarData = [];
         for ($month = 1; $month <= 12; $month++) {
             $firstDay = Carbon::create($year, $month, 1);
             $lastDay = $firstDay->copy()->endOfMonth();
-            $startDate = $firstDay->copy()->startOfWeek(Carbon::MONDAY);
-            $endDate = $lastDay->copy()->endOfWeek(Carbon::SUNDAY);
             
-            // Get all days in the month (including partial weeks)
-            $days = [];
-            $currentDate = $startDate->copy();
-            while ($currentDate <= $endDate) {
-                $days[] = [
-                    'date' => $currentDate->copy(),
-                    'day' => $currentDate->day,
-                    'isInMonth' => $currentDate->month == $month,
-                    'isWeekend' => $currentDate->isWeekend(),
-                ];
-                $currentDate->addDay();
-            }
-            
-            // Group days into weeks
-            $weeks = [];
-            $currentWeek = [];
-            foreach ($days as $day) {
-                $currentWeek[] = $day;
-                if (count($currentWeek) == 7) {
-                    $weeks[] = $currentWeek;
-                    $currentWeek = [];
-                }
-            }
-            if (count($currentWeek) > 0) {
-                $weeks[] = $currentWeek;
-            }
-
-            // Avoid duplicating weeks that already belong to the previous month
-            if (!empty($weeks)) {
-                $firstWeekStart = $weeks[0][0]['date'];
-                if ($firstWeekStart->year == $year && $firstWeekStart->month < $month) {
-                    array_shift($weeks);
+            // Get weeks that belong to this month
+            $monthWeeks = [];
+            foreach ($allWeeks as $weekData) {
+                if ($weekData['month'] == $month) {
+                    // Format week days for display
+                    $formattedWeek = [];
+                    foreach ($weekData['week'] as $day) {
+                        $formattedWeek[] = [
+                            'date' => $day['date'],
+                            'day' => $day['day'],
+                            'isInMonth' => $day['month'] == $month,
+                            'isWeekend' => $day['isWeekend'],
+                        ];
+                    }
+                    $monthWeeks[] = $formattedWeek;
                 }
             }
             
             // Match formations to weeks
             $monthFormations = $formations->where('month', $month);
-            foreach ($weeks as $weekIndex => &$week) {
+            foreach ($monthWeeks as $weekIndex => &$week) {
                 if (count($week) > 0) {
                     $weekStart = $week[0]['date'];
                     $weekEnd = (count($week) == 7 && isset($week[6])) 
@@ -411,7 +550,7 @@ class TbtFormationController extends Controller
             $calendarData[$month] = [
                 'name' => Carbon::create($year, $month, 1)->locale('fr')->monthName,
                 'shortName' => Carbon::create($year, $month, 1)->locale('fr')->shortMonthName . '-' . substr($year, -2),
-                'weeks' => $weeks,
+                'weeks' => $monthWeeks,
                 'firstDay' => $firstDay,
                 'lastDay' => $lastDay,
             ];

@@ -157,6 +157,34 @@
             </ul>
         </li>
         <li class="mb-2">
+            <a href="#"
+               class="text-dark text-decoration-none d-flex align-items-center p-2 {{ (request()->routeIs('journeys.*') || request()->routeIs('journeys-checklist.*')) ? 'active' : '' }}"
+               data-bs-toggle="collapse"
+               data-bs-target="#journeysSubmenu"
+               aria-expanded="{{ (request()->routeIs('journeys.*') || request()->routeIs('journeys-checklist.*')) ? 'true' : 'false' }}"
+               aria-controls="journeysSubmenu">
+                <i class="bi bi-signpost-split me-2 text-gray-600 sidebar-icon"></i>
+                <span class="sidebar-text">{{ __('messages.journeys') ?? 'Journeys' }}</span>
+                <i class="bi bi-chevron-down ms-auto sidebar-icon"></i>
+            </a>
+            <ul class="collapse list-unstyled ms-3 {{ (request()->routeIs('journeys.*') || request()->routeIs('journeys-checklist.*')) ? 'show' : '' }}" id="journeysSubmenu">
+                <li class="mb-1">
+                    <a href="{{ route('journeys.index') }}"
+                       class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('journeys.*') ? 'active' : '' }}">
+                        <i class="bi bi-signpost-2 me-2 text-gray-600 sidebar-icon"></i>
+                        <span class="sidebar-text">{{ __('messages.journeys') ?? 'Journeys' }}</span>
+                    </a>
+                </li>
+                <li class="mb-1">
+                    <a href="{{ route('journeys-checklist.index') }}"
+                       class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('journeys-checklist.*') ? 'active' : '' }}">
+                        <i class="bi bi-list-check me-2 text-gray-600 sidebar-icon"></i>
+                        <span class="sidebar-text">{{ __('messages.journeys_checklist') ?? 'Journeys Checklist' }}</span>
+                    </a>
+                </li>
+            </ul>
+        </li>
+        <li class="mb-2">
             <a href="{{ route('organigram.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('organigram.*') ? 'active' : '' }}">
                 <i class="bi bi-people me-2 text-gray-600 sidebar-icon"></i>
                 <span class="sidebar-text">{{ __('messages.members') }}</span>
@@ -403,6 +431,34 @@
                            class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('rest-points.checklists.categories.*') ? 'active' : '' }}">
                             <i class="bi bi-list-check me-2 text-gray-600 sidebar-icon"></i>
                             <span class="sidebar-text">{{ __('messages.checklist') ?? 'Check List' }}</span>
+                        </a>
+                    </li>
+                </ul>
+            </li>
+            <li class="mb-2">
+                <a href="#"
+                   class="text-dark text-decoration-none d-flex align-items-center p-2 {{ (request()->routeIs('journeys.*') || request()->routeIs('journeys-checklist.*')) ? 'active' : '' }}"
+                   data-bs-toggle="collapse"
+                   data-bs-target="#journeysSubmenu"
+                   aria-expanded="{{ (request()->routeIs('journeys.*') || request()->routeIs('journeys-checklist.*')) ? 'true' : 'false' }}"
+                   aria-controls="journeysSubmenu">
+                    <i class="bi bi-signpost-split me-2 text-gray-600 sidebar-icon"></i>
+                    <span class="sidebar-text">{{ __('messages.journeys') ?? 'Journeys' }}</span>
+                    <i class="bi bi-chevron-down ms-auto sidebar-icon"></i>
+                </a>
+                <ul class="collapse list-unstyled ms-3 {{ (request()->routeIs('journeys.*') || request()->routeIs('journeys-checklist.*')) ? 'show' : '' }}" id="journeysSubmenu">
+                    <li class="mb-1">
+                        <a href="{{ route('journeys.index') }}"
+                           class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('journeys.*') ? 'active' : '' }}">
+                            <i class="bi bi-signpost-2 me-2 text-gray-600 sidebar-icon"></i>
+                            <span class="sidebar-text">{{ __('messages.journeys') ?? 'Journeys' }}</span>
+                        </a>
+                    </li>
+                    <li class="mb-1">
+                        <a href="{{ route('journeys-checklist.index') }}"
+                           class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('journeys-checklist.*') ? 'active' : '' }}">
+                            <i class="bi bi-list-check me-2 text-gray-600 sidebar-icon"></i>
+                            <span class="sidebar-text">{{ __('messages.journeys_checklist') ?? 'Journeys Checklist' }}</span>
                         </a>
                     </li>
                 </ul>

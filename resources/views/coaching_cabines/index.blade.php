@@ -269,6 +269,17 @@
                                                     <i class="bi bi-file-pdf"></i>
                                                 </a>
                                             @endif
+                                            <button
+                                                type="button"
+                                                class="btn btn-outline-danger"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#deleteSessionModal"
+                                                data-session-id="{{ $session->id }}"
+                                                data-session-driver="{{ $session->driver->full_name ?? '' }}"
+                                                title="{{ __('messages.delete') }}"
+                                            >
+                                                <i class="bi bi-trash"></i>
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>
@@ -370,5 +381,67 @@
         </div>
         @endif
     @endforeach
+
+    {{-- Delete Session Modal --}}
+    <div class="modal fade" id="deleteSessionModal" tabindex="-1" aria-labelledby="deleteSessionModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form id="deleteSessionForm" method="POST">
+                    @csrf
+                    @method('DELETE')
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title" id="deleteSessionModalLabel">
+                            <i class="bi bi-trash me-2"></i>
+                            {{ __('messages.coaching_cabines_delete_confirm') ?? 'Are you sure you want to delete this coaching session?' }}
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="mb-2">
+                            {{ __('messages.confirm_delete_turnover_warning') ?? 'This action cannot be undone.' }}
+                        </p>
+                        <p class="mb-0 text-muted">
+                            <strong>{{ __('messages.driver') }}:</strong>
+                            <span id="delete-session-driver"></span>
+                        </p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                            {{ __('messages.cancel') }}
+                        </button>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-trash me-1"></i>{{ __('messages.delete') }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 </x-app-layout>
 
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const deleteModal = document.getElementById('deleteSessionModal');
+    if (!deleteModal) return;
+
+    const deleteForm = document.getElementById('deleteSessionForm');
+    const driverSpan = document.getElementById('delete-session-driver');
+
+    deleteModal.addEventListener('show.bs.modal', function (event) {
+        const button = event.relatedTarget;
+        if (!button) return;
+
+        const sessionId = button.getAttribute('data-session-id');
+        const driverName = button.getAttribute('data-session-driver') || '';
+
+        if (driverSpan) {
+            driverSpan.textContent = driverName;
+        }
+
+        if (deleteForm && sessionId) {
+            const actionTemplate = '{{ route("coaching-cabines.destroy", ":id") }}';
+            deleteForm.action = actionTemplate.replace(':id', sessionId);
+        }
+    });
+});
+</script>

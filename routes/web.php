@@ -24,6 +24,8 @@ use App\Http\Controllers\RestPointController;
 use App\Http\Controllers\RestPointChecklistController;
 use App\Http\Controllers\RestPointChecklistCategoryController;
 use App\Http\Controllers\RestPointChecklistItemController;
+use App\Http\Controllers\JourneyChecklistController;
+use App\Http\Controllers\JourneyController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Storage;
@@ -246,6 +248,37 @@ Route::middleware('auth')->group(function () {
             'update' => 'rest-points.checklists.items.update',
             'destroy' => 'rest-points.checklists.items.destroy',
         ]);
+    
+    // Journeys
+    // Place specific routes BEFORE resource route to avoid conflicts
+    Route::get('/journeys/export', [JourneyController::class, 'export'])->name('journeys.export');
+    Route::match(['get', 'post'], '/journeys/export-pdf', [JourneyController::class, 'exportPdf'])->name('journeys.export-pdf');
+    Route::get('/journeys/planning', [JourneyController::class, 'planning'])
+        ->name('journeys.planning');
+    Route::get('/journeys/planning/pdf', [JourneyController::class, 'planningPdf'])
+        ->name('journeys.planning.pdf');
+    Route::post('/journeys/{journey}/black-points', [JourneyController::class, 'storeBlackPoint'])
+        ->name('journeys.black-points.store');
+    Route::put('/journeys/black-points/{blackPoint}', [JourneyController::class, 'updateBlackPoint'])
+        ->name('journeys.black-points.update');
+    Route::delete('/journeys/black-points/{blackPoint}', [JourneyController::class, 'destroyBlackPoint'])
+        ->name('journeys.black-points.destroy');
+    Route::post('/journeys/{journey}/checklists', [JourneyController::class, 'storeChecklist'])
+        ->name('journeys.checklists.store');
+    Route::put('/journeys/checklists/{checklist}', [JourneyController::class, 'updateChecklist'])
+        ->name('journeys.checklists.update');
+    Route::match(['get', 'post'], '/journeys/checklists/{checklist}/pdf', [JourneyController::class, 'checklistPdf'])
+        ->name('journeys.checklists.pdf');
+    Route::get('/journeys/checklists/document/{encoded}', [JourneyController::class, 'checklistDocument'])
+        ->name('journeys.checklists.document');
+    Route::resource('journeys', JourneyController::class);
+    
+    // Journeys Checklist (template of items)
+    Route::resource('journeys-checklist', JourneyChecklistController::class)
+        ->except(['create', 'edit', 'show'])
+        ->parameters(['journeys-checklist' => 'journeys_checklist']);
+    Route::post('/journeys-checklist/{journeys_checklist}/toggle-status', [JourneyChecklistController::class, 'toggleStatus'])
+        ->name('journeys-checklist.toggle-status');
     
 });
 

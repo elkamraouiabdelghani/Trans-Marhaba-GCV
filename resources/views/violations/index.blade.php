@@ -134,11 +134,11 @@
                             </select>
                         </div>
                         <div class="col-12 col-md-2">
-                            <label for="driverFilter" class="form-label fw-semibold">{{ __('messages.driver') }}</label>
-                            <select name="driver_id" id="driverFilter" class="form-select">
-                                <option value="">{{ __('messages.all_drivers') }}</option>
-                                @foreach($drivers as $id => $name)
-                                    <option value="{{ $id }}" @selected(($filters['driver_id'] ?? '') == $id)>{{ $name }}</option>
+                            <label for="flotteFilter" class="form-label fw-semibold">{{ __('messages.flotte') }}</label>
+                            <select name="flotte_id" id="flotteFilter" class="form-select">
+                                <option value="">{{ __('messages.all_flottes') }}</option>
+                                @foreach($flottes as $id => $name)
+                                    <option value="{{ $id }}" @selected(($filters['flotte_id'] ?? '') == $id)>{{ $name }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -190,6 +190,7 @@
                             <tr>
                                 <th class="ps-3">{{ __('messages.violation_date') }}</th>
                                 <th>{{ __('messages.driver') }}</th>
+                                <th>{{ __('messages.flotte') }}</th>
                                 <th>{{ __('messages.violation_type') }}</th>
                                 <th>{{ __('messages.location') }}</th>
                                 <th>{{ __('messages.status') }}</th>
@@ -206,6 +207,11 @@
                                     </td>
                                     <td>
                                         <div class="fw-semibold">{{ $violation->driver?->full_name ?? __('messages.not_available') }}</div>
+                                    </td>
+                                    <td>
+                                        <div class="fw-semibold">
+                                            {{ $violation->driver?->flotte?->name ?? '-' }}
+                                        </div>
                                     </td>
                                     <td>
                                         <div class="fw-semibold">

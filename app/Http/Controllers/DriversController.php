@@ -1110,24 +1110,6 @@ class DriversController extends Controller
         return sprintf('%02d:%02d', $hours, $minutes);
     }
 
-    private function timeStringToSeconds($time): int
-    {
-        if (!$time) {
-            return 0;
-        }
-
-        if ($time instanceof Carbon) {
-            return ((int) $time->format('H') * 3600) + ((int) $time->format('i') * 60) + (int) $time->format('s');
-        }
-
-        $parts = explode(':', (string) $time);
-        $hours = (int) ($parts[0] ?? 0);
-        $minutes = (int) ($parts[1] ?? 0);
-        $seconds = (int) ($parts[2] ?? 0);
-
-        return ($hours * 3600) + ($minutes * 60) + $seconds;
-    }
-
     private function normalizeImportHeader(?string $value): string
     {
         return Str::of((string) $value)
@@ -1515,15 +1497,6 @@ class DriversController extends Controller
         return true;
     }
 
-    /**
-     * Prepare timeline data for Gantt chart
-     */
-    // Removed placeholder timeline; return empty until real activity data is wired
-    private function prepareTimelineData($driver, $dateFrom, $dateTo, $violations)
-    {
-        return [];
-    }
-
     private function driversQuery(?int $flotteId = null)
     {
         $query = Driver::query()
@@ -1710,6 +1683,11 @@ class DriversController extends Controller
             $validated = $request->validated();
             unset($validated['documents'], $validated['profile_photo'], $validated['remove_photo']);
 
+            // Capture requested status once, before we possibly override it based on vehicle assignment.
+            $requestedStatus = isset($validated['status'])
+                ? strtolower(trim((string) $validated['status']))
+                : null;
+
             $existingPhotoPath = $driver->profile_photo_path;
 
             if ($request->hasFile('profile_photo')) {
@@ -1730,6 +1708,21 @@ class DriversController extends Controller
             $newVehicleId = $validated['assigned_vehicle_id'] ?? null;
             $newVehicleId = $newVehicleId ?: null;
             $validated['assigned_vehicle_id'] = $newVehicleId;
+
+            // Prevent setting driver to inactive while they still have a vehicle
+            // in this request. We only allow inactivation if the driver is
+            // being unassigned from any vehicle at the same time.
+            if (
+                $originalVehicleId &&                                         // driver currently has a vehicle
+                $this->isDriverActive($driver) &&                             // driver is currently active
+                $requestedStatus !== null &&
+                in_array($requestedStatus, ['inactive', 'inactif'], true) && // user requested inactive
+                $newVehicleId !== null                                        // still assigned to a vehicle in this request
+            ) {
+                return back()
+                    ->withInput()
+                    ->with('error', 'Driver is assigned to a vehicle. Please unassign the driver from the vehicle before setting them inactive.');
+            }
 
             $vehicleAssignmentChanged = $originalVehicleId !== $newVehicleId;
 
@@ -2127,11 +2120,6 @@ class DriversController extends Controller
         }
 
         return null;
-    }
-
-    private function encodeDocumentToken(string $path): string
-    {
-        return rtrim(strtr(base64_encode($path), '+/', '-_'), '=');
     }
 
     private function decodeDocumentToken(string $token): ?string

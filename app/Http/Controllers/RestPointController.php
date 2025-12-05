@@ -183,7 +183,7 @@ class RestPointController extends Controller
                     'created_by' => Auth::id(),
                 ]);
 
-                // Validate and create checklist if provided
+                // Validate and create checklist if provided (optional)
                 $checklistData = $request->input('checklist', []);
                 
                 if (!empty($checklistData)) {
@@ -192,80 +192,62 @@ class RestPointController extends Controller
                         ->pluck('id')
                         ->toArray();
 
-                    // Validate that all active items have answers
-                    $submittedItemIds = array_keys($checklistData);
-                    $missingItems = array_diff($activeItems, $submittedItemIds);
-                    
-                    if (!empty($missingItems)) {
-                        DB::rollBack();
-                        return back()
-                            ->withInput()
-                            ->with('error', __('messages.checklist_incomplete') ?? 'Please complete all checklist items before submitting.');
-                    }
+                    // Build a list of valid answers (only for submitted/checked items)
+                    $validAnswers = [];
 
-                    // Validate each answer
                     foreach ($checklistData as $itemId => $answerData) {
-                        if (!in_array($itemId, $activeItems)) {
+                        // Ensure item is a valid active checklist item
+                        if (!in_array((int) $itemId, $activeItems, true)) {
                             DB::rollBack();
                             return back()
                                 ->withInput()
                                 ->with('error', __('messages.invalid_checklist_item') ?? 'Invalid checklist item detected.');
                         }
 
-                        if (!isset($answerData['is_checked']) || !in_array($answerData['is_checked'], ['0', '1'])) {
-                            DB::rollBack();
-                            return back()
-                                ->withInput()
-                                ->with('error', __('messages.checklist_answer_required') ?? 'Please provide a Yes/No answer for all checklist items.');
+                        // Only keep answers where a Yes/No value was actually provided
+                        if (isset($answerData['is_checked']) && in_array($answerData['is_checked'], ['0', '1'], true)) {
+                            $validAnswers[(int) $itemId] = $answerData;
                         }
                     }
 
-                    // Get status from request (default to 'accepted')
-                    $checklistStatus = $request->input('checklist_status', 'accepted');
-                    if (!in_array($checklistStatus, ['pending', 'accepted', 'rejected'])) {
-                        $checklistStatus = 'accepted';
-                    }
+                    // If user didn't answer any item, skip creating a checklist entirely
+                    if (!empty($validAnswers)) {
+                        // Get status from request (default to 'accepted')
+                        $checklistStatus = $request->input('checklist_status', 'accepted');
+                        if (!in_array($checklistStatus, ['pending', 'accepted', 'rejected'], true)) {
+                            $checklistStatus = 'accepted';
+                        }
 
-                    // Handle file uploads
-                    $documents = [];
-                    if ($request->hasFile('checklist_documents')) {
-                        foreach ($request->file('checklist_documents') as $file) {
-                            if ($file->isValid()) {
-                                $path = $file->store('rest-points/checklists', 'public');
-                                $documents[] = $path;
+                        // Handle file uploads
+                        $documents = [];
+                        if ($request->hasFile('checklist_documents')) {
+                            foreach ($request->file('checklist_documents') as $file) {
+                                if ($file->isValid()) {
+                                    $path = $file->store('rest-points/checklists', 'public');
+                                    $documents[] = $path;
+                                }
                             }
                         }
-                    }
 
-                    // Create checklist record
-                    $checklist = RestPointChecklist::create([
-                        'rest_point_id' => $restPoint->id,
-                        'completed_by' => Auth::id(),
-                        'completed_at' => now(),
-                        'status' => $checklistStatus,
-                        'notes' => $request->input('checklist_notes'),
-                        'documents' => !empty($documents) ? $documents : null,
-                    ]);
-
-                    // Create answers for each item
-                    foreach ($checklistData as $itemId => $answerData) {
-                        RestPointChecklistItemAnswer::create([
-                            'rest_points_checklist_id' => $checklist->id,
-                            'rest_points_checklist_item_id' => $itemId,
-                            'is_checked' => $answerData['is_checked'] === '1',
-                            'comment' => !empty($answerData['comment']) ? $answerData['comment'] : null,
+                        // Create checklist record
+                        $checklist = RestPointChecklist::create([
+                            'rest_point_id' => $restPoint->id,
+                            'completed_by' => Auth::id(),
+                            'completed_at' => now(),
+                            'status' => $checklistStatus,
+                            'notes' => $request->input('checklist_notes'),
+                            'documents' => !empty($documents) ? $documents : null,
                         ]);
-                    }
-                } else {
-                    // No checklist data provided, but it's required
-                    // Check if there are any active categories/items
-                    $hasActiveItems = RestPointChecklistItem::where('is_active', true)->exists();
-                    
-                    if ($hasActiveItems) {
-                        DB::rollBack();
-                        return back()
-                            ->withInput()
-                            ->with('error', __('messages.checklist_required') ?? 'Checklist is required. Please complete all checklist items.');
+
+                        // Create answers for each valid item
+                        foreach ($validAnswers as $itemId => $answerData) {
+                            RestPointChecklistItemAnswer::create([
+                                'rest_points_checklist_id' => $checklist->id,
+                                'rest_points_checklist_item_id' => $itemId,
+                                'is_checked' => $answerData['is_checked'] === '1',
+                                'comment' => !empty($answerData['comment']) ? $answerData['comment'] : null,
+                            ]);
+                        }
                     }
                 }
 
@@ -410,24 +392,8 @@ class RestPointController extends Controller
                         ->map(fn ($id) => (int) $id)
                         ->toArray();
 
-                    // If this rest point has NO checklist yet, then require answers for all active items
-                    if (! $checklist) {
-                        $submittedItemIds = array_map('intval', array_keys($checklistData));
-                        $missingItems = array_diff($activeItems, $submittedItemIds);
-
-                        if (! empty($missingItems)) {
-                            DB::rollBack();
-                            Log::warning('Checklist incomplete on first creation', [
-                                'missing_items' => $missingItems,
-                                'submitted_items' => $submittedItemIds,
-                                'active_items' => $activeItems,
-                            ]);
-
-                            return back()
-                                ->withInput()
-                                ->with('error', __('messages.checklist_incomplete') ?? 'Please complete all checklist items before submitting.');
-                        }
-                    }
+                    // Build a list of valid answers (only for submitted/checked items)
+                    $validAnswers = [];
 
                     // Validate each submitted answer (for both new and existing checklists)
                     foreach ($checklistData as $itemId => $answerData) {
@@ -445,17 +411,17 @@ class RestPointController extends Controller
                                 ->with('error', __('messages.invalid_checklist_item') ?? 'Invalid checklist item detected.');
                         }
 
-                        if (! isset($answerData['is_checked']) || ! in_array($answerData['is_checked'], ['0', '1'], true)) {
-                            DB::rollBack();
-                            Log::warning('Missing checklist answer', [
-                                'item_id' => $itemId,
-                                'answer_data' => $answerData,
-                            ]);
-
-                            return back()
-                                ->withInput()
-                                ->with('error', __('messages.checklist_answer_required') ?? 'Please provide a Yes/No answer for all checklist items.');
+                        if (isset($answerData['is_checked']) && in_array($answerData['is_checked'], ['0', '1'], true)) {
+                            $validAnswers[$itemIdInt] = $answerData;
                         }
+                    }
+
+                    // If user didn't answer any item, don't touch checklist/answers
+                    if (empty($validAnswers)) {
+                        Log::info('No valid checklist answers submitted; skipping checklist update/creation', [
+                            'rest_point_id' => $restPoint->id,
+                        ]);
+                        goto checklist_done;
                     }
                     
                     if (! $checklist) {
@@ -566,12 +532,9 @@ class RestPointController extends Controller
                         }
                     }
 
-                    // Update or create answers for each item
+                    // Update or create answers for each valid item
                     // This will update existing answers or create new ones if they don't exist
-                    foreach ($checklistData as $itemId => $answerData) {
-                        // Ensure itemId is an integer
-                        $itemIdInt = (int)$itemId;
-                        
+                    foreach ($validAnswers as $itemIdInt => $answerData) {
                         try {
                             RestPointChecklistItemAnswer::updateOrCreate(
                                 [
@@ -599,19 +562,11 @@ class RestPointController extends Controller
                     Log::info('Checklist answers processed successfully', [
                         'rest_point_id' => $restPoint->id,
                         'checklist_id' => $checklist->id,
-                        'answers_count' => count($checklistData),
+                        'answers_count' => count($validAnswers),
                     ]);
                 } else {
-                    // No checklist data provided, but it's required
-                    // Check if there are any active categories/items
-                    $hasActiveItems = RestPointChecklistItem::where('is_active', true)->exists();
-                    
-                    if ($hasActiveItems) {
-                        DB::rollBack();
-                        return back()
-                            ->withInput()
-                            ->with('error', __('messages.checklist_required') ?? 'Checklist is required. Please complete all checklist items.');
-                    }
+                    checklist_done:
+                    // No checklist data provided or no valid answers; nothing to do
                 }
 
                 DB::commit();

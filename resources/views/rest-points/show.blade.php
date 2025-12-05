@@ -311,15 +311,17 @@
                                     </small>
                                 @endif
                             @endif
-                            <hr class="my-2">
-                            {{-- Delete rest point button --}}
-                            <button type="button"
-                                    class="btn btn-outline-danger btn-sm"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#deleteRestPointModal">
-                                <i class="bi bi-trash me-1"></i>
-                                {{ __('messages.delete_rest_point') ?? 'Delete rest point' }}
-                            </button>
+                            @if(Auth::user()->role === 'admin')
+                                <hr class="my-2">
+                                {{-- Delete rest point button --}}
+                                <button type="button"
+                                        class="btn btn-outline-danger btn-sm"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#deleteRestPointModal">
+                                    <i class="bi bi-trash me-1"></i>
+                                    {{ __('messages.delete_rest_point') ?? 'Delete rest point' }}
+                                </button>
+                            @endif
                         </div>
                     </div>
                 </div>
