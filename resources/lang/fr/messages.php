@@ -806,6 +806,7 @@ return [
     'select_site' => 'Sélectionner un site...',
     'select_flotte' => 'Sélectionner une flotte...',
     'select_driver_for_formation' => 'Sélectionner un conducteur...',
+    'all_themes' => 'Tous les thèmes',
     'theme' => 'Thème',
     'enter_theme' => 'Entrez le thème...',
     'identification_besoin_notes' => 'Notes d\'identification de besoin',

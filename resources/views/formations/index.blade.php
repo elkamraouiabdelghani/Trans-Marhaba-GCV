@@ -148,6 +148,17 @@
                             </select>
                         </div>
                         <div class="col-md-2">
+                            <label for="theme" class="form-label small">{{ __('messages.theme') }}</label>
+                            <select name="theme" id="theme" class="form-select form-select-sm">
+                                <option value="">{{ __('messages.all_themes') }}</option>
+                                @foreach($themes ?? [] as $theme)
+                                    <option value="{{ $theme }}" {{ request('theme', $selectedTheme ?? '') === $theme ? 'selected' : '' }}>
+                                        {{ $theme }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-2">
                             <label for="year" class="form-label small">{{ __('messages.year') }}</label>
                             @php
                                 $yearValue = request('year', $selectedYear ?? now()->year);
@@ -161,22 +172,21 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-2 d-flex align-items-end">
+                        <div class="col-md-1 d-flex align-items-end">
                             <button type="submit" class="btn btn-primary btn-sm w-100">
                                 <i class="bi bi-search"></i>
                             </button>
+                            @if($hasFilters ?? false)
+                                <div class="row mt-2">
+                                    <div class="col-12">
+                                        <a href="{{ route('formations.index') }}" class="btn btn-outline-secondary btn-sm">
+                                            <i class="bi bi-x-circle"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            @endif
                         </div>
                     </div>
-                    @if($hasFilters ?? false)
-                        <div class="row mt-2">
-                            <div class="col-12">
-                                <a href="{{ route('formations.index') }}" class="btn btn-outline-secondary btn-sm">
-                                    <i class="bi bi-x-circle me-1"></i>
-                                    {{ __('messages.clear_filters') }}
-                                </a>
-                            </div>
-                        </div>
-                    @endif
                 </form>
             </div>
         </div>

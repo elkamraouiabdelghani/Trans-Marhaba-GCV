@@ -30,6 +30,11 @@ class FormationController extends Controller
                 ->orderBy('full_name')
                 ->get();
             $flottes = Flotte::orderBy('name')->get();
+            $themes = Formation::select('theme')
+                ->whereNotNull('theme')
+                ->distinct()
+                ->orderBy('theme')
+                ->pluck('theme');
 
         $currentYear = (int) now()->format('Y');
 
@@ -38,6 +43,7 @@ class FormationController extends Controller
         $selectedFlotte = $request->input('flotte');
         $selectedStatus = $request->input('status');
         $selectedFormationType = $request->input('type');
+        $selectedTheme = $request->input('theme');
         $requestedYear = $request->input('year');
         $selectedYear = $requestedYear ?: $currentYear;
         $yearFilterApplied = $requestedYear !== null && $requestedYear !== '';
@@ -79,16 +85,20 @@ class FormationController extends Controller
             }
 
             // Determine if filters are applied
-        $hasFilters = $selectedDriver || $selectedFlotte || $selectedStatus || $selectedFormationType || $yearFilterApplied;
+        $hasFilters = $selectedDriver || $selectedFlotte || $selectedStatus || $selectedFormationType || $selectedTheme || $yearFilterApplied;
             
             // Rule: If only status is selected, show nothing
-        $onlyStatus = $selectedStatus && !$selectedDriver && !$selectedFlotte && !$selectedFormationType && !$yearFilterApplied;
+        $onlyStatus = $selectedStatus && !$selectedDriver && !$selectedFlotte && !$selectedFormationType && !$selectedTheme && !$yearFilterApplied;
 
         // Build base query for formations
         $formationsQuery = Formation::with(['flotte']);
 
         if ($selectedYear) {
             $formationsQuery->whereYear('realizing_date', $selectedYear);
+        }
+
+        if ($selectedTheme) {
+            $formationsQuery->where('theme', $selectedTheme);
         }
 
         // Yearly stats (before additional filters)
@@ -265,13 +275,23 @@ class FormationController extends Controller
                     }
                 }
 
-                if ($selectedFormationType) {
-                    $query->whereHas('formation', function ($q) use ($selectedFormationType) {
-                        $q->where('type', $selectedFormationType);
+                if ($selectedFormationType || $selectedTheme) {
+                    $query->whereHas('formation', function ($q) use ($selectedFormationType, $selectedTheme) {
+                        if ($selectedFormationType) {
+                            $q->where('type', $selectedFormationType);
+                        }
+                        if ($selectedTheme) {
+                            $q->where('theme', $selectedTheme);
+                        }
                     });
                 }
 
                 // Get actual driver formation records
+                $allFormationsForGraph = $formations->pluck('id')->toArray();
+                if (!empty($allFormationsForGraph)) {
+                    $query->whereIn('formation_id', $allFormationsForGraph);
+                }
+
                 $driverFormations = $query->get();
 
                 // Get all drivers that match the filter criteria
@@ -335,8 +355,10 @@ class FormationController extends Controller
                 'selectedFlotte',
                 'selectedStatus',
                 'selectedFormationType',
+                'selectedTheme',
                 'selectedYear',
                 'years',
+                'themes',
                 'graphData',
                 'hasFilters',
                 'yearlyStats'
@@ -367,6 +389,8 @@ class FormationController extends Controller
                 'selectedFlotte' => null,
                 'selectedStatus' => null,
                 'selectedFormationType' => null,
+                'selectedTheme' => null,
+                'themes' => collect(),
             ])->with('error', __('messages.formation_create_error'));
         }
     }

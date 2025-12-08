@@ -803,6 +803,7 @@ return [
     'select_site' => 'Select site...',
     'select_flotte' => 'Select flotte...',
     'select_driver_for_formation' => 'Select driver...',
+    'all_themes' => 'All Themes',
     'theme' => 'Theme',
     'enter_theme' => 'Enter theme...',
     'identification_besoin_notes' => 'Need Identification Notes',
