@@ -339,6 +339,11 @@
                                     </td>
                                     <td class="text-end pe-3">
                                         <div class="btn-group" role="group">
+                                            <a href="{{ route('formations.show', $formation) }}" 
+                                               class="btn btn-sm btn-outline-secondary" 
+                                               title="{{ __('messages.view') }}">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
                                             @if($formation->status !== 'realized')
                                                 <button type="button" 
                                                         class="btn btn-sm btn-outline-success" 

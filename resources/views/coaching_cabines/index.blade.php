@@ -164,6 +164,18 @@
                 <div>
                     <h1 class="h4 mb-1">{{ __('messages.coaching_cabines_index_title') }}</h1>
                 </div>
+                <div class="d-flex align-items-center gap-2 small text-muted">
+                    <span class="fw-semibold">{{ __('messages.score_legend') ?? 'Score:' }}</span>
+                    <span class="badge bg-success bg-opacity-10 text-success">
+                        <span class="fw-semibold">≥ 70</span> - {{ __('messages.score_excellent') ?? 'Excellent' }}
+                    </span>
+                    <span class="badge bg-warning bg-opacity-10 text-warning">
+                        <span class="fw-semibold">50-69</span> - {{ __('messages.score_average') ?? 'Average' }}
+                    </span>
+                    <span class="badge bg-danger bg-opacity-10 text-danger">
+                        <span class="fw-semibold">&lt; 50</span> - {{ __('messages.score_poor') ?? 'Poor' }}
+                    </span>
+                </div>
                 <div class="d-flex gap-2">
                     <a href="{{ route('coaching-cabines.planning') }}" class="btn btn-info btn-sm">
                         <i class="bi bi-calendar3 me-1"></i> {{ __('messages.planning') }}
@@ -187,6 +199,8 @@
                                 <th>{{ __('messages.moniteur') }}</th>
                                 <th>{{ __('messages.status') }}</th>
                                 <th>{{ __('messages.score') ?? 'Score' }}</th>
+                                <th>{{ __('messages.route') ?? 'Route' }}</th>
+                                <th>{{ __('messages.distance') ?? 'Distance' }}</th>
                                 <th class="text-end pe-4">{{ __('messages.action') }}</th>
                             </tr>
                         </thead>
@@ -246,6 +260,47 @@
                                         @if($session->score !== null)
                                             <span class="badge bg-{{ $session->score >= 70 ? 'success' : ($session->score >= 50 ? 'warning' : 'danger') }}-opacity-10 text-{{ $session->score >= 70 ? 'success' : ($session->score >= 50 ? 'warning' : 'danger') }}">
                                                 {{ $session->score }}/100
+                                            </span>
+                                        @else
+                                            <span class="text-muted">-</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if($session->from_location_name && $session->to_location_name)
+                                            <div class="small">
+                                                <span class="fw-semibold">{{ $session->from_location_name }}</span>
+                                                <i class="bi bi-arrow-right mx-1 text-muted"></i>
+                                                <span class="fw-semibold">{{ $session->to_location_name }}</span>
+                                            </div>
+                                        @elseif($session->from_latitude && $session->from_longitude && $session->to_latitude && $session->to_longitude)
+                                            <div class="small text-muted">
+                                                {{ __('messages.coordinates') ?? 'Coordinates' }}
+                                            </div>
+                                        @else
+                                            <span class="text-muted">-</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if($session->from_latitude && $session->from_longitude && $session->to_latitude && $session->to_longitude)
+                                            @php
+                                                // Calculate distance using Haversine formula
+                                                $lat1 = deg2rad($session->from_latitude);
+                                                $lon1 = deg2rad($session->from_longitude);
+                                                $lat2 = deg2rad($session->to_latitude);
+                                                $lon2 = deg2rad($session->to_longitude);
+                                                
+                                                $earthRadius = 6371; // Earth's radius in kilometers
+                                                $dLat = $lat2 - $lat1;
+                                                $dLon = $lon2 - $lon1;
+                                                
+                                                $a = sin($dLat / 2) * sin($dLat / 2) +
+                                                     cos($lat1) * cos($lat2) *
+                                                     sin($dLon / 2) * sin($dLon / 2);
+                                                $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+                                                $distance = $earthRadius * $c;
+                                            @endphp
+                                            <span class="badge bg-secondary bg-opacity-10 text-secondary">
+                                                {{ number_format($distance, 1) }} km
                                             </span>
                                         @else
                                             <span class="text-muted">-</span>
@@ -367,6 +422,64 @@
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
+
+                                {{-- Rest Places Section --}}
+                                <div class="col-12">
+                                    <label class="form-label fw-semibold">{{ __('messages.rest_places') ?? 'Rest Places' }}</label>
+                                    <small class="text-muted d-block mb-2">
+                                        {{ __('messages.rest_places_help', ['days' => $session->validity_days - 1]) ?? 'Add rest places from Day 1 to Day ' . ($session->validity_days - 1) . ' (maximum ' . ($session->validity_days - 1) . ' rest places)' }}
+                                    </small>
+                                    <div id="rest-places-container-{{ $session->id }}" data-max-places="{{ $session->validity_days - 1 }}">
+                                        @php
+                                            $restPlaces = old('rest_places', $session->rest_places ?? []);
+                                            $currentCount = count($restPlaces);
+                                        @endphp
+                                        @if($currentCount > 0)
+                                            @foreach($restPlaces as $i => $place)
+                                                <div class="rest-place-item mb-2" data-index="{{ $i }}">
+                                                    <div class="input-group input-group-sm">
+                                                        <span class="input-group-text">{{ __('messages.day') ?? 'Day' }} {{ $i + 1 }}</span>
+                                                        <input type="text" 
+                                                               name="rest_places[]" 
+                                                               class="form-control rest-place-input" 
+                                                               value="{{ $place }}"
+                                                               placeholder="{{ __('messages.rest_place_placeholder') ?? 'Enter city or village name' }}"
+                                                               data-session-id="{{ $session->id }}"
+                                                               data-place-index="{{ $i }}">
+                                                        <button type="button" 
+                                                                class="btn btn-outline-primary rest-place-search-btn" 
+                                                                data-session-id="{{ $session->id }}"
+                                                                data-place-index="{{ $i }}"
+                                                                title="{{ __('messages.search_rest_place_city') ?? 'Search city' }}">
+                                                            <i class="bi bi-search"></i>
+                                                        </button>
+                                                        <button type="button" 
+                                                                class="btn btn-outline-danger remove-rest-place-btn" 
+                                                                data-session-id="{{ $session->id }}"
+                                                                title="{{ __('messages.remove_rest_place') ?? 'Remove' }}">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    </div>
+                                                    <div class="rest-place-error text-danger small mt-1 d-none" id="rest-place-error-{{ $session->id }}-{{ $i }}"></div>
+                                                    <div class="rest-place-map-container mt-2" id="rest-place-map-{{ $session->id }}-{{ $i }}" style="height: 200px; width: 100%; background: #f5f5f5; display: none;"></div>
+                                                </div>
+                                            @endforeach
+                                        @endif
+                                    </div>
+                                    <button type="button" 
+                                            class="btn btn-outline-success btn-sm mt-2 add-rest-place-btn" 
+                                            data-session-id="{{ $session->id }}"
+                                            data-max-places="{{ $session->validity_days - 1 }}"
+                                            @if($currentCount >= ($session->validity_days - 1)) style="display: none;" @endif>
+                                        <i class="bi bi-plus-circle me-1"></i> {{ __('messages.add_rest_place') ?? 'Add Rest Place' }}
+                                    </button>
+                                    @error('rest_places')
+                                        <div class="text-danger small mt-1">{{ $message }}</div>
+                                    @enderror
+                                    @error('rest_places.*')
+                                        <div class="text-danger small mt-1">{{ $message }}</div>
+                                    @enderror
+                                </div>
                             </div>
                         </div>
                         <div class="modal-footer">
@@ -417,7 +530,616 @@
             </div>
         </div>
     </div>
-</x-app-layout>
+
+    {{-- Leaflet CSS and JS for rest places maps --}}
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+        crossorigin=""
+    />
+    <script
+        src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""
+    ></script>
+
+    @push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Geocoding function for rest places
+            async function geocodeRestPlace(query) {
+                const url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(query);
+                const response = await fetch(url, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'User-Agent': 'GCV Coaching System'
+                    }
+                });
+                if (!response.ok) {
+                    throw new Error('Geocoding request failed');
+                }
+                const data = await response.json();
+                if (!Array.isArray(data) || data.length === 0) {
+                    throw new Error('No results found');
+                }
+                const first = data[0];
+                
+                // Extract short city/village name
+                let shortName = query;
+                if (first.address) {
+                    shortName = first.address.city || 
+                               first.address.town || 
+                               first.address.village || 
+                               first.address.municipality ||
+                               first.address.county ||
+                               query;
+                } else {
+                    const displayName = first.display_name || '';
+                    const parts = displayName.split(',');
+                    if (parts.length > 0) {
+                        shortName = parts[0].trim();
+                    }
+                }
+                
+                return {
+                    name: shortName,
+                    lat: parseFloat(first.lat),
+                    lng: parseFloat(first.lon),
+                    displayName: first.display_name || shortName
+                };
+            }
+
+            // Initialize map for rest place
+            function initRestPlaceMap(containerId, lat, lng, placeName) {
+                // Clear any existing timeout for this container
+                if (window._restPlaceMapTimeouts && window._restPlaceMapTimeouts[containerId]) {
+                    clearTimeout(window._restPlaceMapTimeouts[containerId]);
+                    delete window._restPlaceMapTimeouts[containerId];
+                }
+                if (!window._restPlaceMapTimeouts) {
+                    window._restPlaceMapTimeouts = {};
+                }
+
+                function waitForLeaflet(callback) {
+                    if (window.L && window.L.map) {
+                        callback();
+                    } else {
+                        setTimeout(function() {
+                            waitForLeaflet(callback);
+                        }, 100);
+                    }
+                }
+
+                waitForLeaflet(function() {
+                    if (!window.L || !window.L.map) {
+                        console.error('Leaflet not loaded');
+                        return null;
+                    }
+
+                    const mapContainer = document.getElementById(containerId);
+                    if (!mapContainer) {
+                        console.error('Map container not found:', containerId);
+                        return null;
+                    }
+
+                    // Wait for container to be visible (important for modals)
+                    function initMapWhenVisible() {
+                        // Check if container still exists
+                        const container = document.getElementById(containerId);
+                        if (!container) {
+                            return; // Container was removed, abort
+                        }
+
+                        // Check if container is visible
+                        const isVisible = container.offsetWidth > 0 && container.offsetHeight > 0;
+                        if (!isVisible) {
+                            // Container not visible yet, try again after a short delay
+                            const timeoutId = setTimeout(initMapWhenVisible, 200);
+                            window._restPlaceMapTimeouts[containerId] = timeoutId;
+                            return;
+                        }
+
+                        // Double-check container still exists before proceeding
+                        const containerCheck = document.getElementById(containerId);
+                        if (!containerCheck || containerCheck !== container) {
+                            return; // Container changed or removed, abort
+                        }
+
+                        // Remove existing map if any
+                        if (container._leaflet_id) {
+                            try {
+                                const existingMap = L.Map.prototype.getContainer.call({ _container: container });
+                                if (existingMap && existingMap.remove) {
+                                    existingMap.remove();
+                                }
+                            } catch (e) {
+                                // Ignore errors when removing
+                            }
+                            container._leaflet_id = null;
+                        }
+                        container.innerHTML = '';
+
+                        // Validate coordinates
+                        if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+                            console.error('Invalid coordinates:', lat, lng);
+                            return;
+                        }
+
+                        // Final check before initializing map
+                        const finalContainer = document.getElementById(containerId);
+                        if (!finalContainer || finalContainer !== container) {
+                            return; // Container changed, abort
+                        }
+
+                        try {
+                            // Initialize map with center and zoom first
+                            const map = L.map(containerId, {
+                                center: [lat, lng],
+                                zoom: 10
+                            });
+
+                            // Add tile layer
+                            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                                maxZoom: 19,
+                                attribution: '&copy; OpenStreetMap contributors',
+                            }).addTo(map);
+
+                            // Add marker
+                            const marker = L.marker([lat, lng]).addTo(map);
+                            marker.bindPopup('<strong>' + placeName + '</strong><br><small>' + lat.toFixed(6) + ', ' + lng.toFixed(6) + '</small>').openPopup();
+
+                            // Fix rendering after map is created
+                            setTimeout(() => {
+                                try {
+                                    const mapCheck = document.getElementById(containerId);
+                                    if (mapCheck && mapCheck._leaflet_id) {
+                                        map.invalidateSize();
+                                    }
+                                } catch (e) {
+                                    console.warn('Error invalidating map size:', e);
+                                }
+                            }, 300);
+                        } catch (error) {
+                            console.error('Error initializing map:', error);
+                        }
+                    }
+
+                    initMapWhenVisible();
+                });
+            }
+
+            // Handle rest place search (using event delegation for modals)
+            document.addEventListener('click', async function(e) {
+                if (!e.target.closest('.rest-place-search-btn')) return;
+                
+                const btn = e.target.closest('.rest-place-search-btn');
+                const sessionId = btn.getAttribute('data-session-id');
+                const placeIndex = btn.getAttribute('data-place-index');
+                const input = document.querySelector(`input[data-session-id="${sessionId}"][data-place-index="${placeIndex}"]`);
+                const errorEl = document.getElementById(`rest-place-error-${sessionId}-${placeIndex}`);
+                
+                if (!input || btn.disabled) return;
+                
+                const query = input.value.trim();
+                if (!query) {
+                    if (errorEl) {
+                        errorEl.textContent = '{{ __('messages.please_enter_city_name') ?? 'Please enter a city or village name' }}';
+                        errorEl.classList.remove('d-none');
+                    }
+                    return;
+                }
+
+                const originalHtml = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+                if (errorEl) {
+                    errorEl.classList.add('d-none');
+                    errorEl.textContent = '';
+                }
+
+                try {
+                    const result = await geocodeRestPlace(query);
+                    
+                    // Validate result structure
+                    if (!result || typeof result !== 'object') {
+                        throw new Error('Invalid geocoding result');
+                    }
+                    
+                    if (!result.name || result.lat === undefined || result.lng === undefined) {
+                        console.error('Invalid result structure:', result);
+                        throw new Error('Geocoding returned invalid data');
+                    }
+                    
+                    // Validate coordinates
+                    const lat = parseFloat(result.lat);
+                    const lng = parseFloat(result.lng);
+                    
+                    if (isNaN(lat) || isNaN(lng)) {
+                        throw new Error('Invalid coordinates received');
+                    }
+                    
+                    input.value = result.name;
+                    if (errorEl) {
+                        errorEl.classList.add('d-none');
+                    }
+                    
+                    // Show map with location
+                    const mapContainerId = `rest-place-map-${sessionId}-${placeIndex}`;
+                    const mapContainer = document.getElementById(mapContainerId);
+                    if (mapContainer) {
+                        mapContainer.style.display = 'block';
+                        initRestPlaceMap(mapContainerId, lat, lng, result.name);
+                    }
+                } catch (err) {
+                    console.error('Geocoding error:', err);
+                    if (errorEl) {
+                        errorEl.textContent = err.message || '{{ __('messages.unable_to_find_location') ?? 'Unable to find this location' }}';
+                        errorEl.classList.remove('d-none');
+                    }
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                }
+            });
+
+            // Function to update add button visibility
+            function updateAddRestPlaceButton(sessionId) {
+                const btn = document.querySelector(`.add-rest-place-btn[data-session-id="${sessionId}"]`);
+                if (!btn) return;
+                
+                const maxPlaces = parseInt(btn.getAttribute('data-max-places')) || 0;
+                const container = document.getElementById(`rest-places-container-${sessionId}`);
+                if (!container) return;
+                
+                const currentItems = container.querySelectorAll('.rest-place-item');
+                const currentCount = currentItems.length;
+                
+                if (currentCount >= maxPlaces) {
+                    btn.style.display = 'none';
+                } else {
+                    btn.style.display = 'inline-block';
+                }
+            }
+
+            // Handle add rest place button
+            document.querySelectorAll('.add-rest-place-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const sessionId = this.getAttribute('data-session-id');
+                    const container = document.getElementById(`rest-places-container-${sessionId}`);
+                    if (!container) return;
+                    
+                    const maxPlaces = parseInt(container.getAttribute('data-max-places')) || 0;
+                    const currentItems = container.querySelectorAll('.rest-place-item');
+                    const currentCount = currentItems.length;
+                    
+                    if (currentCount >= maxPlaces) {
+                        alert('{{ __('messages.rest_places_max_reached') ?? 'Maximum number of rest places reached' }}');
+                        return;
+                    }
+                    
+                    const newIndex = currentCount;
+                    const dayNumber = newIndex + 1;
+                    
+                    const newItem = document.createElement('div');
+                    newItem.className = 'rest-place-item mb-2';
+                    newItem.setAttribute('data-index', newIndex);
+                    newItem.innerHTML = `
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text">{{ __('messages.day') ?? 'Day' }} ${dayNumber}</span>
+                            <input type="text" 
+                                   name="rest_places[]" 
+                                   class="form-control rest-place-input" 
+                                   value=""
+                                   placeholder="{{ __('messages.rest_place_placeholder') ?? 'Enter city or village name' }}"
+                                   data-session-id="${sessionId}"
+                                   data-place-index="${newIndex}">
+                            <button type="button" 
+                                    class="btn btn-outline-primary rest-place-search-btn" 
+                                    data-session-id="${sessionId}"
+                                    data-place-index="${newIndex}"
+                                    title="{{ __('messages.search_rest_place_city') ?? 'Search city' }}">
+                                <i class="bi bi-search"></i>
+                            </button>
+                            <button type="button" 
+                                    class="btn btn-outline-danger remove-rest-place-btn" 
+                                    data-session-id="${sessionId}"
+                                    title="{{ __('messages.remove_rest_place') ?? 'Remove' }}">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                        <div class="rest-place-error text-danger small mt-1 d-none" id="rest-place-error-${sessionId}-${newIndex}"></div>
+                        <div class="rest-place-map-container mt-2" id="rest-place-map-${sessionId}-${newIndex}" style="height: 200px; width: 100%; background: #f5f5f5; display: none;"></div>
+                    `;
+                    
+                    container.appendChild(newItem);
+                    
+                    // Attach event listeners to new elements
+                    const newSearchBtn = newItem.querySelector('.rest-place-search-btn');
+                    if (newSearchBtn) {
+                        newSearchBtn.addEventListener('click', async function() {
+                            const placeIndex = this.getAttribute('data-place-index');
+                            const input = document.querySelector(`input[data-session-id="${sessionId}"][data-place-index="${placeIndex}"]`);
+                            const errorEl = document.getElementById(`rest-place-error-${sessionId}-${placeIndex}`);
+                            
+                            if (!input) return;
+                            
+                            const query = input.value.trim();
+                            if (!query) {
+                                if (errorEl) {
+                                    errorEl.textContent = '{{ __('messages.please_enter_city_name') ?? 'Please enter a city or village name' }}';
+                                    errorEl.classList.remove('d-none');
+                                }
+                                return;
+                            }
+
+                            const originalHtml = this.innerHTML;
+                            this.disabled = true;
+                            this.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+                            if (errorEl) {
+                                errorEl.classList.add('d-none');
+                                errorEl.textContent = '';
+                            }
+
+                            try {
+                                const result = await geocodeRestPlace(query);
+                                
+                                // Validate result structure
+                                if (!result || typeof result !== 'object') {
+                                    throw new Error('Invalid geocoding result');
+                                }
+                                
+                                if (!result.name || result.lat === undefined || result.lng === undefined) {
+                                    console.error('Invalid result structure:', result);
+                                    throw new Error('Geocoding returned invalid data');
+                                }
+                                
+                                // Validate coordinates
+                                const lat = parseFloat(result.lat);
+                                const lng = parseFloat(result.lng);
+                                
+                                if (isNaN(lat) || isNaN(lng)) {
+                                    throw new Error('Invalid coordinates received');
+                                }
+                                
+                                input.value = result.name;
+                                if (errorEl) {
+                                    errorEl.classList.add('d-none');
+                                }
+                                
+                                // Show map with location
+                                const mapContainerId = `rest-place-map-${sessionId}-${placeIndex}`;
+                                const mapContainer = document.getElementById(mapContainerId);
+                                if (mapContainer) {
+                                    mapContainer.style.display = 'block';
+                                    initRestPlaceMap(mapContainerId, lat, lng, result.name);
+                                }
+                            } catch (err) {
+                                console.error('Geocoding error:', err);
+                                if (errorEl) {
+                                    errorEl.textContent = err.message || '{{ __('messages.unable_to_find_location') ?? 'Unable to find this location' }}';
+                                    errorEl.classList.remove('d-none');
+                                }
+                            } finally {
+                                this.disabled = false;
+                                this.innerHTML = originalHtml;
+                            }
+                        });
+                    }
+                    
+                    const newRemoveBtn = newItem.querySelector('.remove-rest-place-btn');
+                    if (newRemoveBtn) {
+                        newRemoveBtn.addEventListener('click', function() {
+                            const item = this.closest('.rest-place-item');
+                            if (item) {
+                                item.remove();
+                                updateDayLabels(sessionId);
+                                updateAddRestPlaceButton(sessionId);
+                            }
+                        });
+                    }
+                    
+                    updateDayLabels(sessionId);
+                    updateAddRestPlaceButton(sessionId);
+                });
+            });
+
+            // Handle remove rest place (using event delegation)
+            document.addEventListener('click', function(e) {
+                if (e.target.closest('.remove-rest-place-btn')) {
+                    const btn = e.target.closest('.remove-rest-place-btn');
+                    const sessionId = btn.getAttribute('data-session-id');
+                    const item = btn.closest('.rest-place-item');
+                    if (item) {
+                        item.remove();
+                        updateDayLabels(sessionId);
+                        updateAddRestPlaceButton(sessionId);
+                    }
+                }
+            });
+
+            // Update day labels after removal
+            function updateDayLabels(sessionId) {
+                const container = document.getElementById(`rest-places-container-${sessionId}`);
+                if (!container) return;
+                
+                const items = container.querySelectorAll('.rest-place-item');
+                items.forEach((item, index) => {
+                    const label = item.querySelector('.input-group-text');
+                    if (label) {
+                        label.textContent = '{{ __('messages.day') ?? 'Day' }} ' + (index + 1);
+                    }
+                    const input = item.querySelector('input');
+                    if (input) {
+                        input.setAttribute('data-place-index', index);
+                    }
+                    const searchBtn = item.querySelector('.rest-place-search-btn');
+                    if (searchBtn) {
+                        searchBtn.setAttribute('data-place-index', index);
+                    }
+                    const errorEl = item.querySelector('.rest-place-error');
+                    if (errorEl) {
+                        errorEl.id = `rest-place-error-${sessionId}-${index}`;
+                    }
+                });
+            }
+            // Geocoding function for rest places
+            async function geocodeRestPlace(query) {
+                const url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(query);
+                const response = await fetch(url, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'User-Agent': 'GCV Coaching System'
+                    }
+                });
+                if (!response.ok) {
+                    throw new Error('Geocoding request failed');
+                }
+                const data = await response.json();
+                if (!Array.isArray(data) || data.length === 0) {
+                    throw new Error('No results found');
+                }
+                const first = data[0];
+                
+                // Extract short city/village name
+                let shortName = query;
+                if (first.address) {
+                    shortName = first.address.city || 
+                               first.address.town || 
+                               first.address.village || 
+                               first.address.municipality ||
+                               first.address.county ||
+                               query;
+                } else {
+                    const displayName = first.display_name || '';
+                    const parts = displayName.split(',');
+                    if (parts.length > 0) {
+                        shortName = parts[0].trim();
+                    }
+                }
+                
+                return {
+                    name: shortName,
+                    lat: parseFloat(first.lat),
+                    lng: parseFloat(first.lon),
+                    displayName: first.display_name || shortName
+                };
+            }
+
+            // Handle rest place search
+            document.querySelectorAll('.rest-place-search-btn').forEach(btn => {
+                btn.addEventListener('click', async function() {
+                    const sessionId = this.getAttribute('data-session-id');
+                    const placeIndex = this.getAttribute('data-place-index');
+                    const input = document.querySelector(`input[data-session-id="${sessionId}"][data-place-index="${placeIndex}"]`);
+                    const errorEl = document.getElementById(`rest-place-error-${sessionId}-${placeIndex}`);
+                    
+                    if (!input) return;
+                    
+                    const query = input.value.trim();
+                    if (!query) {
+                        if (errorEl) {
+                            errorEl.textContent = '{{ __('messages.please_enter_city_name') ?? 'Please enter a city or village name' }}';
+                            errorEl.classList.remove('d-none');
+                        }
+                        return;
+                    }
+
+                    const originalHtml = this.innerHTML;
+                    this.disabled = true;
+                    this.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+                    if (errorEl) {
+                        errorEl.classList.add('d-none');
+                        errorEl.textContent = '';
+                    }
+
+                    try {
+                        const result = await geocodeRestPlace(query);
+                        
+                        // Validate result structure
+                        if (!result || typeof result !== 'object') {
+                            throw new Error('Invalid geocoding result');
+                        }
+                        
+                        if (!result.name || result.lat === undefined || result.lng === undefined) {
+                            console.error('Invalid result structure:', result);
+                            throw new Error('Geocoding returned invalid data');
+                        }
+                        
+                        // Validate coordinates
+                        const lat = parseFloat(result.lat);
+                        const lng = parseFloat(result.lng);
+                        
+                        if (isNaN(lat) || isNaN(lng)) {
+                            throw new Error('Invalid coordinates received');
+                        }
+                        
+                        input.value = result.name;
+                        if (errorEl) {
+                            errorEl.classList.add('d-none');
+                        }
+                        
+                        // Show map with location
+                        const mapContainerId = `rest-place-map-${sessionId}-${placeIndex}`;
+                        const mapContainer = document.getElementById(mapContainerId);
+                        if (mapContainer) {
+                            mapContainer.style.display = 'block';
+                            initRestPlaceMap(mapContainerId, lat, lng, result.name);
+                        }
+                    } catch (err) {
+                        console.error('Geocoding error:', err);
+                        if (errorEl) {
+                            errorEl.textContent = err.message || '{{ __('messages.unable_to_find_location') ?? 'Unable to find this location' }}';
+                            errorEl.classList.remove('d-none');
+                        }
+                    } finally {
+                        this.disabled = false;
+                        this.innerHTML = originalHtml;
+                    }
+                });
+            });
+
+            // Handle remove rest place (if needed for dynamic adding)
+            document.querySelectorAll('.remove-rest-place-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const sessionId = this.getAttribute('data-session-id');
+                    const item = this.closest('.rest-place-item');
+                    if (item) {
+                        item.remove();
+                        // Update day labels
+                        updateDayLabels(sessionId);
+                        updateAddRestPlaceButton(sessionId);
+                    }
+                });
+            });
+
+            // Update day labels after removal
+            function updateDayLabels(sessionId) {
+                const container = document.getElementById(`rest-places-container-${sessionId}`);
+                if (!container) return;
+                
+                const items = container.querySelectorAll('.rest-place-item');
+                items.forEach((item, index) => {
+                    const label = item.querySelector('.input-group-text');
+                    if (label) {
+                        label.textContent = '{{ __('messages.day') ?? 'Day' }} ' + (index + 1);
+                    }
+                    const input = item.querySelector('input');
+                    if (input) {
+                        input.setAttribute('data-place-index', index);
+                    }
+                    const searchBtn = item.querySelector('.rest-place-search-btn');
+                    if (searchBtn) {
+                        searchBtn.setAttribute('data-place-index', index);
+                    }
+                });
+            }
+        });
+    </script>
+    @endpush
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -445,3 +1167,4 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 </script>
+</x-app-layout>

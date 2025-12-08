@@ -9,6 +9,7 @@ use App\Models\Flotte;
 use App\Models\Driver;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Response;
@@ -444,11 +445,26 @@ class FormationController extends Controller
 
     /**
      * Display the specified formation.
-     * Redirects to edit form since detailed read-only view is not implemented.
      */
-    public function show(Formation $formation): RedirectResponse
+    public function show(Formation $formation): View
     {
-        return redirect()->route('formations.edit', $formation);
+        // Load formation with relationships
+        $formation->load(['flotte', 'driverFormations.driver.flotte']);
+
+        // Get all driver formations for this formation with driver info
+        $driverFormations = DriverFormation::with(['driver.flotte'])
+            ->where('formation_id', $formation->id)
+            ->orderBy('done_at', 'desc')
+            ->orderBy('planned_at', 'desc')
+            ->get();
+
+        // Calculate statistics
+        $totalDrivers = $driverFormations->count();
+        $completedDrivers = $driverFormations->where('status', 'done')->count();
+        $plannedDrivers = $driverFormations->where('status', 'planned')->count();
+        $completionPercentage = $totalDrivers > 0 ? round(($completedDrivers / $totalDrivers) * 100, 2) : 0;
+
+        return view('formations.show', compact('formation', 'driverFormations', 'totalDrivers', 'completedDrivers', 'plannedDrivers', 'completionPercentage'));
     }
 
     /**
@@ -587,9 +603,39 @@ class FormationController extends Controller
     public function markAsRealized(Formation $formation)
     {
         try {
-            $formation->update([
-                'status' => 'realized',
-            ]);
+            DB::transaction(function () use ($formation) {
+                $drivers = Driver::query()
+                    ->when($formation->flotte_id, function ($query) use ($formation) {
+                        $query->where('flotte_id', $formation->flotte_id);
+                    })
+                    ->where(function ($query) {
+                        $query->whereNull('status')
+                              ->orWhere('status', '!=', 'terminated');
+                    })
+                    ->get();
+
+                $now = now();
+                $plannedAt = $formation->realizing_date;
+
+                foreach ($drivers as $driver) {
+                    DriverFormation::create([
+                        'driver_id' => $driver->id,
+                        'formation_id' => $formation->id,
+                        'formation_process_id' => null,
+                        'status' => 'done',
+                        'planned_at' => $plannedAt,
+                        'done_at' => $now,
+                        'progress_percent' => 100,
+                        'validation_status' => 'validated',
+                        'certificate_path' => null,
+                        'notes' => null,
+                    ]);
+                }
+
+                $formation->update([
+                    'status' => 'realized',
+                ]);
+            });
         } catch (\Throwable $e) {
             Log::error('Failed to mark formation as realized', [
                 'id' => $formation->id,

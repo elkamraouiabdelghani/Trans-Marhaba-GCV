@@ -28,6 +28,13 @@ class CoachingSession extends Model
         'date_fin',
         'type',
         'route_taken',
+        'from_latitude',
+        'from_longitude',
+        'from_location_name',
+        'to_latitude',
+        'to_longitude',
+        'to_location_name',
+        'rest_places',
         'moniteur',
         'assessment',
         'status',
@@ -44,6 +51,7 @@ class CoachingSession extends Model
         'date' => 'date',
         'date_fin' => 'date',
         'next_planning_session' => 'date',
+        'rest_places' => 'array',
     ];
 
     /**

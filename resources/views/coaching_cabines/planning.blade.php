@@ -43,6 +43,24 @@
         @endif
 
         <div class="card border-0 shadow-sm">
+            <div class="card-footer bg-white">
+                <div class="row">
+                    <div class="col-md-6">
+                        <small class="text-muted">
+                            <span class="badge bg-primary bg-opacity-10 text-primary me-2">P</span> = {{ __('messages.planifie') }} |
+                            <span class="badge bg-success bg-opacity-10 text-success me-2">R</span> = {{ __('messages.realise') }} |
+                            <span class="badge bg-danger bg-opacity-10 text-danger me-2">NJ</span> = {{ __('messages.non_justifie') }}
+                        </small>
+                    </div>
+                    
+                    <div class="col-md-6 text-end">
+                        <small class="text-warning">
+                            <i class="bi bi-exclamation-triangle me-1"></i>
+                            {{ __('messages.driver_missing_sessions') }}
+                        </small>
+                    </div>
+                </div>
+            </div>
             <div class="card-body p-0">
                 <div class="table-responsive" style="max-height: 70vh; overflow-y: auto;">
                     <table class="table table-bordered table-hover mb-0 align-middle" style="min-width: 1200px;">
@@ -196,23 +214,6 @@
                             </tr>
                         </tfoot>
                     </table>
-                </div>
-            </div>
-            <div class="card-footer bg-white">
-                <div class="row">
-                    <div class="col-md-6">
-                        <small class="text-muted">
-                            <span class="badge bg-primary bg-opacity-10 text-primary me-2">P</span> = {{ __('messages.planifie') }} |
-                            <span class="badge bg-success bg-opacity-10 text-success me-2">R</span> = {{ __('messages.realise') }} |
-                            <span class="badge bg-danger bg-opacity-10 text-danger me-2">NJ</span> = {{ __('messages.non_justifie') }}
-                        </small>
-                    </div>
-                    <div class="col-md-6 text-end">
-                        <small class="text-warning">
-                            <i class="bi bi-exclamation-triangle me-1"></i>
-                            {{ __('messages.driver_missing_sessions') }}
-                        </small>
-                    </div>
                 </div>
             </div>
         </div>

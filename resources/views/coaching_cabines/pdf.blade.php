@@ -155,6 +155,32 @@
             color: white;
         }
         
+        .map-container {
+            text-align: center;
+            margin: 15px 0;
+            page-break-inside: avoid;
+        }
+        
+        .map-image {
+            max-width: 100%;
+            height: auto;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .rest-places-list {
+            list-style: none;
+            padding: 0;
+            margin: 10px 0;
+        }
+        
+        .rest-places-list li {
+            padding: 6px 10px;
+            margin: 4px 0;
+            background: #f8f9fa;
+            border-left: 3px solid #3498db;
+        }
+        
         @page {
             margin: 20mm 15mm;
         }
@@ -249,12 +275,92 @@
         </div>
     </div>
 
-    @if($coachingCabine->route_taken)
+    {{-- Route Information --}}
+    @if($coachingCabine->from_latitude && $coachingCabine->from_longitude && $coachingCabine->to_latitude && $coachingCabine->to_longitude)
+    <div class="info-section">
+        <div class="section-title">{{ __('messages.route_taken') ?? 'Itinéraire emprunté' }}</div>
+        
+        <div class="info-grid">
+            <div class="info-row">
+                <div class="info-label">{{ __('messages.from_location') ?? 'Lieu de départ' }}:</div>
+                <div class="info-value">
+                    @if($coachingCabine->from_location_name)
+                        <strong>{{ $coachingCabine->from_location_name }}</strong>
+                    @endif
+                    <small class="text-muted">({{ number_format($coachingCabine->from_latitude, 6) }}, {{ number_format($coachingCabine->from_longitude, 6) }})</small>
+                </div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">{{ __('messages.to_location') ?? 'Lieu d\'arrivée' }}:</div>
+                <div class="info-value">
+                    @if($coachingCabine->to_location_name)
+                        <strong>{{ $coachingCabine->to_location_name }}</strong>
+                    @endif
+                    <small class="text-muted">({{ number_format($coachingCabine->to_latitude, 6) }}, {{ number_format($coachingCabine->to_longitude, 6) }})</small>
+                </div>
+            </div>
+            @php
+                // Calculate distance using Haversine formula
+                $lat1 = deg2rad($coachingCabine->from_latitude);
+                $lon1 = deg2rad($coachingCabine->from_longitude);
+                $lat2 = deg2rad($coachingCabine->to_latitude);
+                $lon2 = deg2rad($coachingCabine->to_longitude);
+                
+                $earthRadius = 6371; // Earth's radius in kilometers
+                $dLat = $lat2 - $lat1;
+                $dLon = $lon2 - $lon1;
+                
+                $a = sin($dLat / 2) * sin($dLat / 2) +
+                     cos($lat1) * cos($lat2) *
+                     sin($dLon / 2) * sin($dLon / 2);
+                $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+                $distance = $earthRadius * $c;
+            @endphp
+            <div class="info-row">
+                <div class="info-label">{{ __('messages.distance') ?? 'Distance' }}:</div>
+                <div class="info-value">
+                    <strong>{{ number_format($distance, 1) }} km</strong>
+                </div>
+            </div>
+        </div>
+        
+        {{-- Map Image --}}
+        @if($mapImageBase64)
+        <div class="map-container">
+            <img src="{{ $mapImageBase64 }}" alt="Route Map" class="map-image" />
+        </div>
+        @elseif($staticMapUrl)
+        <div class="map-container">
+            <img src="{{ $staticMapUrl }}" alt="Route Map" class="map-image" />
+        </div>
+        @elseif($coachingCabine->from_latitude && $coachingCabine->from_longitude && $coachingCabine->to_latitude && $coachingCabine->to_longitude)
+        <div class="map-container">
+            <div style="height: 400px; background-color: #f5f5f5; border: 2px solid #ddd; display: flex; align-items: center; justify-content: center; border-radius: 4px;">
+                <p style="color: #999; font-size: 12pt;">{{ __('messages.map_not_available') ?? 'Map image not available' }}</p>
+            </div>
+        </div>
+        @endif
+    </div>
+    @elseif($coachingCabine->route_taken)
     <div class="info-section">
         <div class="section-title">{{ __('messages.route_taken') ?? 'Itinéraire emprunté' }}</div>
         <div class="text-content">
             {{ $coachingCabine->route_taken }}
         </div>
+    </div>
+    @endif
+
+    {{-- Rest Places --}}
+    @if($coachingCabine->rest_places && count($coachingCabine->rest_places) > 0)
+    <div class="info-section">
+        <div class="section-title">{{ __('messages.rest_places') ?? 'Lieux de repos' }}</div>
+        <ul class="rest-places-list">
+            @foreach($coachingCabine->rest_places as $index => $place)
+                <li>
+                    <strong>{{ __('messages.day') ?? 'Jour' }} {{ $index + 1 }}:</strong> {{ $place }}
+                </li>
+            @endforeach
+        </ul>
     </div>
     @endif
 

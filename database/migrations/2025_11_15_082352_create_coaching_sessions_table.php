@@ -19,6 +19,13 @@ return new class extends Migration
             $table->date('date_fin')->nullable();
             $table->enum('type', ['initial', 'suivi', 'correctif', 'route_analysing', 'obc_suite', 'other'])->default('initial');
             $table->string('route_taken')->nullable();
+            $table->decimal('from_latitude', 10, 7)->nullable();
+            $table->decimal('from_longitude', 10, 7)->nullable();
+            $table->string('from_location_name')->nullable();
+            $table->decimal('to_latitude', 10, 7)->nullable();
+            $table->decimal('to_longitude', 10, 7)->nullable();
+            $table->string('to_location_name')->nullable();
+            $table->json('rest_places')->nullable();
             $table->string('moniteur')->nullable();
             $table->text('assessment')->nullable();
             $table->enum('status', ['planned', 'in_progress', 'completed', 'cancelled'])->default('planned');

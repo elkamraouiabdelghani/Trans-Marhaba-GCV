@@ -128,11 +128,6 @@ class CoachingCabineController extends Controller
                 $driver->update(['flotte_id' => $validated['flotte_id']]);
             }
 
-            // Set default validity_days based on type
-            if (!isset($validated['validity_days']) || $validated['validity_days'] == 3) {
-                $validated['validity_days'] = $validated['type'] === 'initial' ? 15 : 5;
-            }
-
             CoachingSession::create($validated);
 
             return redirect()
@@ -195,13 +190,22 @@ class CoachingCabineController extends Controller
                 ? \Carbon\Carbon::parse($validated['next_planning_session'])->format('Y-m-d') 
                 : null;
 
-            // Set default validity_days based on type if not provided
-            if (!isset($validated['validity_days']) || $validated['validity_days'] == $coachingCabine->validity_days) {
-                if ($validated['type'] === 'initial' && $coachingCabine->validity_days != 15) {
-                    $validated['validity_days'] = 15;
-                } elseif ($validated['type'] !== 'initial' && $coachingCabine->validity_days == 15) {
-                    $validated['validity_days'] = 5;
-                }
+            // Process rest_places: Always replace with what's in the request
+            // This ensures that removed rest places are deleted from the database
+            // Check if the form was submitted with rest_places (using hidden field as indicator)
+            if ($request->has('rest_places_sent')) {
+                // Get rest_places from request (will be empty array if no inputs, or array of values)
+                $restPlacesInput = $request->input('rest_places', []);
+                // Filter out empty values (null, empty string, whitespace-only)
+                $restPlaces = array_filter($restPlacesInput, function($value) {
+                    return $value !== null && $value !== '' && trim($value) !== '';
+                });
+                // Re-index array and set to null if empty (to allow clearing all rest places)
+                // Always replace existing rest_places with what's in the request
+                $validated['rest_places'] = !empty($restPlaces) ? array_values($restPlaces) : null;
+            } else {
+                // If rest_places_sent is not in the request, don't update rest_places (keep existing)
+                unset($validated['rest_places']);
             }
 
             $coachingCabine->update($validated);
@@ -517,15 +521,42 @@ class CoachingCabineController extends Controller
     /**
      * Export coaching session as PDF.
      */
-    public function pdf(CoachingSession $coachingCabine)
+    public function pdf(Request $request, CoachingSession $coachingCabine)
     {
         try {
             $coachingCabine->load(['driver', 'flotte']);
             
-            $pdf = Pdf::loadView('coaching_cabines.pdf', compact('coachingCabine'))
+            // Get map image from request (captured by html2canvas from show page)
+            $mapImageBase64 = $request->input('map_image');
+            $staticMapUrl = null;
+            
+            // If no map image provided, try to generate static map URL as fallback
+            if (empty($mapImageBase64)) {
+                $staticMapUrl = $this->generateCoachingSessionMapUrl($coachingCabine);
+                
+                if ($staticMapUrl) {
+                    try {
+                        $response = \Illuminate\Support\Facades\Http::timeout(30)->get($staticMapUrl);
+                        if ($response->successful()) {
+                            $imageContent = $response->body();
+                            if (!empty($imageContent)) {
+                                $mapImageBase64 = 'data:image/png;base64,' . base64_encode($imageContent);
+                            }
+                        }
+                    } catch (\Exception $e) {
+                        \Illuminate\Support\Facades\Log::warning('Failed to download map image for coaching session PDF', [
+                            'url' => $staticMapUrl,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+                }
+            }
+            
+            $pdf = Pdf::loadView('coaching_cabines.pdf', compact('coachingCabine', 'staticMapUrl', 'mapImageBase64'))
                 ->setPaper('a4', 'portrait')
                 ->setOption('isHtml5ParserEnabled', true)
-                ->setOption('isRemoteEnabled', true);
+                ->setOption('isRemoteEnabled', true)
+                ->setOption('enable-local-file-access', true);
 
             $filename = 'coaching_session_' . $coachingCabine->id . '_' . date('Y-m-d') . '.pdf';
 
@@ -534,6 +565,121 @@ class CoachingCabineController extends Controller
             report($th);
             return back()->with('error', __('messages.coaching_cabines_pdf_error') ?? 'Impossible de générer le PDF.');
         }
+    }
+
+    /**
+     * Generate static map URL with route and rest places for coaching session
+     */
+    private function generateCoachingSessionMapUrl(CoachingSession $coachingCabine): ?string
+    {
+        // Check if we have route coordinates
+        if (!$coachingCabine->from_latitude || !$coachingCabine->from_longitude || 
+            !$coachingCabine->to_latitude || !$coachingCabine->to_longitude) {
+            return null;
+        }
+
+        $fromLat = $coachingCabine->from_latitude;
+        $fromLng = $coachingCabine->from_longitude;
+        $toLat = $coachingCabine->to_latitude;
+        $toLng = $coachingCabine->to_longitude;
+
+        // Get rest places
+        $restPlaces = $coachingCabine->rest_places ?? [];
+        
+        // Try to get route path from OSRM for better visualization
+        $routePath = null;
+        try {
+            $osrmUrl = "https://router.project-osrm.org/route/v1/driving/{$fromLng},{$fromLat};{$toLng},{$toLat}?overview=full&geometries=geojson";
+            $response = \Illuminate\Support\Facades\Http::timeout(10)->get($osrmUrl);
+            if ($response->successful()) {
+                $data = $response->json();
+                if (isset($data['routes'][0]['geometry']['coordinates'])) {
+                    $coordinates = $data['routes'][0]['geometry']['coordinates'];
+                    // Convert [lng, lat] to [lat, lng] for Google Maps
+                    $routePath = array_map(function($coord) {
+                        return $coord[1] . ',' . $coord[0]; // [lat, lng]
+                    }, $coordinates);
+                    // Limit to reasonable number of points (Google Maps has URL length limits)
+                    if (count($routePath) > 100) {
+                        $routePath = array_filter($routePath, function($key) use ($routePath) {
+                            return $key % ceil(count($routePath) / 100) == 0 || $key == 0 || $key == count($routePath) - 1;
+                        }, ARRAY_FILTER_USE_KEY);
+                        $routePath = array_values($routePath);
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            // Fallback to straight line if OSRM fails
+        }
+        
+        // Calculate center point
+        $centerLat = ($fromLat + $toLat) / 2;
+        $centerLng = ($fromLng + $toLng) / 2;
+        
+        // Calculate zoom level based on distance
+        $latDiff = abs($toLat - $fromLat);
+        $lngDiff = abs($toLng - $fromLng);
+        $maxDiff = max($latDiff, $lngDiff);
+        
+        if ($maxDiff > 5) {
+            $zoom = 6;
+        } elseif ($maxDiff > 1) {
+            $zoom = 7;
+        } elseif ($maxDiff > 0.5) {
+            $zoom = 8;
+        } elseif ($maxDiff > 0.1) {
+            $zoom = 9;
+        } else {
+            $zoom = 10;
+        }
+
+        // Try Google Maps Static API first (if API key is available)
+        $googleApiKey = env('GOOGLE_MAPS_API_KEY', '');
+        if (!empty($googleApiKey)) {
+            $params = [
+                'center' => $centerLat . ',' . $centerLng,
+                'zoom' => $zoom,
+                'size' => '1200x800', // Larger size for better quality
+                'maptype' => 'roadmap',
+                'key' => $googleApiKey,
+                'scale' => 2, // High DPI for better quality
+            ];
+
+            // Add path for route (use OSRM path if available, otherwise straight line)
+            if ($routePath && count($routePath) > 1) {
+                $path = 'color:0x2563eb|weight:6|' . implode('|', $routePath);
+            } else {
+                $path = 'color:0x2563eb|weight:6|' . $fromLat . ',' . $fromLng . '|' . $toLat . ',' . $toLng;
+            }
+            $params['path'] = $path;
+
+            // Build markers parameter
+            $markerParams = [];
+            // Start marker (green)
+            $markerParams[] = 'markers=color:green|label:F|' . $fromLat . ',' . $fromLng;
+            // End marker (red)
+            $markerParams[] = 'markers=color:red|label:T|' . $toLat . ',' . $toLng;
+            
+            // Note: Rest places are city names, we'd need to geocode them to add markers
+            // For now, we'll just show the route and list rest places in the PDF text
+            
+            // Build URL with path and markers
+            $url = 'https://maps.googleapis.com/maps/api/staticmap?' . http_build_query($params);
+            if (!empty($markerParams)) {
+                $url .= '&' . implode('&', $markerParams);
+            }
+
+            return $url;
+        }
+
+        // Fallback to OpenStreetMap static map (basic, without route/path)
+        // Note: OSM static maps don't support paths/markers easily, so this is a basic fallback
+        return 'https://staticmap.openstreetmap.de/staticmap.php?' . http_build_query([
+            'center' => $centerLat . ',' . $centerLng,
+            'zoom' => $zoom,
+            'size' => '1200x800',
+            'maptype' => 'mapnik',
+        ]);
     }
 
     /**
@@ -547,7 +693,22 @@ class CoachingCabineController extends Controller
             'route_taken' => ['nullable', 'string', 'max:255'],
             'assessment' => ['nullable', 'string'],
             'notes' => ['nullable', 'string'],
+            'rest_places' => ['nullable', 'array'],
+            'rest_places.*' => ['required', 'string', 'max:255'],
         ]);
+
+        // Validate rest_places count doesn't exceed validity_days - 1 (maximum allowed)
+        $validityDays = $coachingCabine->validity_days;
+        $restPlaces = $validated['rest_places'] ?? [];
+        $maxCount = $validityDays - 1;
+        $actualCount = count(array_filter($restPlaces));
+        
+        // Allow up to validity_days - 1 rest places when completing (0 to max)
+        if ($actualCount > $maxCount) {
+            return back()->withInput()->withErrors([
+                'rest_places' => __('messages.rest_places_max_exceeded', ['max' => $maxCount, 'actual' => $actualCount])
+            ]);
+        }
 
         try {
             // Update the session with completion data
@@ -558,6 +719,7 @@ class CoachingCabineController extends Controller
                 'route_taken' => $validated['route_taken'] ?? null,
                 'assessment' => $validated['assessment'] ?? null,
                 'notes' => $validated['notes'] ?? null,
+                'rest_places' => $restPlaces,
             ]);
 
             // Handle next_planning_session changes
