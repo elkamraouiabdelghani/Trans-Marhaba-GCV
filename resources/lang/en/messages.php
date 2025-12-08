@@ -1247,7 +1247,7 @@ return [
     'moniteur' => 'Monitor',
     'route_taken' => 'Route taken',
     'assessment' => 'Assessment',
-    'validity_days' => 'Validity days',
+    'validity_days' => 'Duration',
     'next_planning_session' => 'Next planned session',
     'date_fin' => 'End date',
     'type_initial' => 'Initial',
@@ -1276,7 +1276,7 @@ return [
     'year' => 'Year',
     'select_year' => 'Select year',
     'driver_missing_sessions' => 'Drivers with less than 2 sessions per year',
-    'date_fin_auto' => 'Automatically calculated (date + 3 days)',
+    'date_fin_auto' => 'Automatically calculated (date + 5 days)',
     'score_range' => 'Between 0 and 100',
     'days' => 'days',
     'information' => 'Information',
@@ -1753,7 +1753,7 @@ return [
     'no_checklist_answers' => 'No checklist answers found.',
     'no_checklist_found_journey' => 'No checklist has been completed for this journey yet.',
     'confirm_delete_journey' => 'Are you sure you want to delete this journey? This action cannot be undone and will delete all associated black points and checklists.',
-    
+    'select_moniteur' => 'Select Moniteur',
     // Journey Status
     'journey_status' => 'Journey Status',
     'journey_status_excellent' => 'Excellent',

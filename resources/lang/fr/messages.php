@@ -1236,7 +1236,7 @@ return [
     'moniteur' => 'Moniteur',
     'route_taken' => 'Route empruntée',
     'assessment' => 'Évaluation',
-    'validity_days' => 'Jours de validité',
+    'validity_days' => 'Durée',
     'next_planning_session' => 'Prochaine session planifiée',
     'date_fin' => 'Date de fin',
     'type_initial' => 'Initial',
@@ -1265,7 +1265,7 @@ return [
     'year' => 'Année',
     'select_year' => 'Sélectionner l\'année',
     'driver_missing_sessions' => 'Chauffeurs avec moins de 2 sessions par an',
-    'date_fin_auto' => 'Calculé automatiquement (date + 3 jours)',
+    'date_fin_auto' => 'Calculé automatiquement (date + 5 jours)',
     'score_range' => 'Entre 0 et 100',
     'days' => 'jours',
     'information' => 'Informations',
@@ -1739,7 +1739,7 @@ return [
     'no_checklist_answers' => 'Aucune réponse de checklist trouvée.',
     'no_checklist_found_journey' => 'Aucune checklist n\'a été complétée pour ce trajet pour le moment.',
     'confirm_delete_journey' => 'Êtes-vous sûr de vouloir supprimer ce trajet ? Cette action ne peut pas être annulée et supprimera tous les points noirs et checklists associés.',
-    
+    'select_moniteur' => 'Sélectionner le moniteur',
     // Statut du trajet
     'journey_status' => 'Statut du Trajet',
     'journey_status_excellent' => 'Excellent',
