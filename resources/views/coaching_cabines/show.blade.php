@@ -226,9 +226,9 @@
                                 <i class="bi bi-person me-1"></i> {{ __('messages.view_driver') ?? 'Voir le chauffeur' }}
                             </a>
                             @if ($coachingCabine->status == 'completed')
-                                <button type="button" class="btn btn-danger btn-sm" id="exportPdfBtn" data-pdf-url="{{ route('coaching-cabines.pdf', $coachingCabine) }}">
+                                <a href="{{ route('coaching-cabines.pdf', $coachingCabine) }}" class="btn btn-danger btn-sm" target="_blank" rel="noopener">
                                     <i class="bi bi-file-pdf me-1"></i> {{ __('messages.export_pdf') ?? 'Exporter en PDF' }}
-                                </button>
+                                </a>
                             @endif
                         </div>
                     </div>
