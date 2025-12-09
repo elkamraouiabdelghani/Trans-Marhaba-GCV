@@ -26,10 +26,8 @@ class FormationController extends Controller
         try {
             $typeOptions = Formation::typeOptions();
 
-            // Get filter options
-            $integratedDrivers = Driver::where('is_integrated', 1)
-                ->orderBy('full_name')
-                ->get();
+            // Get filter options - list all drivers
+            $integratedDrivers = Driver::orderBy('full_name')->where('status', '!=', 'terminated')->get();
             $flottes = Flotte::orderBy('name')->get();
             $themes = Formation::select('theme')
                 ->whereNotNull('theme')
@@ -85,7 +83,7 @@ class FormationController extends Controller
                 }
             }
 
-            // Determine if filters are applied
+            // Determine if filters are applied (for showing reset button)
         $hasFilters = $selectedDriver || $selectedFlotte || $selectedStatus || $selectedFormationType || $selectedTheme || $yearFilterApplied;
             
             // Rule: If only status is selected, show nothing
@@ -241,103 +239,6 @@ class FormationController extends Controller
 
         $formations = $formationsQuery->orderBy('realizing_date', 'desc')->get();
 
-            // Build graph data (always show when filters are applied, even with 0 counts)
-            $graphData = null;
-            if ($hasFilters && !$onlyStatus) {
-                // Get all formations that should be displayed (for graph labels)
-                $allFormationsForGraph = $formations->pluck('id')->toArray();
-                
-                // Build query for driver formations
-                $query = \App\Models\DriverFormation::with(['driver', 'formation'])
-                    ->whereHas('driver', function ($q) use ($selectedDriver, $selectedFlotte) {
-                        $q->where('is_integrated', 1);
-                        if ($selectedDriver) {
-                            $q->where('id', $selectedDriver);
-                        }
-                        if ($selectedFlotte) {
-                            $q->where('flotte_id', $selectedFlotte);
-                        }
-                    });
-
-                if ($selectedStatus) {
-                    $query->where('status', $selectedStatus === 'realized' ? 'done' : 'planned');
-                }
-
-                if ($selectedYear) {
-                    if ($selectedStatus === 'realized') {
-                        $query->whereYear('done_at', $selectedYear);
-                    } elseif ($selectedStatus === 'planned') {
-                        $query->whereYear('planned_at', $selectedYear);
-                    } else {
-                        $query->where(function ($yearQuery) use ($selectedYear) {
-                            $yearQuery->whereYear('done_at', $selectedYear)
-                                      ->orWhereYear('planned_at', $selectedYear);
-                        });
-                    }
-                }
-
-                if ($selectedFormationType || $selectedTheme) {
-                    $query->whereHas('formation', function ($q) use ($selectedFormationType, $selectedTheme) {
-                        if ($selectedFormationType) {
-                            $q->where('type', $selectedFormationType);
-                        }
-                        if ($selectedTheme) {
-                            $q->where('theme', $selectedTheme);
-                        }
-                    });
-                }
-
-                // Get actual driver formation records
-                $allFormationsForGraph = $formations->pluck('id')->toArray();
-                if (!empty($allFormationsForGraph)) {
-                    $query->whereIn('formation_id', $allFormationsForGraph);
-                }
-
-                $driverFormations = $query->get();
-
-                // Get all drivers that match the filter criteria
-                $driversQuery = \App\Models\Driver::where('is_integrated', 1);
-                if ($selectedDriver) {
-                    $driversQuery->where('id', $selectedDriver);
-                }
-                if ($selectedFlotte) {
-                    $driversQuery->where('flotte_id', $selectedFlotte);
-                }
-                $relevantDrivers = $driversQuery->get();
-
-                // Build graph data: for each driver, show all formations with their counts (0 if no record)
-                $graphData = $relevantDrivers->map(function ($driver) use ($allFormationsForGraph, $driverFormations, $selectedStatus) {
-                    $driverFormationsForDriver = $driverFormations->where('driver_id', $driver->id);
-                    
-                    $formationsData = Formation::whereIn('id', $allFormationsForGraph)
-                        ->get()
-                        ->map(function ($formation) use ($driverFormationsForDriver, $selectedStatus) {
-                            $matchingFormations = $driverFormationsForDriver->where('formation_id', $formation->id);
-                            
-                            // If status filter is applied, only count matching status
-                            if ($selectedStatus) {
-                                $matchingFormations = $matchingFormations->filter(function ($df) use ($selectedStatus) {
-                                    return $df->status === ($selectedStatus === 'realized' ? 'done' : 'planned');
-                                });
-                            }
-                            
-                            return [
-                                'theme' => $formation->theme,
-                                'count' => $matchingFormations->count(),
-                            ];
-                        })
-                        ->values()
-                        ->all();
-
-                    return [
-                        'driver' => $driver->full_name,
-                        'formations' => $formationsData,
-                    ];
-                })
-                ->values()
-                ->all();
-            }
-
             // Calculate stats
             $totalFormations = Formation::count();
             $totalIntegratedDrivers = Driver::where('is_integrated', 1)->count();
@@ -360,7 +261,6 @@ class FormationController extends Controller
                 'selectedYear',
                 'years',
                 'themes',
-                'graphData',
                 'hasFilters',
                 'yearlyStats'
             ));
@@ -375,7 +275,6 @@ class FormationController extends Controller
                 'typeOptions' => Formation::typeOptions(),
                 'integratedDrivers' => collect(),
                 'flottes' => collect(),
-                'graphData' => null,
                 'hasFilters' => false,
                 'yearlyStats' => [
                     'total' => 0,
