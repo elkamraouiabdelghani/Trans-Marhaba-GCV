@@ -210,6 +210,9 @@
                                         </td>
                                         <td class="text-end">
                                             <div class="btn-group btn-group-sm">
+                                                <a href="{{ route('tbt-formations.show', $formation) }}" class="btn btn-outline-secondary" title="{{ __('messages.view') }}">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
                                                 @if($formation->status !== 'realized')
                                                     <button type="button" class="btn btn-outline-success" title="{{ __('messages.mark_as_realized') }}" data-bs-toggle="modal" data-bs-target="#confirmRealizedModal" data-formation-id="{{ $formation->id }}" data-formation-name="{{ $formation->title }}">
                                                         <i class="bi bi-check-circle"></i>

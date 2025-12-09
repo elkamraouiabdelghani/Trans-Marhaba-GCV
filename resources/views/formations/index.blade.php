@@ -354,6 +354,13 @@
                                                         data-formation-theme="{{ $formation->theme }}">
                                                     <i class="bi bi-check-circle"></i>
                                                 </button>
+                                            @else
+                                                <a href="{{ route('formations.presence-pdf', $formation) }}" 
+                                                class="btn btn-sm btn-outline-danger" 
+                                                title="{{ __('messages.generate_presence_list') ?? 'Presence List PDF' }}"
+                                                target="_blank" rel="noopener">
+                                                    <i class="bi bi-file-pdf"></i>
+                                                </a>
                                             @endif
                                             <a href="{{ route('formations.edit', $formation) }}" 
                                                class="btn btn-sm btn-outline-warning" 

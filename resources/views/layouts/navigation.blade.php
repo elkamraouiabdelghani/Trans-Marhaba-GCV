@@ -57,6 +57,12 @@
                         <span class="sidebar-text">{{ __('messages.tbt_formations') }}</span>
                     </a>
                 </li>
+                <li class="mb-1">
+                    <a href="{{ route('formations.suivi') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('formations.suivi') ? 'active' : '' }}">
+                        <i class="bi bi-bar-chart-line me-2 text-gray-600 sidebar-icon"></i>
+                        <span class="sidebar-text">{{ __('messages.formations_suivi') }}</span>
+                    </a>
+                </li>
             </ul>
         </li>
         <li class="mb-2">
@@ -334,6 +340,12 @@
                         <a href="{{ route('tbt-formations.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('tbt-formations.*') ? 'active' : '' }}">
                             <i class="bi bi-book-half me-2 text-gray-600 sidebar-icon"></i>
                             <span class="sidebar-text">{{ __('messages.tbt_formations') }}</span>
+                        </a>
+                    </li>
+                    <li class="mb-1">
+                        <a href="{{ route('formations.suivi') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('formations.suivi') ? 'active' : '' }}">
+                            <i class="bi bi-bar-chart-line me-2 text-gray-600 sidebar-icon"></i>
+                            <span class="sidebar-text">{{ __('messages.formations_suivi') }}</span>
                         </a>
                     </li>
                 </ul>

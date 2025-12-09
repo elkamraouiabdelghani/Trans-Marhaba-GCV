@@ -182,7 +182,7 @@
         </div>
 
         <!-- Filter Panel -->
-        <div class="card border-0 shadow-sm mb-4">
+                <div id="formations-table" class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-white border-0 py-3">
                 <h5 class="mb-0 text-dark fw-bold">
                     <i class="bi bi-funnel me-2 text-primary"></i>
@@ -618,6 +618,19 @@
                         <i class="bi bi-book me-2 text-primary"></i>
                         {{ __('messages.formations') }}
                     </h5>
+                    <form method="GET" action="{{ route('drivers.show', $driver) }}#formations-table" class="d-flex align-items-center gap-2">
+                        @foreach(request()->except('formation_year') as $key => $value)
+                            <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+                        @endforeach
+                        <label for="formation_year" class="form-label small mb-0">{{ __('messages.formation_year') ?? 'Year' }}</label>
+                        <select name="formation_year" id="formation_year" class="form-select form-select-sm" style="width:auto;" onchange="this.form.submit()">
+                            @foreach($formationYears ?? [] as $year)
+                                <option value="{{ $year }}" {{ (string)$formationYear === (string)$year ? 'selected' : '' }}>
+                                    {{ $year }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </form>
                 </div>
             </div>
             <div class="card-body p-0">
@@ -764,47 +777,10 @@
                                     @endphp
                                     <td class="py-3 px-4 text-center">
                                         <div class="btn-group" role="group">
-                                            @if($lastDone && $lastDone->certificate_path)
-                                                <a href="{{ route('drivers.formations.download-certificate', $lastDone) }}" class="btn btn-outline-success btn-sm" title="{{ __('messages.download_certificate') }}">
-                                                    <i class="bi bi-download"></i>
+                                            @if($lastDone)
+                                                <a href="{{ route('formations.certificate-pdf', [$formationItem, $lastDone]) }}" class="btn btn-outline-danger btn-sm" target="_blank" rel="noopener" title="{{ __('messages.generate_certificate') ?? 'Certificate PDF' }}">
+                                                    <i class="bi bi-filetype-pdf"></i>
                                                 </a>
-                                            @endif
-                                            @if($currentProcess)
-                                                <a href="{{ route('formation-processes.show', $currentProcess) }}" class="btn btn-outline-primary btn-sm" title="{{ __('messages.view') }}">
-                                                    <i class="bi bi-eye"></i>
-                                                </a>
-                                            @endif
-                                            @if($showStartButton)
-                                                @if($canStartForFlotte)
-                                                    @if($isQuickFormation)
-                                                        @php
-                                                            $calculatedNextDate = $lastDone ? $lastDone->getNextRealizingDate() : null;
-                                                            $nextDateValue = $calculatedNextDate ? $calculatedNextDate->format('Y-m-d') : '';
-                                                        @endphp
-                                                        <button type="button"
-                                                                class="btn btn-dark btn-sm btn-quick-formation-start"
-                                                                data-formation-id="{{ $formationItem->id }}"
-                                                                data-formation-theme="{{ $formationItem->theme ?? '' }}"
-                                                                data-next-date="{{ $nextDateValue }}">
-                                                            <i class="bi bi-play-circle me-1"></i>
-                                                            {{ __('messages.start') }}
-                                                        </button>
-                                                    @else
-                                                        <a href="{{ route('formation-processes.create') }}?driver_id={{ $driver->id }}&formation_id={{ $formationItem->id }}" class="btn btn-dark btn-sm" title="{{ __('messages.start_formation_process') }}">
-                                                            <i class="bi bi-play-circle me-1"></i>
-                                                            {{ __('messages.start') }}
-                                                        </a>
-                                                    @endif
-                                                @else
-                                                    <button type="button"
-                                                            class="btn btn-outline-secondary btn-sm"
-                                                            disabled
-                                                            data-bs-toggle="tooltip"
-                                                            data-bs-placement="top"
-                                                            title="{{ $formationFlotteName ? __('messages.formation_start_restricted_with_flotte', ['flotte' => $formationFlotteName]) : __('messages.formation_start_restricted') }}">
-                                                        <i class="bi bi-lock"></i>
-                                                    </button>
-                                                @endif
                                             @endif
                                         </div>
                                         @if($showStartButton && !$canStartForFlotte)
@@ -841,14 +817,14 @@
             $isTerminated = $driverStatusValue === 'terminated';
         @endphp
         @if(!$isTerminated)
-            <div class="card border-0 shadow-sm mb-4">
+            <div id="tbt-formations-table" class="card border-0 shadow-sm mb-4">
                 <div class="card-header bg-white border-0 py-3">
                     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                         <h5 class="mb-0 text-dark fw-bold">
                             <i class="bi bi-calendar-week me-2 text-primary"></i>
                             {{ __('messages.tbt_formations_title') ?? 'TBT Formations' }}
                         </h5>
-                        <form method="GET" action="{{ route('drivers.show', $driver) }}" class="d-flex gap-2 align-items-center">
+                        <form method="GET" action="{{ route('drivers.show', $driver) }}#tbt-formations-table" class="d-flex gap-2 align-items-center">
                             @foreach(request()->except('tbt_year') as $key => $value)
                                 <input type="hidden" name="{{ $key }}" value="{{ $value }}">
                             @endforeach
@@ -874,6 +850,8 @@
                                     <th class="border-0 py-3 px-4">{{ __('messages.tbt_formation_status') ?? 'Status' }}</th>
                                     <th class="border-0 py-3 px-4">{{ __('messages.tbt_formation_active') ?? 'Active' }}</th>
                                     <th class="border-0 py-3 px-4">{{ __('messages.description') }}</th>
+                                    <th class="border-0 py-3 px-4">{{ __('messages.done_at') ?? 'Done at' }}</th>
+                                    <th class="border-0 py-3 px-4 text-center">{{ __('messages.actions') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -912,10 +890,29 @@
                                                 {{ $tbtFormation->description ? Str::limit($tbtFormation->description, 100) : __('messages.not_available') }}
                                             </small>
                                         </td>
+                                        @php
+                                            $driverTbtFormation = $tbtFormation->driverTbtFormations()->where('driver_id', $driver->id)->first();
+                                        @endphp
+                                        <td class="py-3 px-4">
+                                            @if($driverTbtFormation && $driverTbtFormation->done_at)
+                                                {{ $driverTbtFormation->done_at->format('d/m/Y') }}
+                                            @else
+                                                <span class="text-muted">-</span>
+                                            @endif
+                                        </td>
+                                        <td class="py-3 px-4 text-center">
+                                            <div class="btn-group btn-group-sm">
+                                                @if($driverTbtFormation)
+                                                    <a href="{{ route('tbt-formations.certificate-pdf', [$tbtFormation, $driverTbtFormation]) }}" class="btn btn-outline-danger" target="_blank" rel="noopener" title="{{ __('messages.generate_certificate') ?? 'Certificate PDF' }}">
+                                                        <i class="bi bi-filetype-pdf"></i>
+                                                    </a>
+                                                @endif
+                                            </div>
+                                        </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="6" class="text-center py-5">
+                                        <td colspan="8" class="text-center py-5">
                                             <div class="text-muted">
                                                 <i class="bi bi-calendar-x display-1 mb-3"></i>
                                                 <h5 class="mb-2">{{ __('messages.tbt_formation_no_formations') ?? 'No TBT Formations Found' }}</h5>

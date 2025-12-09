@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class TbtFormation extends Model
 {
@@ -31,6 +32,11 @@ class TbtFormation extends Model
         'month' => 'integer',
         'documents' => 'array',
     ];
+
+    public function driverTbtFormations(): HasMany
+    {
+        return $this->hasMany(DriverTbtFormation::class);
+    }
 
     /**
      * Scope to filter active formations

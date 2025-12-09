@@ -83,6 +83,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/formations/planning/pdf', [FormationController::class, 'planningPdf'])->name('formations.planning.pdf');
     Route::resource('formations', FormationController::class);
     Route::post('/formations/{formation}/mark-realized', [FormationController::class, 'markAsRealized'])->name('formations.mark-realized');
+    Route::get('/formations/{formation}/presence-pdf', [FormationController::class, 'presencePdf'])->name('formations.presence-pdf');
+    Route::get('/formations/{formation}/driver-formations/{driverFormation}/certificate-pdf', [FormationController::class, 'certificatePdf'])->name('formations.certificate-pdf');
 
     // Changements
     Route::resource('changement-types', ChangementTypeController::class);
@@ -193,8 +195,10 @@ Route::middleware('auth')->group(function () {
     // TBT Formations
     Route::get('/tbt-formations/planning', [TbtFormationController::class, 'planning'])->name('tbt-formations.planning');
     Route::get('/tbt-formations/planning/pdf', [TbtFormationController::class, 'planningPdf'])->name('tbt-formations.planning.pdf');
-    Route::resource('tbt-formations', TbtFormationController::class)->except(['show']);
+    Route::resource('tbt-formations', TbtFormationController::class);
     Route::post('/tbt-formations/{tbtFormation}/mark-realized', [TbtFormationController::class, 'markAsRealized'])->name('tbt-formations.mark-realized');
+    Route::get('/tbt-formations/{tbtFormation}/presence-pdf', [TbtFormationController::class, 'presencePdf'])->name('tbt-formations.presence-pdf');
+    Route::get('/tbt-formations/{tbtFormation}/driver-formations/{driverTbtFormation}/certificate-pdf', [TbtFormationController::class, 'certificatePdf'])->name('tbt-formations.certificate-pdf');
     
     // Coaching Cabines
     Route::get('/coaching-cabines/planning/{year?}', [CoachingCabineController::class, 'planning'])->name('coaching-cabines.planning');
@@ -272,6 +276,10 @@ Route::middleware('auth')->group(function () {
         ->name('journeys.checklists.pdf');
     Route::get('/journeys/checklists/document/{encoded}', [JourneyController::class, 'checklistDocument'])
         ->name('journeys.checklists.document');
+
+    // Formations Suivi
+    Route::get('/formations-suivi', [\App\Http\Controllers\FormationSuiviController::class, 'index'])->name('formations.suivi');
+    Route::match(['get', 'post'], '/formations-suivi/pdf', [\App\Http\Controllers\FormationSuiviController::class, 'pdf'])->name('formations.suivi.pdf');
     Route::resource('journeys', JourneyController::class);
     
     // Journeys Checklist (template of items)

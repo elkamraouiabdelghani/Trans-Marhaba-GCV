@@ -618,18 +618,22 @@ class FormationController extends Controller
                 $plannedAt = $formation->realizing_date;
 
                 foreach ($drivers as $driver) {
-                    DriverFormation::create([
+                    $driverFormation = DriverFormation::firstOrNew([
                         'driver_id' => $driver->id,
                         'formation_id' => $formation->id,
-                        'formation_process_id' => null,
+                    ]);
+
+                    // If a record already exists (e.g., planned), mark it done; otherwise create new
+                    $driverFormation->fill([
+                        'formation_process_id' => $driverFormation->formation_process_id ?? null,
                         'status' => 'done',
-                        'planned_at' => $plannedAt,
+                        'planned_at' => $driverFormation->planned_at ?? $plannedAt,
                         'done_at' => $now,
                         'progress_percent' => 100,
                         'validation_status' => 'validated',
-                        'certificate_path' => null,
-                        'notes' => null,
-                    ]);
+                        'certificate_path' => $driverFormation->certificate_path ?? null,
+                        'notes' => $driverFormation->notes ?? null,
+                    ])->save();
                 }
 
                 $formation->update([
@@ -648,6 +652,85 @@ class FormationController extends Controller
 
         return redirect()->route('formations.index')
             ->with('success', __('messages.formation_mark_realized_success'));
+    }
+
+    /**
+     * Generate presence list PDF for a formation.
+     */
+    public function presencePdf(Formation $formation)
+    {
+        try {
+            $formation->load(['flotte']);
+
+            // Load driver formations ordered by driver name
+            $driverFormations = DriverFormation::with(['driver', 'driver.flotte'])
+                ->where('formation_id', $formation->id)
+                ->leftJoin('drivers', 'driver_formations.driver_id', '=', 'drivers.id')
+                ->select('driver_formations.*')
+                ->orderBy('drivers.full_name')
+                ->get();
+
+            // Administrative participants: all non-admin users (administrative staff)
+            $administratives = \App\Models\User::where('status', '!=', 'terminated')
+                ->orderBy('name')
+                ->get();
+
+            $pdf = Pdf::loadView('formations.presence_pdf', [
+                'formation' => $formation,
+                'driverFormations' => $driverFormations,
+                'administratives' => $administratives,
+            ])
+                ->setPaper('a4', 'portrait')
+                ->setOption('isHtml5ParserEnabled', true)
+                ->setOption('isRemoteEnabled', true);
+
+            $filename = 'presence_list_formation_' . $formation->id . '.pdf';
+
+            return $pdf->download($filename);
+        } catch (\Throwable $e) {
+            Log::error('Failed to generate presence list PDF', [
+                'id' => $formation->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', __('messages.presence_list_pdf_error') ?? 'Unable to generate presence list PDF.');
+        }
+    }
+
+    /**
+     * Generate a certificate PDF for a specific driver/formation.
+     */
+    public function certificatePdf(Formation $formation, DriverFormation $driverFormation)
+    {
+        try {
+            if ($driverFormation->formation_id !== $formation->id) {
+                abort(404);
+            }
+
+            $driverFormation->load(['driver', 'driver.flotte']);
+            $formation->load(['flotte']);
+
+            $pdf = Pdf::loadView('formations.certificate_pdf', [
+                'formation' => $formation,
+                'driverFormation' => $driverFormation,
+                'driver' => $driverFormation->driver,
+            ])
+                ->setPaper('a4', 'landscape')
+                ->setOption('isHtml5ParserEnabled', true)
+                ->setOption('isRemoteEnabled', true);
+
+            $filename = 'certificate_formation_' . $formation->id . '_driver_' . $driverFormation->driver_id . '.pdf';
+
+            return $pdf->download($filename);
+        } catch (\Throwable $e) {
+            Log::error('Failed to generate certificate PDF', [
+                'formation_id' => $formation->id,
+                'driver_formation_id' => $driverFormation->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', __('messages.certificate_pdf_error') ?? 'Unable to generate certificate PDF.');
+        }
     }
 }
 

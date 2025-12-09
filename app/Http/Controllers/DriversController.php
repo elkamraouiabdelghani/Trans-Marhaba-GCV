@@ -193,6 +193,10 @@ class DriversController extends Controller
         $integration = null;
         $integrationProgress = null;
 
+        // Year filters
+        $currentYear = now()->year;
+        $formationYear = $request->get('formation_year', $currentYear);
+
         // Get formations for this driver
         $formations = DriverFormation::where('driver_id', $driver->id)
             ->with(['formation', 'formationProcess'])
@@ -218,12 +222,24 @@ class DriversController extends Controller
         $warningAlerts = $alertStates->filter(fn ($state) => $state === 'warning')->count();
         $criticalAlerts = $alertStates->filter(fn ($state) => $state === 'critical')->count();
 
-        $currentYear = now()->year;
-
+        // Catalog by selected year
         $formationsCatalog = Formation::with(['flotte'])
-            ->whereYear('realizing_date', $currentYear)
+            ->when($formationYear, function ($q) use ($formationYear) {
+                $q->whereYear('realizing_date', $formationYear);
+            })
             ->orderBy('theme')
             ->get();
+
+        // Available formation years
+        $formationYears = Formation::whereNotNull('realizing_date')
+            ->selectRaw('YEAR(realizing_date) as year')
+            ->distinct()
+            ->orderBy('year', 'desc')
+            ->pluck('year');
+        if ($formationYear && !$formationYears->contains($formationYear)) {
+            $formationYears->push($formationYear);
+            $formationYears = $formationYears->sortDesc()->values();
+        }
 
         // Get TBT formations for the current year (default)
         $tbtFormationYear = $request->get('tbt_year', $currentYear);
@@ -263,6 +279,8 @@ class DriversController extends Controller
             'integrationProgress',
             'formations',
             'formationsCatalog',
+            'formationYear',
+            'formationYears',
             'warningAlerts',
             'criticalAlerts',
             'violationFilters',

@@ -4,12 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Models\TbtFormation;
 use App\Http\Requests\TbtFormationRequest;
+use App\Models\Driver;
+use App\Models\DriverTbtFormation;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Response;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Log;
 
 class TbtFormationController extends Controller
 {
@@ -151,6 +154,16 @@ class TbtFormationController extends Controller
     }
 
     /**
+     * Display the specified resource.
+     */
+    public function show(TbtFormation $tbtFormation): View
+    {
+        $tbtFormation->load(['driverTbtFormations.driver']);
+
+        return view('formations.tbt_formations.show', compact('tbtFormation'));
+    }
+
+    /**
      * Update the specified resource in storage.
      */
     public function update(TbtFormationRequest $request, TbtFormation $tbtFormation): RedirectResponse
@@ -230,10 +243,96 @@ class TbtFormationController extends Controller
         if ($tbtFormation->status !== 'realized') {
             $tbtFormation->status = 'realized';
             $tbtFormation->save();
+
+            // Create/update driver TBT formations for all non-terminated drivers
+            $now = now();
+            $drivers = Driver::where(function ($q) {
+                $q->whereNull('status')->orWhere('status', '!=', 'terminated');
+            })->get();
+
+            foreach ($drivers as $driver) {
+                $df = DriverTbtFormation::firstOrNew([
+                    'driver_id' => $driver->id,
+                    'tbt_formation_id' => $tbtFormation->id,
+                ]);
+
+                $df->fill([
+                    'status' => 'done',
+                    'planned_at' => $df->planned_at ?? $tbtFormation->week_start_date,
+                    'done_at' => $now,
+                    'validation_status' => 'validated',
+                ]);
+
+                // Keep existing notes if present
+                $df->save();
+            }
         }
 
         return redirect()->route('tbt-formations.index', ['year' => $tbtFormation->year])
-            ->with('success', __('messages.tbt_formation_marked_realized'));
+            ->with('success', __('messages.tbt_formation_marked_realized') . ' ' . __('messages.tbt_formation_driver_created'));
+    }
+
+    /**
+     * Export presence list as PDF.
+     */
+    public function presencePdf(TbtFormation $tbtFormation)
+    {
+        try {
+            $tbtFormation->load(['driverTbtFormations.driver']);
+
+            $pdf = Pdf::loadView('formations.tbt_formations.presence_pdf', [
+                'tbtFormation' => $tbtFormation,
+                'driverFormations' => $tbtFormation->driverTbtFormations,
+            ])
+                ->setPaper('a4', 'portrait')
+                ->setOption('isHtml5ParserEnabled', true)
+                ->setOption('isRemoteEnabled', true);
+
+            $filename = 'tbt_presence_list_' . $tbtFormation->id . '.pdf';
+
+            return $pdf->download($filename);
+        } catch (\Throwable $e) {
+            Log::error('Failed to generate TBT presence PDF', [
+                'id' => $tbtFormation->id,
+                'error' => $e->getMessage(),
+            ]);
+            return back()->with('error', __('messages.presence_list_pdf_error') ?? 'Unable to generate presence list PDF.');
+        }
+    }
+
+    /**
+     * Export certificate for a driver TBT formation.
+     */
+    public function certificatePdf(TbtFormation $tbtFormation, DriverTbtFormation $driverTbtFormation)
+    {
+        try {
+            if ($driverTbtFormation->tbt_formation_id !== $tbtFormation->id) {
+                abort(404);
+            }
+
+            $driverTbtFormation->load(['driver']);
+
+            $pdf = Pdf::loadView('formations.tbt_formations.certificate_pdf', [
+                'tbtFormation' => $tbtFormation,
+                'driverFormation' => $driverTbtFormation,
+                'driver' => $driverTbtFormation->driver,
+            ])
+                ->setPaper('a4', 'landscape')
+                ->setOption('isHtml5ParserEnabled', true)
+                ->setOption('isRemoteEnabled', true);
+
+            $filename = 'tbt_certificate_' . $tbtFormation->id . '_driver_' . $driverTbtFormation->driver_id . '.pdf';
+
+            return $pdf->download($filename);
+        } catch (\Throwable $e) {
+            Log::error('Failed to generate TBT certificate PDF', [
+                'tbt_formation_id' => $tbtFormation->id,
+                'driver_tbt_formation_id' => $driverTbtFormation->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', __('messages.certificate_pdf_error') ?? 'Unable to generate certificate PDF.');
+        }
     }
 
     /**

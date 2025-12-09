@@ -16,9 +16,6 @@
                 <a href="{{ route('formations.index') }}" class="btn btn-sm btn-outline-secondary">
                     <i class="bi bi-arrow-left me-1"></i> {{ __('messages.back_to_list') ?? 'Back to List' }}
                 </a>
-                <a href="{{ route('formations.edit', $formation) }}" class="btn btn-sm btn-warning">
-                    <i class="bi bi-pencil me-1"></i> {{ __('messages.edit') }}
-                </a>
             </div>
         </div>
 
@@ -222,18 +219,52 @@
                                 <i class="bi bi-pencil me-1"></i> {{ __('messages.edit') }}
                             </a>
                             @if($formation->status !== 'realized')
-                                <form action="{{ route('formations.mark-realized', $formation) }}" method="POST" class="d-inline">
-                                    @csrf
-                                    <button type="submit" class="btn btn-sm btn-success w-100" onclick="return confirm('{{ __('messages.confirm_mark_realized_message', ['name' => $formation->theme]) }}')">
-                                        <i class="bi bi-check-circle me-1"></i> {{ __('messages.mark_as_realized') ?? 'Mark as Realized' }}
-                                    </button>
-                                </form>
+                                <button type="button" class="btn btn-sm btn-success w-100" data-bs-toggle="modal" data-bs-target="#markRealizedModal">
+                                    <i class="bi bi-check-circle me-1"></i> {{ __('messages.mark_as_realized') ?? 'Mark as Realized' }}
+                                </button>
                             @endif
+                        <a href="{{ route('formations.presence-pdf', $formation) }}" class="btn btn-sm btn-danger" target="_blank" rel="noopener">
+                            <i class="bi bi-file-pdf me-1"></i> {{ __('messages.generate_presence_list') ?? 'Presence List PDF' }}
+                        </a>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+
+        @if($formation->status !== 'realized')
+        <!-- Mark as Realized Confirmation Modal -->
+        <div class="modal fade" id="markRealizedModal" tabindex="-1" aria-labelledby="markRealizedModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title" id="markRealizedModalLabel">
+                            <i class="bi bi-check-circle me-2 text-white"></i>
+                            {{ __('messages.mark_as_realized') ?? 'Mark as Realized' }}
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="mb-0">
+                            {{ __('messages.confirm_mark_realized_message', ['name' => $formation->theme]) }}
+                        </p>
+                        <small class="text-muted d-block mt-2">
+                            {{ __('messages.this_action_is_irreversible') ?? 'This action will mark the formation as completed for eligible drivers.' }}
+                        </small>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ __('messages.cancel') }}</button>
+                        <form action="{{ route('formations.mark-realized', $formation) }}" method="POST" class="d-inline">
+                            @csrf
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-circle me-1"></i> {{ __('messages.confirm') ?? 'Confirm' }}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endif
 
         <!-- Drivers Table -->
         <div class="card border-0 shadow-sm">
@@ -307,6 +338,11 @@
                                             <a href="{{ route('drivers.show', $driverFormation->driver) }}" class="btn btn-sm btn-outline-primary" title="{{ __('messages.view_driver') ?? 'View Driver' }}">
                                                 <i class="bi bi-eye"></i>
                                             </a>
+                                            @if($driverFormation->status === 'done')
+                                                <a href="{{ route('formations.certificate-pdf', [$formation, $driverFormation]) }}" class="btn btn-sm btn-outline-danger" title="{{ __('messages.generate_certificate') ?? 'Certificate PDF' }}" target="_blank" rel="noopener">
+                                                    <i class="bi bi-filetype-pdf"></i>
+                                                </a>
+                                            @endif
                                         @endif
                                     </td>
                                 </tr>
