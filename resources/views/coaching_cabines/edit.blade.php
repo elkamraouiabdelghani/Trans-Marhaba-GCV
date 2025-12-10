@@ -46,7 +46,7 @@
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label for="driver_id" class="form-label fw-semibold">{{ __('messages.driver') }} <span class="text-danger">*</span></label>
-                            <select name="driver_id" id="driver_id" class="form-select @error('driver_id') is-invalid @enderror" required disabled>
+                            <select name="driver_id" id="driver_id" class="form-select @error('driver_id') is-invalid @enderror" required>
                                 <option value="">{{ __('messages.select_driver') ?? 'Sélectionner un chauffeur' }}</option>
                                 @foreach($drivers as $driver)
                                     <option value="{{ $driver->id }}" data-flotte-id="{{ $driver->flotte_id ?? '' }}" {{ old('driver_id', $coachingCabine->driver_id) == $driver->id ? 'selected' : '' }}>
@@ -54,7 +54,6 @@
                                     </option>
                                 @endforeach
                             </select>
-                            <input type="hidden" name="driver_id" value="{{ old('driver_id', $coachingCabine->driver_id) }}">
                             @error('driver_id')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -134,14 +133,13 @@
 
                         <div class="col-md-6">
                             <label for="type" class="form-label fw-semibold">{{ __('messages.type') ?? 'Type' }} <span class="text-danger">*</span></label>
-                            <select name="type" id="type" class="form-select @error('type') is-invalid @enderror" required disabled>
+                            <select name="type" id="type" class="form-select @error('type') is-invalid @enderror" required>
                                 @foreach(\App\Models\CoachingSession::getTypes() as $type)
                                     <option value="{{ $type }}" {{ old('type', $coachingCabine->type) == $type ? 'selected' : '' }}>
                                         {{ \App\Models\CoachingSession::getTypeTitles()[$type] }}
                                     </option>
                                 @endforeach
                             </select>
-                            <input type="hidden" name="type" value="{{ old('type', $coachingCabine->type) }}">
                             @error('type')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
