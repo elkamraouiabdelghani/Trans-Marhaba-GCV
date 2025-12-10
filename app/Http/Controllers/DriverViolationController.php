@@ -158,10 +158,19 @@ class DriverViolationController extends Controller
                 Log::warning('Could not load vehicles for violation form', ['error' => $e->getMessage()]);
             }
 
+            // Get flottes
+            $flottes = collect();
+            try {
+                $flottes = Flotte::orderBy('name')->get();
+            } catch (\Exception $e) {
+                Log::warning('Could not load flottes for violation form', ['error' => $e->getMessage()]);
+            }
+
             return view('violations.create', [
                 'drivers' => $drivers,
                 'violationTypes' => $violationTypes,
                 'vehicles' => $vehicles,
+                'flottes' => $flottes,
             ]);
         } catch (\Illuminate\Database\QueryException $exception) {
             report($exception);
@@ -208,11 +217,13 @@ class DriverViolationController extends Controller
             $validated['status'] = $validated['status'] ?? 'pending';
             $validated['created_by'] = Auth::id();
 
-            // Automatically set flotte_id from driver's flotte
-            if (isset($validated['driver_id'])) {
-                $driver = Driver::find($validated['driver_id']);
-                if ($driver && $driver->flotte_id) {
-                    $validated['flotte_id'] = $driver->flotte_id;
+            // Set flotte_id: use provided flotte_id, otherwise auto-set from driver's flotte
+            if (!isset($validated['flotte_id']) || empty($validated['flotte_id'])) {
+                if (isset($validated['driver_id'])) {
+                    $driver = Driver::find($validated['driver_id']);
+                    if ($driver && $driver->flotte_id) {
+                        $validated['flotte_id'] = $driver->flotte_id;
+                    }
                 }
             }
 
@@ -325,11 +336,20 @@ class DriverViolationController extends Controller
                 Log::warning('Could not load vehicles for violation edit', ['error' => $e->getMessage()]);
             }
 
+            // Get flottes
+            $flottes = collect();
+            try {
+                $flottes = Flotte::orderBy('name')->get();
+            } catch (\Exception $e) {
+                Log::warning('Could not load flottes for violation edit', ['error' => $e->getMessage()]);
+            }
+
             return view('violations.edit', [
                 'violation' => $driverViolation->load(['driver', 'violationType', 'vehicle']),
                 'drivers' => $drivers,
                 'violationTypes' => $violationTypes,
                 'vehicles' => $vehicles,
+                'flottes' => $flottes,
             ]);
         } catch (\Illuminate\Database\QueryException $exception) {
             report($exception);

@@ -33,7 +33,7 @@
 
     <div class="container-fluid py-4 mt-4">
         <div class="row justify-content-center">
-            <div class="col-lg-9">
+            <div class="col-lg-10">
                 <div class="card border-0 shadow-sm">
                     <div class="card-header bg-white border-0 py-3">
                         <div class="d-flex justify-content-between align-items-center">
@@ -53,54 +53,23 @@
 
                             <div class="row g-4">
                                 <div class="col-md-6">
-                                    <label for="driver_id" class="form-label fw-semibold">{{ __('messages.driver') }} <span class="text-danger">*</span></label>
+                                    <label for="flotte_id" class="form-label fw-semibold">{{ __('messages.flotte') }}</label>
                                     <select
-                                        id="driver_id"
-                                        name="driver_id"
-                                        class="form-select @error('driver_id') is-invalid @enderror"
-                                        required
+                                        id="flotte_id"
+                                        name="flotte_id"
+                                        class="form-select @error('flotte_id') is-invalid @enderror"
                                     >
-                                        <option value="">{{ __('messages.select_driver') }}</option>
-                                        @foreach($drivers as $driver)
+                                        <option value="">{{ __('messages.all_flottes') }}</option>
+                                        @foreach($flottes as $flotte)
                                             <option
-                                                value="{{ $driver->id }}"
-                                                data-vehicle="{{ $driver->assignedVehicle?->id ?? '' }}"
-                                                @selected((int) old('driver_id', $violation->driver_id) === (int) $driver->id)
+                                                value="{{ $flotte->id }}"
+                                                @selected((int) old('flotte_id', $violation->flotte_id) === (int) $flotte->id)
                                             >
-                                                {{ $driver->full_name }}
+                                                {{ $flotte->name }}
                                             </option>
                                         @endforeach
                                     </select>
-                                    @error('driver_id')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-
-                                <div class="col-md-6">
-                                    <label for="violation_date" class="form-label fw-semibold">{{ __('messages.violation_date') }} <span class="text-danger">*</span></label>
-                                    <input
-                                        type="date"
-                                        id="violation_date"
-                                        name="violation_date"
-                                        class="form-control @error('violation_date') is-invalid @enderror"
-                                        value="{{ old('violation_date', $violation->violation_date?->format('Y-m-d')) }}"
-                                        required
-                                    >
-                                    @error('violation_date')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-
-                                <div class="col-md-6">
-                                    <label for="violation_time" class="form-label fw-semibold">{{ __('messages.violation_time') }}</label>
-                                    <input
-                                        type="time"
-                                        id="violation_time"
-                                        name="violation_time"
-                                        class="form-control @error('violation_time') is-invalid @enderror"
-                                        value="{{ old('violation_time', $violation->violation_time ? $violation->violation_time->format('H:i') : null) }}"
-                                    >
-                                    @error('violation_time')
+                                    @error('flotte_id')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
@@ -124,6 +93,128 @@
                                         @endforeach
                                     </select>
                                     @error('violation_type_id')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <label for="vehicle_id" class="form-label fw-semibold">{{ __('messages.vehicle') }}</label>
+                                    <select
+                                        id="vehicle_id"
+                                        name="vehicle_id"
+                                        class="form-select @error('vehicle_id') is-invalid @enderror"
+                                    >
+                                        <option value="">{{ __('messages.select_vehicle') }}</option>
+                                        @foreach($vehicles as $vehicle)
+                                            <option 
+                                                value="{{ $vehicle->id }}"
+                                                @selected((int) old('vehicle_id', $violation->vehicle_id) === (int) $vehicle->id)
+                                            >
+                                                {{ $vehicle->license_plate }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @error('vehicle_id')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="driver_id" class="form-label fw-semibold">{{ __('messages.driver') }} <span class="text-danger">*</span></label>
+                                    <div class="position-relative">
+                                        <!-- Hidden select for form submission -->
+                                        <select
+                                            id="driver_id"
+                                            name="driver_id"
+                                            class="d-none"
+                                            required
+                                        >
+                                            <option value="">{{ __('messages.select_driver') }}</option>
+                                            @foreach($drivers as $driver)
+                                                <option
+                                                    value="{{ $driver->id }}"
+                                                    data-vehicle="{{ $driver->assignedVehicle?->id ?? '' }}"
+                                                    data-flotte-id="{{ $driver->flotte_id ?? '' }}"
+                                                    @selected((int) old('driver_id', $violation->driver_id) === (int) $driver->id)
+                                                >
+                                                    {{ $driver->full_name }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                        
+                                        <!-- Custom dropdown -->
+                                        <div class="custom-driver-dropdown position-relative">
+                                            <button
+                                                type="button"
+                                                id="driver_dropdown_toggle"
+                                                class="form-select text-start @error('driver_id') is-invalid @enderror"
+                                                data-bs-toggle="dropdown"
+                                                aria-expanded="false"
+                                            >
+                                                <span id="driver_dropdown_display">
+                                                    @php
+                                                        $selectedDriver = $drivers->firstWhere('id', old('driver_id', $violation->driver_id));
+                                                    @endphp
+                                                    {{ $selectedDriver ? $selectedDriver->full_name : __('messages.select_driver') }}
+                                                </span>
+                                            </button>
+                                            <ul class="dropdown-menu w-100 p-0" id="driver_dropdown_menu" style="max-height: 300px; overflow-y: auto;">
+                                                <li class="p-2 border-bottom">
+                                                    <div class="input-group input-group-sm">
+                                                        <span class="input-group-text bg-light">
+                                                            <i class="bi bi-search"></i>
+                                                        </span>
+                                                        <input
+                                                            type="text"
+                                                            id="driver_search"
+                                                            class="form-control"
+                                                            placeholder="{{ __('messages.search_driver') ?? 'Search driver...' }}"
+                                                            autocomplete="off"
+                                                        >
+                                                    </div>
+                                                </li>
+                                                <li>
+                                                    <div id="driver_dropdown_options" class="list-group list-group-flush">
+                                                        <!-- Options will be populated by JavaScript -->
+                                                    </div>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    @error('driver_id')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="violation_date" class="form-label fw-semibold">{{ __('messages.violation_date') }} <span class="text-danger">*</span></label>
+                                    <input
+                                        type="date"
+                                        id="violation_date"
+                                        name="violation_date"
+                                        class="form-control @error('violation_date') is-invalid @enderror"
+                                        value="{{ old('violation_date', $violation->violation_date?->format('Y-m-d')) }}"
+                                        required
+                                    >
+                                    @error('violation_date')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="violation_time" class="form-label fw-semibold">{{ __('messages.violation_time') }}</label>
+                                    <input
+                                        type="text"
+                                        id="violation_time"
+                                        name="violation_time"
+                                        class="form-control @error('violation_time') is-invalid @enderror"
+                                        value="{{ old('violation_time', $violation->violation_time ? $violation->violation_time->format('H:i:s') : null) }}"
+                                        placeholder="17:30:00"
+                                        pattern="^([0-1][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$"
+                                        maxlength="8"
+                                    >
+                                    <small class="text-muted">{{ __('messages.time_format_hint') ?? 'Format: HH:MM:SS (24-hour format, e.g., 17:30:00)' }}</small>
+                                    @error('violation_time')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
@@ -168,29 +259,6 @@
                                             {{ __('messages.location_help') }}
                                         @endif
                                     </small>
-                                </div>
-
-
-                                <div class="col-md-6">
-                                    <label for="vehicle_id" class="form-label fw-semibold">{{ __('messages.vehicle') }}</label>
-                                    <select
-                                        id="vehicle_id"
-                                        name="vehicle_id"
-                                        class="form-select @error('vehicle_id') is-invalid @enderror"
-                                    >
-                                        <option value="">{{ __('messages.select_vehicle') }}</option>
-                                        @foreach($vehicles as $vehicle)
-                                            <option 
-                                                value="{{ $vehicle->id }}"
-                                                @selected((int) old('vehicle_id', $violation->vehicle_id) === (int) $vehicle->id)
-                                            >
-                                                {{ $vehicle->license_plate }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                    @error('vehicle_id')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
                                 </div>
 
                                 <div class="col-md-6">
@@ -301,7 +369,6 @@
                                         rows="3"
                                         class="form-control @error('analysis') is-invalid @enderror"
                                         placeholder="{{ __('messages.violation_analysis_hint') }}"
-                                        required
                                     >{{ old('analysis', $violation->analysis) }}</textarea>
                                     @error('analysis')
                                         <div class="invalid-feedback">{{ $message }}</div>
@@ -318,7 +385,6 @@
                                         rows="4"
                                         class="form-control @error('action_plan') is-invalid @enderror"
                                         placeholder="{{ __('messages.violation_action_plan_hint') }}"
-                                        required
                                     >{{ old('action_plan', $violation->action_plan) }}</textarea>
                                     @error('action_plan')
                                         <div class="invalid-feedback">{{ $message }}</div>
@@ -413,6 +479,46 @@
     </div>
 </div>
 
+<!-- Custom Driver Dropdown Styles -->
+<style>
+    .custom-driver-dropdown .dropdown-menu {
+        min-width: 100%;
+    }
+    
+    .custom-driver-dropdown .list-group-item {
+        cursor: pointer;
+        border-left: none;
+        border-right: none;
+    }
+    
+    .custom-driver-dropdown .list-group-item:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .custom-driver-dropdown .list-group-item.active {
+        background-color: #0d6efd;
+        color: white;
+    }
+    
+    .custom-driver-dropdown .list-group-item:first-child {
+        border-top: none;
+    }
+    
+    .custom-driver-dropdown .list-group-item:last-child {
+        border-bottom: none;
+    }
+    
+    .custom-driver-dropdown #driver_search {
+        border: none;
+        box-shadow: none;
+    }
+    
+    .custom-driver-dropdown #driver_search:focus {
+        border: none;
+        box-shadow: none;
+    }
+</style>
+
 <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -429,14 +535,228 @@
 document.addEventListener('DOMContentLoaded', function () {
     const driverSelect = document.getElementById('driver_id');
     const vehicleSelect = document.getElementById('vehicle_id');
+    const flotteSelect = document.getElementById('flotte_id');
+    const driverDropdownToggle = document.getElementById('driver_dropdown_toggle');
+    const driverDropdownDisplay = document.getElementById('driver_dropdown_display');
+    const driverDropdownOptions = document.getElementById('driver_dropdown_options');
+    const driverSearchInput = document.getElementById('driver_search');
+    const driverDropdownMenu = document.getElementById('driver_dropdown_menu');
 
-    // Update vehicle based on driver selection
-    if (driverSelect && vehicleSelect) {
-        driverSelect.addEventListener('change', function() {
-            const selectedOption = driverSelect.options[driverSelect.selectedIndex];
-            const assignedVehicleId = selectedOption ? selectedOption.getAttribute('data-vehicle') : '';
-            if (assignedVehicleId && !vehicleSelect.value) {
-                vehicleSelect.value = assignedVehicleId;
+    // Store all driver options for filtering
+    let allDriverOptions = [];
+    if (driverSelect) {
+        for (let i = 0; i < driverSelect.options.length; i++) {
+            const option = driverSelect.options[i];
+            if (option.value) { // Skip placeholder
+                allDriverOptions.push({
+                    value: option.value,
+                    text: option.text,
+                    flotteId: option.getAttribute('data-flotte-id') || '',
+                    vehicleId: option.getAttribute('data-vehicle') || ''
+                });
+            }
+        }
+    }
+
+    let currentSearchTerm = '';
+    let selectedDriverValue = driverSelect ? driverSelect.value : '';
+
+    // Function to render driver options in dropdown
+    function renderDriverOptions(selectedFlotteId, searchTerm) {
+        if (!driverDropdownOptions) return;
+
+        // Normalize search term for case-insensitive matching
+        const normalizedSearch = (searchTerm || '').toLowerCase().trim();
+
+        // Clear current options
+        driverDropdownOptions.innerHTML = '';
+
+        // Filter and render options
+        let hasOptions = false;
+        allDriverOptions.forEach(function(option) {
+            // Check fleet filter
+            const matchesFleet = !selectedFlotteId || selectedFlotteId === '' || option.flotteId === selectedFlotteId;
+            
+            // Check search filter
+            const matchesSearch = !normalizedSearch || option.text.toLowerCase().includes(normalizedSearch);
+
+            // If both filters pass, add the option
+            if (matchesFleet && matchesSearch) {
+                const listItem = document.createElement('a');
+                listItem.href = '#';
+                listItem.className = 'list-group-item list-group-item-action' + (option.value === selectedDriverValue ? ' active' : '');
+                listItem.setAttribute('data-value', option.value);
+                listItem.setAttribute('data-vehicle', option.vehicleId);
+                listItem.setAttribute('data-flotte-id', option.flotteId);
+                listItem.textContent = option.text;
+                
+                listItem.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    selectDriver(option.value, option.text, option.vehicleId, option.flotteId);
+                    
+                    // Close dropdown
+                    const dropdown = bootstrap.Dropdown.getInstance(driverDropdownToggle);
+                    if (dropdown) {
+                        dropdown.hide();
+                    }
+                });
+                
+                driverDropdownOptions.appendChild(listItem);
+                hasOptions = true;
+            }
+        });
+
+        // Show message if no options
+        if (!hasOptions) {
+            const noResults = document.createElement('div');
+            noResults.className = 'list-group-item text-muted text-center';
+            noResults.textContent = '{{ __('messages.no_drivers_found') ?? 'No drivers found' }}';
+            driverDropdownOptions.appendChild(noResults);
+        }
+    }
+
+    // Function to select a driver
+    function selectDriver(value, text, vehicleId, flotteId) {
+        selectedDriverValue = value;
+        
+        // Update hidden select
+        if (driverSelect) {
+            driverSelect.value = value;
+            // Trigger change event
+            driverSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        
+        // Update display
+        if (driverDropdownDisplay) {
+            driverDropdownDisplay.textContent = text || '{{ __('messages.select_driver') }}';
+        }
+        
+        // Update vehicle
+        if (vehicleSelect && vehicleId) {
+            vehicleSelect.value = vehicleId;
+        }
+        
+        // Auto-select flotte based on selected driver
+        if (flotteSelect && flotteId) {
+            for (let i = 0; i < flotteSelect.options.length; i++) {
+                if (flotteSelect.options[i].value === flotteId) {
+                    flotteSelect.value = flotteId;
+                    // Re-render drivers after fleet change
+                    renderDriverOptions(flotteId, currentSearchTerm);
+                    break;
+                }
+            }
+        }
+        
+        // Clear search
+        if (driverSearchInput) {
+            driverSearchInput.value = '';
+            currentSearchTerm = '';
+        }
+    }
+
+    // Initialize display with current selection
+    if (driverSelect && driverSelect.value && driverDropdownDisplay) {
+        const selectedOption = driverSelect.options[driverSelect.selectedIndex];
+        if (selectedOption) {
+            driverDropdownDisplay.textContent = selectedOption.text;
+            selectedDriverValue = driverSelect.value;
+        }
+    }
+
+    // Filter drivers when fleet selection changes
+    if (flotteSelect) {
+        flotteSelect.addEventListener('change', function() {
+            const selectedFlotteId = this.value;
+            renderDriverOptions(selectedFlotteId, currentSearchTerm);
+        });
+    }
+
+    // Filter drivers when search term changes
+    if (driverSearchInput) {
+        driverSearchInput.addEventListener('input', function() {
+            currentSearchTerm = this.value;
+            const selectedFlotteId = flotteSelect ? flotteSelect.value : '';
+            renderDriverOptions(selectedFlotteId, currentSearchTerm);
+        });
+        
+        // Prevent dropdown from closing when clicking inside
+        if (driverDropdownMenu) {
+            driverDropdownMenu.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+        }
+        
+        // Focus search when dropdown opens
+        if (driverDropdownToggle) {
+            driverDropdownToggle.addEventListener('shown.bs.dropdown', function() {
+                setTimeout(function() {
+                    if (driverSearchInput) {
+                        driverSearchInput.focus();
+                    }
+                }, 100);
+            });
+        }
+    }
+
+    // Initial render
+    const initialFlotteId = flotteSelect ? flotteSelect.value : '';
+    renderDriverOptions(initialFlotteId, currentSearchTerm);
+
+    // Format violation time input (HH:MM:SS) - text input with auto-formatting
+    const violationTimeInput = document.getElementById('violation_time');
+    if (violationTimeInput) {
+        // Auto-format on blur to ensure proper format
+        violationTimeInput.addEventListener('blur', function() {
+            if (!this.value) return;
+            
+            // Remove any non-digit characters except colons
+            let cleaned = this.value.replace(/[^\d:]/g, '');
+            
+            // Parse the time value
+            const timeMatch = cleaned.match(/(\d{1,2}):?(\d{0,2}):?(\d{0,2})/);
+            if (timeMatch) {
+                let hours = parseInt(timeMatch[1] || '0', 10);
+                let minutes = parseInt(timeMatch[2] || '0', 10);
+                let seconds = parseInt(timeMatch[3] || '0', 10);
+                
+                // Validate and clamp values
+                if (hours < 0) hours = 0;
+                if (hours > 23) hours = 23;
+                if (minutes < 0) minutes = 0;
+                if (minutes > 59) minutes = 59;
+                if (seconds < 0) seconds = 0;
+                if (seconds > 59) seconds = 59;
+                
+                // Format as HH:MM:SS
+                const formattedTime = String(hours).padStart(2, '0') + ':' + 
+                                    String(minutes).padStart(2, '0') + ':' + 
+                                    String(seconds).padStart(2, '0');
+                
+                this.value = formattedTime;
+            }
+        });
+        
+        // Auto-insert colons while typing
+        violationTimeInput.addEventListener('input', function(e) {
+            let value = this.value.replace(/[^\d]/g, ''); // Remove non-digits
+            
+            // Auto-format as user types (HH:MM:SS)
+            if (value.length > 0) {
+                let formatted = value;
+                if (value.length > 2) {
+                    formatted = value.substring(0, 2) + ':' + value.substring(2);
+                }
+                if (value.length > 4) {
+                    formatted = value.substring(0, 2) + ':' + value.substring(2, 4) + ':' + value.substring(4, 6);
+                }
+                // Only update if the formatted value is different to avoid cursor jumping
+                if (formatted !== this.value && formatted.length <= 8) {
+                    const cursorPos = this.selectionStart;
+                    this.value = formatted;
+                    // Try to maintain cursor position
+                    this.setSelectionRange(Math.min(cursorPos + (formatted.length - value.length), formatted.length), Math.min(cursorPos + (formatted.length - value.length), formatted.length));
+                }
             }
         });
     }
@@ -456,33 +776,70 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!violationMap) {
             const latInput = document.getElementById('location_lat');
             const lngInput = document.getElementById('location_lng');
+            const locationInput = document.getElementById('location');
             const coordsLabel = document.getElementById('location-coordinates-label');
 
-            // Default center (Morocco)
-            let initialLat = 33.5731;
-            let initialLng = -7.5898;
-            let initialZoom = 7;
-
-            // If we already have stored coordinates, use them and zoom in
-            if (latInput && lngInput && latInput.value && lngInput.value) {
-                const storedLat = parseFloat(latInput.value);
-                const storedLng = parseFloat(lngInput.value);
-                if (!isNaN(storedLat) && !isNaN(storedLng)) {
-                    initialLat = storedLat;
-                    initialLng = storedLng;
-                    initialZoom = 13;
+            // Reverse geocoding function to get location name from coordinates
+            async function reverseGeocode(lat, lng) {
+                try {
+                    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`;
+                    const response = await fetch(url, {
+                        headers: {
+                            'Accept': 'application/json',
+                            'User-Agent': 'GCV Violation System'
+                        }
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Reverse geocoding request failed');
+                    }
+                    
+                    const data = await response.json();
+                    
+                    if (data && data.address) {
+                        // Try to get a meaningful location name
+                        const address = data.address;
+                        let locationName = '';
+                        
+                        // Priority: city/town/village > municipality > county > state
+                        if (address.city) {
+                            locationName = address.city;
+                        } else if (address.town) {
+                            locationName = address.town;
+                        } else if (address.village) {
+                            locationName = address.village;
+                        } else if (address.municipality) {
+                            locationName = address.municipality;
+                        } else if (address.county) {
+                            locationName = address.county;
+                        } else if (address.state) {
+                            locationName = address.state;
+                        }
+                        
+                        // If we have a road/street, add it
+                        if (address.road && locationName) {
+                            locationName = address.road + ', ' + locationName;
+                        } else if (address.road && !locationName) {
+                            locationName = address.road;
+                        }
+                        
+                        // Fallback to display_name if nothing found
+                        if (!locationName && data.display_name) {
+                            const parts = data.display_name.split(',');
+                            locationName = parts[0].trim();
+                        }
+                        
+                        return locationName || '';
+                    }
+                    
+                    return '';
+                } catch (error) {
+                    console.error('Reverse geocoding error:', error);
+                    return '';
                 }
             }
 
-            violationMap = L.map(mapContainer).setView([initialLat, initialLng], initialZoom);
-
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19,
-                attribution: '&copy; OpenStreetMap contributors',
-            }).addTo(violationMap);
-
-
-            function updateMarkerAndInputs(lat, lng) {
+            async function updateMarkerAndInputs(lat, lng) {
                 if (violationMarker) {
                     violationMarker.setLatLng([lat, lng]);
                 } else {
@@ -496,16 +853,48 @@ document.addEventListener('DOMContentLoaded', function () {
                     coordsLabel.innerHTML = label + ': ' +
                         '<span class="fw-semibold">' + lat.toFixed(6) + ', ' + lng.toFixed(6) + '</span>';
                 }
+                
+                // Reverse geocode to get location name and fill the location input
+                if (locationInput) {
+                    // Show loading state
+                    const originalValue = locationInput.value;
+                    locationInput.value = '{{ __('messages.loading_location') ?? 'Loading location...' }}';
+                    locationInput.disabled = true;
+                    
+                    try {
+                        const locationName = await reverseGeocode(lat, lng);
+                        if (locationName) {
+                            locationInput.value = locationName;
+                        } else {
+                            // If reverse geocoding fails, keep original value or use coordinates
+                            locationInput.value = originalValue || `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+                        }
+                    } catch (error) {
+                        // On error, keep original value or use coordinates
+                        locationInput.value = originalValue || `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+                    } finally {
+                        locationInput.disabled = false;
+                    }
+                }
             }
 
-            // If coordinates were already present, drop a marker there
+            violationMap = L.map(mapContainer).setView([33.5731, -7.5898], 7); // Default center: Morocco
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; OpenStreetMap contributors',
+            }).addTo(violationMap);
+
+            // Initialize from existing values if any
             if (latInput && lngInput && latInput.value && lngInput.value) {
                 const lat = parseFloat(latInput.value);
                 const lng = parseFloat(lngInput.value);
                 if (!isNaN(lat) && !isNaN(lng)) {
                     updateMarkerAndInputs(lat, lng);
+                    violationMap.setView([lat, lng], 13);
                 }
             }
+
             violationMap.on('click', function (e) {
                 updateMarkerAndInputs(e.latlng.lat, e.latlng.lng);
             });

@@ -38,7 +38,7 @@ class DriverViolation extends Model
 
     protected $casts = [
         'violation_date' => 'date',
-        'violation_time' => 'datetime:H:i',
+        'violation_time' => 'datetime:H:i:s',
         'speed' => 'decimal:2',
         'speed_limit' => 'decimal:2',
         'violation_duration_seconds' => 'integer',

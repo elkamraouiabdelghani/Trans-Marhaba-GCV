@@ -23,9 +23,10 @@ class DriverViolationRequest extends FormRequest
     {
         return [
             'driver_id' => ['required', 'exists:drivers,id'],
+            'flotte_id' => ['nullable', 'exists:flottes,id'],
             'violation_type_id' => ['required', 'exists:violation_types,id'],
             'violation_date' => ['required', 'date'],
-            'violation_time' => ['nullable', 'date_format:H:i'],
+            'violation_time' => ['nullable', 'date_format:H:i:s'],
             'speed' => ['nullable', 'numeric', 'min:0'],
             'speed_limit' => ['nullable', 'numeric', 'min:0'],
             'violation_duration_seconds' => ['nullable', 'integer', 'min:0'],
@@ -38,8 +39,8 @@ class DriverViolationRequest extends FormRequest
             'description' => ['nullable', 'string'],
             'document' => ['nullable', 'array'],
             'document.*' => ['file', 'max:10240'],
-            'analysis' => ['required', 'string'],
-            'action_plan' => ['required', 'string'],
+            'analysis' => ['nullable', 'string'],
+            'action_plan' => ['nullable', 'string'],
             'evidence' => ['nullable', 'file', 'max:10240'],
         ];
     }
