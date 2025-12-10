@@ -198,7 +198,7 @@
                                 <th>{{ __('messages.type') ?? 'Type' }}</th>
                                 <th>{{ __('messages.moniteur') }}</th>
                                 <th>{{ __('messages.status') }}</th>
-                                <th>{{ __('messages.score') ?? 'Score' }}</th>
+                                <th>{{ __('messages.checklist_score') ?? 'Checklist Score' }}</th>
                                 <th>{{ __('messages.route') ?? 'Route' }}</th>
                                 <th>{{ __('messages.distance') ?? 'Distance' }}</th>
                                 <th class="text-end pe-4">{{ __('messages.action') }}</th>
@@ -257,9 +257,14 @@
                                         </span>
                                     </td>
                                     <td>
-                                        @if($session->score !== null)
-                                            <span class="badge bg-{{ $session->score >= 70 ? 'success' : ($session->score >= 50 ? 'warning' : 'danger') }}-opacity-10 text-{{ $session->score >= 70 ? 'success' : ($session->score >= 50 ? 'warning' : 'danger') }}">
-                                                {{ $session->score }}/100
+                                        @if($session->checklist)
+                                            @php
+                                                $totalScore = $session->checklist->getTotalScore();
+                                                $status = $session->checklist->getScoreStatus();
+                                                $statusColor = $session->checklist->getScoreStatusColor();
+                                            @endphp
+                                            <span class="badge text-{{ $statusColor }}">
+                                                {{ $totalScore }} - {{ $status }}
                                             </span>
                                         @else
                                             <span class="text-muted">-</span>
@@ -319,9 +324,9 @@
                                                     <i class="bi bi-check-circle"></i>
                                                 </button>
                                             @endif
-                                            @if ($session->status == 'completed')
-                                                <a href="{{ route('coaching-cabines.pdf', $session) }}" class="btn btn-danger btn-sm" target="_blank" title="{{ __('messages.export_pdf') }}">
-                                                    <i class="bi bi-file-pdf"></i>
+                                            @if (!isset($session->checklist) || !$session->checklist)
+                                                <a href="{{ route('coaching.checklists.create', $session) }}" class="btn btn-outline-primary btn-sm" title="{{ __('messages.add_checklist') ?? 'Add Checklist' }}">
+                                                    <i class="bi bi-clipboard-plus"></i>
                                                 </a>
                                             @endif
                                             <button
@@ -340,7 +345,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="8" class="text-center py-5 text-muted">
+                                    <td colspan="10" class="text-center py-5 text-muted">
                                         <i class="bi bi-inbox fs-1 d-block mb-2"></i>
                                         {{ __('messages.coaching_cabines_empty') }}
                                     </td>

@@ -205,7 +205,34 @@ Route::middleware('auth')->group(function () {
     Route::get('/coaching-cabines/planning/{year}/pdf', [CoachingCabineController::class, 'planningPdf'])->name('coaching-cabines.planning.pdf');
     Route::match(['get', 'post'], '/coaching-cabines/{coachingCabine}/pdf', [CoachingCabineController::class, 'pdf'])->name('coaching-cabines.pdf');
     Route::put('/coaching-cabines/{coachingCabine}/complete', [CoachingCabineController::class, 'complete'])->name('coaching-cabines.complete');
+    Route::get('/coaching-cabines/{coachingCabine}/checklists/create', [\App\Http\Controllers\CoachingChecklistController::class, 'create'])->name('coaching.checklists.create');
+    Route::post('/coaching-cabines/{coachingCabine}/checklists', [\App\Http\Controllers\CoachingChecklistController::class, 'store'])->name('coaching.checklists.store');
+    Route::get('/coaching-cabines/{coachingCabine}/checklists/{checklist}', [\App\Http\Controllers\CoachingChecklistController::class, 'show'])->name('coaching.checklists.show');
+    Route::get('/coaching-cabines/{coachingCabine}/checklists/{checklist}/pdf', [\App\Http\Controllers\CoachingChecklistController::class, 'pdf'])->name('coaching.checklists.pdf');
     Route::resource('coaching-cabines', CoachingCabineController::class);
+    
+    // Coaching Checklist Categories (CRUD)
+    Route::resource('coaching-checklist-categories', \App\Http\Controllers\CoachingChecklistCategoryController::class)
+        ->except(['create', 'edit'])
+        ->parameters(['coaching-checklist-categories' => 'category'])
+        ->names([
+            'index' => 'coaching.checklists.categories.index',
+            'store' => 'coaching.checklists.categories.store',
+            'show' => 'coaching.checklists.categories.show',
+            'update' => 'coaching.checklists.categories.update',
+            'destroy' => 'coaching.checklists.categories.destroy',
+        ]);
+    Route::post('/coaching-checklist-categories/{category}/toggle-status', [\App\Http\Controllers\CoachingChecklistCategoryController::class, 'toggleStatus'])->name('coaching.checklists.categories.toggle-status');
+    
+    // Coaching Checklist Items (CRUD - only store, update, destroy via modals)
+    Route::resource('coaching-checklist-items', \App\Http\Controllers\CoachingChecklistItemController::class)
+        ->except(['index', 'create', 'edit', 'show'])
+        ->parameters(['coaching-checklist-items' => 'item'])
+        ->names([
+            'store' => 'coaching.checklists.items.store',
+            'update' => 'coaching.checklists.items.update',
+            'destroy' => 'coaching.checklists.items.destroy',
+        ]);
 
     // Driver Handovers
     Route::get('/driver-handovers/export', [DriverHandoverController::class, 'export'])->name('driver-handovers.export');

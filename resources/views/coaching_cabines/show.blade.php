@@ -221,6 +221,18 @@
                                     <i class="bi bi-check-circle me-1"></i> {{ __('messages.complete_session') ?? 'Compléter la session' }}
                                 </button>
                             @endif
+                            @if ($coachingCabine->checklist)
+                                <a href="{{ route('coaching.checklists.show', [$coachingCabine, $coachingCabine->checklist]) }}" class="btn btn-outline-info btn-sm">
+                                    <i class="bi bi-eye me-1"></i> {{ __('messages.view_checklist') ?? 'View Checklist' }}
+                                </a>
+                                <a href="{{ route('coaching.checklists.pdf', [$coachingCabine, $coachingCabine->checklist]) }}" class="btn btn-outline-danger btn-sm" target="_blank" rel="noopener">
+                                    <i class="bi bi-file-earmark-text me-1"></i> {{ __('messages.download_checklist_pdf') ?? 'Download Checklist PDF' }}
+                                </a>
+                            @else
+                                <a href="{{ route('coaching.checklists.create', $coachingCabine) }}" class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-clipboard-plus me-1"></i> {{ __('messages.add_checklist') ?? 'Add Checklist' }}
+                                </a>
+                            @endif
                             <hr class="my-2">
                             <a href="{{ route('drivers.show', $coachingCabine->driver) }}" class="btn btn-outline-primary btn-sm">
                                 <i class="bi bi-person me-1"></i> {{ __('messages.view_driver') ?? 'Voir le chauffeur' }}

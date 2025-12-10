@@ -18,7 +18,7 @@ class CoachingCabineController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = CoachingSession::with(['driver', 'flotte']);
+            $query = CoachingSession::with(['driver', 'flotte', 'checklist']);
 
             // Apply filters
             if ($request->filled('driver_id')) {
@@ -84,7 +84,8 @@ class CoachingCabineController extends Controller
             $completed = $buildStatsQuery()->where('status', 'completed')->count();
             $completedPercentage = $total > 0 ? round(($completed / $total) * 100, 2) : 0;
 
-            $sessions = $query->orderBy('date', 'desc')
+            $sessions = $query->with(['checklist.answers'])
+                ->orderBy('date', 'desc')
                 ->orderBy('created_at', 'desc')
                 ->paginate(15);
 

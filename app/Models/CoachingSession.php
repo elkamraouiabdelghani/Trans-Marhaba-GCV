@@ -132,6 +132,14 @@ class CoachingSession extends Model
     }
 
     /**
+     * Checklist attached to this coaching session.
+     */
+    public function checklist(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(CoachingSessionChecklist::class, 'coaching_session_id');
+    }
+
+    /**
      * Check if the session is planned.
      */
     public function isPlanned(): bool

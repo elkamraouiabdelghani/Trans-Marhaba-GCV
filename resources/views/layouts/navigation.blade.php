@@ -104,10 +104,30 @@
             </a>
         </li>
         <li class="mb-1">
-            <a href="{{ route('coaching-cabines.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('coaching-cabines.index') || request()->routeIs('coaching-cabines.create') || request()->routeIs('coaching-cabines.edit') || request()->routeIs('coaching-cabines.show') ? 'active' : '' }}">
+            <a href="#"
+               class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('coaching-cabines.*') || request()->routeIs('coaching.checklists.*') ? 'active' : '' }}"
+               data-bs-toggle="collapse"
+               data-bs-target="#coachingCabinesSubmenu"
+               aria-expanded="{{ request()->routeIs('coaching-cabines.*') || request()->routeIs('coaching.checklists.*') ? 'true' : 'false' }}"
+               aria-controls="coachingCabinesSubmenu">
                 <i class="bi bi-person-video3 me-2 text-gray-600 sidebar-icon"></i>
                 <span class="sidebar-text">{{ __('messages.coaching_sessions') }}</span>
+                <i class="bi bi-chevron-down ms-auto sidebar-icon"></i>
             </a>
+            <ul class="collapse list-unstyled ms-3 {{ request()->routeIs('coaching-cabines.*') || request()->routeIs('coaching.checklists.*') ? 'show' : '' }}" id="coachingCabinesSubmenu">
+                <li class="mb-1">
+                    <a href="{{ route('coaching-cabines.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('coaching-cabines.*') ? 'active' : '' }}">
+                        <i class="bi bi-person-video3 me-2 text-gray-600 sidebar-icon"></i>
+                        <span class="sidebar-text">{{ __('messages.coaching_sessions') }}</span>
+                    </a>
+                </li>
+                <li class="mb-1">
+                    <a href="{{ route('coaching.checklists.categories.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('coaching.checklists.*') ? 'active' : '' }}">
+                        <i class="bi bi-list-check me-2 text-gray-600 sidebar-icon"></i>
+                        <span class="sidebar-text">{{ __('messages.coaching_checklist_title') ?? 'Checklists' }}</span>
+                    </a>
+                </li>
+            </ul>
         </li>
         <li class="mb-2">
             <a href="{{ route('concerns.driver-concerns.index') }}"
@@ -389,10 +409,30 @@
                 </a>
             </li>
             <li class="mb-1">
-                <a href="{{ route('coaching-cabines.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('coaching-cabines.index') || request()->routeIs('coaching-cabines.create') || request()->routeIs('coaching-cabines.edit') || request()->routeIs('coaching-cabines.show') ? 'active' : '' }}">
+                <a href="#"
+                   class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('coaching-cabines.*') || request()->routeIs('coaching.checklists.*') ? 'active' : '' }}"
+                   data-bs-toggle="collapse"
+                   data-bs-target="#coachingCabinesSubmenuMobile"
+                   aria-expanded="{{ request()->routeIs('coaching-cabines.*') || request()->routeIs('coaching.checklists.*') ? 'true' : 'false' }}"
+                   aria-controls="coachingCabinesSubmenuMobile">
                     <i class="bi bi-person-video3 me-2 text-gray-600 sidebar-icon"></i>
                     <span class="sidebar-text">{{ __('messages.coaching_sessions') }}</span>
+                    <i class="bi bi-chevron-down ms-auto sidebar-icon"></i>
                 </a>
+                <ul class="collapse list-unstyled ms-3 {{ request()->routeIs('coaching-cabines.*') || request()->routeIs('coaching.checklists.*') ? 'show' : '' }}" id="coachingCabinesSubmenuMobile">
+                    <li class="mb-1">
+                        <a href="{{ route('coaching-cabines.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('coaching-cabines.*') ? 'active' : '' }}">
+                            <i class="bi bi-person-video3 me-2 text-gray-600 sidebar-icon"></i>
+                            <span class="sidebar-text">{{ __('messages.coaching_sessions') }}</span>
+                        </a>
+                    </li>
+                    <li class="mb-1">
+                        <a href="{{ route('coaching.checklists.categories.index') }}" class="text-dark text-decoration-none d-flex align-items-center p-2 {{ request()->routeIs('coaching.checklists.*') ? 'active' : '' }}">
+                            <i class="bi bi-list-check me-2 text-gray-600 sidebar-icon"></i>
+                            <span class="sidebar-text">{{ __('messages.coaching_checklist_title') ?? 'Checklists' }}</span>
+                        </a>
+                    </li>
+                </ul>
             </li>
             <li class="mb-2">
                 <a href="{{ route('concerns.driver-concerns.index') }}"
