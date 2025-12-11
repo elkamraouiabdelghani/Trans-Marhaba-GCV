@@ -145,7 +145,7 @@
                     </div>
                     <div class="col-md-2">
                         <label for="year" class="form-label small">{{ __('messages.year') }}</label>
-                        <input type="number" name="year" id="year" class="form-control form-control-sm" value="{{ request('year', date('Y')) }}" min="2020" max="2100">
+                        <input type="number" name="year" id="year" class="form-control form-control-sm" value="{{ $year }}" min="2000" max="3000">
                     </div>
                     <div class="col-md-12 d-flex gap-2 justify-content-end">
                         <button type="submit" class="btn btn-primary btn-sm">
@@ -329,17 +329,6 @@
                                                     <i class="bi bi-clipboard-plus"></i>
                                                 </a>
                                             @endif
-                                            <button
-                                                type="button"
-                                                class="btn btn-outline-danger"
-                                                data-bs-toggle="modal"
-                                                data-bs-target="#deleteSessionModal"
-                                                data-session-id="{{ $session->id }}"
-                                                data-session-driver="{{ $session->driver->full_name ?? '' }}"
-                                                title="{{ __('messages.delete') }}"
-                                            >
-                                                <i class="bi bi-trash"></i>
-                                            </button>
                                         </div>
                                     </td>
                                 </tr>
@@ -356,16 +345,6 @@
                 </div>
             </div>
 
-            @if ($sessions instanceof \Illuminate\Contracts\Pagination\LengthAwarePaginator)
-                <div class="card-footer bg-white border-0">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div class="text-muted small">
-                            Affichage de {{ $sessions->firstItem() }} à {{ $sessions->lastItem() }} sur {{ $sessions->total() }} résultats
-                        </div>
-                        {{ $sessions->links() }}
-                    </div>
-                </div>
-            @endif
         </div>
     </div>
 
@@ -373,56 +352,266 @@
     @foreach($sessions as $session)
         @if($session->status != 'completed')
         <div class="modal fade" id="completeModal{{ $session->id }}" tabindex="-1" aria-labelledby="completeModalLabel{{ $session->id }}" aria-hidden="true">
-            <div class="modal-dialog modal-lg">
+            <div class="modal-dialog modal-xl modal-dialog-scrollable">
                 <div class="modal-content">
                     <form action="{{ route('coaching-cabines.complete', $session) }}" method="POST">
                         @csrf
                         @method('PUT')
-                        <div class="modal-header">
+                        <input type="hidden" name="return_url" value="{{ url()->full() }}">
+                        <div class="modal-header bg-success text-white">
                             <h5 class="modal-title" id="completeModalLabel{{ $session->id }}">
-                                <i class="bi bi-check-circle me-2 text-success"></i>
+                                <i class="bi bi-check-circle me-2"></i>
                                 {{ __('messages.complete_session') ?? 'Compléter la session' }} - {{ $session->driver->full_name ?? '' }}
                             </h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
-                        <div class="modal-body">
+                        <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                            <div class="alert alert-info mb-3">
+                                <i class="bi bi-info-circle me-2"></i>
+                                <small>{{ __('messages.complete_session_info') ?? 'Please fill in all the required information to complete this coaching session.' }}</small>
+                            </div>
+                            
                             <div class="row g-3">
+                                {{-- Session Information Section --}}
+                                <div class="col-12">
+                                    <h6 class="fw-semibold mb-3">
+                                        <i class="bi bi-info-circle me-2 text-primary"></i>{{ __('messages.session_information') ?? 'Session Information' }}
+                                    </h6>
+                                </div>
+
                                 <div class="col-md-6">
-                                    <label for="score{{ $session->id }}" class="form-label fw-semibold">{{ __('messages.score') }} <span class="text-danger">*</span></label>
+                                    <label class="form-label fw-semibold">
+                                        {{ __('messages.driver') }}
+                                    </label>
+                                    <input type="text" class="form-control bg-light" value="{{ $session->driver->full_name ?? '-' }}" readonly>
+                                    <input type="hidden" name="driver_id" value="{{ $session->driver_id }}">
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">
+                                        {{ __('messages.flotte') }}
+                                    </label>
+                                    <input type="text" class="form-control bg-light" value="{{ $session->flotte->name ?? '-' }}" readonly>
+                                    <input type="hidden" name="flotte_id" value="{{ $session->flotte_id }}">
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="date{{ $session->id }}" class="form-label fw-semibold">
+                                        {{ __('messages.from_date') }}
+                                    </label>
+                                    <input type="date" name="date" id="date{{ $session->id }}" class="form-control @error('date') is-invalid @enderror" value="{{ old('date', $session->date?->format('Y-m-d')) }}">
+                                    @error('date')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="date_fin{{ $session->id }}" class="form-label fw-semibold">
+                                        {{ __('messages.date_fin') }}
+                                    </label>
+                                    <input type="date" name="date_fin" id="date_fin{{ $session->id }}" class="form-control @error('date_fin') is-invalid @enderror" value="{{ old('date_fin', $session->date_fin?->format('Y-m-d')) }}">
+                                    @error('date_fin')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="type{{ $session->id }}" class="form-label fw-semibold">
+                                        {{ __('messages.type') }}
+                                    </label>
+                                    <select name="type" id="type{{ $session->id }}" class="form-select @error('type') is-invalid @enderror">
+                                        @foreach(\App\Models\CoachingSession::getTypes() as $type)
+                                            <option value="{{ $type }}" {{ old('type', $session->type) == $type ? 'selected' : '' }}>
+                                                {{ \App\Models\CoachingSession::getTypeTitles()[$type] }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @error('type')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="moniteur{{ $session->id }}" class="form-label fw-semibold">
+                                        {{ __('messages.moniteur') }}
+                                    </label>
+                                    <select name="moniteur" id="moniteur{{ $session->id }}" class="form-select @error('moniteur') is-invalid @enderror">
+                                        <option value="">{{ __('messages.select_moniteur') ?? 'Select Moniteur' }}</option>
+                                        <option value="Redouan Issa" {{ old('moniteur', $session->moniteur) === 'Redouan Issa' ? 'selected' : '' }}>Redouan Issa</option>
+                                        <option value="Fathlah Khalid" {{ old('moniteur', $session->moniteur) === 'Fathlah Khalid' ? 'selected' : '' }}>Fathlah Khalid</option>
+                                    </select>
+                                    @error('moniteur')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="validity_days{{ $session->id }}" class="form-label fw-semibold">
+                                        {{ __('messages.validity_days') }}
+                                    </label>
+                                    <input type="number" name="validity_days" id="validity_days{{ $session->id }}" class="form-control @error('validity_days') is-invalid @enderror" value="{{ old('validity_days', $session->validity_days) }}" min="1">
+                                    @error('validity_days')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="score{{ $session->id }}" class="form-label fw-semibold">
+                                        {{ __('messages.score') }} <span class="text-danger">*</span>
+                                    </label>
                                     <input type="number" name="score" id="score{{ $session->id }}" class="form-control @error('score') is-invalid @enderror" value="{{ old('score', $session->score) }}" min="0" max="100" required>
-                                    <small class="text-muted">{{ __('messages.score_range') ?? 'Entre 0 et 100' }}</small>
+                                    <small class="text-muted">{{ __('messages.score_range') ?? 'Between 0 and 100' }}</small>
                                     @error('score')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
 
                                 <div class="col-md-6">
-                                    <label for="next_planning_session{{ $session->id }}" class="form-label fw-semibold">{{ __('messages.next_planning_session') }}</label>
+                                    <label for="next_planning_session{{ $session->id }}" class="form-label fw-semibold">
+                                        {{ __('messages.next_planning_session') }}
+                                    </label>
                                     <input type="date" name="next_planning_session" id="next_planning_session{{ $session->id }}" class="form-control @error('next_planning_session') is-invalid @enderror" value="{{ old('next_planning_session', $session->next_planning_session?->format('Y-m-d')) }}">
+                                    <small class="text-muted">{{ __('messages.next_planning_session_hint') ?? 'Optional: Set the date for the next planned session' }}</small>
                                     @error('next_planning_session')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
 
                                 <div class="col-12">
-                                    <label for="route_taken{{ $session->id }}" class="form-label fw-semibold">{{ __('messages.route_taken') }}</label>
-                                    <textarea name="route_taken" id="route_taken{{ $session->id }}" rows="3" class="form-control @error('route_taken') is-invalid @enderror">{{ old('route_taken', $session->route_taken) }}</textarea>
-                                    @error('route_taken')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
+                                    <hr class="my-2">
                                 </div>
 
                                 <div class="col-12">
-                                    <label for="assessment{{ $session->id }}" class="form-label fw-semibold">{{ __('messages.assessment') }}</label>
-                                    <textarea name="assessment" id="assessment{{ $session->id }}" rows="4" class="form-control @error('assessment') is-invalid @enderror">{{ old('assessment', $session->assessment) }}</textarea>
+                                    <label class="form-label fw-semibold mb-1">{{ __('messages.route_taken') }}</label>
+
+                                    <!-- Hidden inputs for coordinates -->
+                                    <input type="hidden" name="from_latitude" id="from_latitude_{{ $session->id }}" value="{{ old('from_latitude', $session->from_latitude) }}">
+                                    <input type="hidden" name="from_longitude" id="from_longitude_{{ $session->id }}" value="{{ old('from_longitude', $session->from_longitude) }}">
+                                    <input type="hidden" name="to_latitude" id="to_latitude_{{ $session->id }}" value="{{ old('to_latitude', $session->to_latitude) }}">
+                                    <input type="hidden" name="to_longitude" id="to_longitude_{{ $session->id }}" value="{{ old('to_longitude', $session->to_longitude) }}">
+                                    <input type="hidden" name="from_location_name" id="from_location_name_{{ $session->id }}" value="{{ old('from_location_name', $session->from_location_name) }}">
+                                    <input type="hidden" name="to_location_name" id="to_location_name_{{ $session->id }}" value="{{ old('to_location_name', $session->to_location_name) }}">
+
+                                    <div class="row g-3">
+                                        <div class="col-lg-6">
+                                            <div class="card border-0">
+                                                <div class="card-body">
+                                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                                        <div>
+                                                            <h6 class="fw-semibold mb-0">{{ __('messages.from_location') }}</h6>
+                                                            <small class="text-muted" id="from-coords-label-{{ $session->id }}">
+                                                                @php
+                                                                    $fromLat = old('from_latitude', $session->from_latitude);
+                                                                    $fromLng = old('from_longitude', $session->from_longitude);
+                                                                    $fromName = old('from_location_name', $session->from_location_name);
+                                                                @endphp
+                                                                @if($fromLat && $fromLng)
+                                                                    @if($fromName)
+                                                                        <span class="fw-semibold">{{ $fromName }}</span><br>
+                                                                        <small class="text-muted">{{ __('messages.location_coords_label') ?? 'Coordinates' }}: {{ $fromLat }}, {{ $fromLng }}</small>
+                                                                    @else
+                                                                        {{ __('messages.location_coords_label') ?? 'Coordinates' }}:
+                                                                        <span class="fw-semibold">{{ $fromLat }}, {{ $fromLng }}</span>
+                                                                    @endif
+                                                                @else
+                                                                    {{ __('messages.location_map_help') ?? 'Search a city or village below.' }}
+                                                                @endif
+                                                            </small>
+                                                        </div>
+                                                    </div>
+                                                    <div class="mb-2">
+                                                        <label for="from_city_search_input_{{ $session->id }}" class="form-label small mb-1">
+                                                            <i class="bi bi-search me-1"></i> {{ __('messages.search_city_village') ?? 'Search City or Village' }}
+                                                        </label>
+                                                        <div class="input-group input-group-sm">
+                                                            <input type="text" id="from_city_search_input_{{ $session->id }}" class="form-control" placeholder="{{ __('messages.enter_city_village_name') ?? 'e.g., Tangier, Rabat, Casablanca...' }}">
+                                                            <button type="button" class="btn btn-primary" id="from_city_search_btn_{{ $session->id }}">
+                                                                <i class="bi bi-search"></i> {{ __('messages.search') ?? 'Search' }}
+                                                            </button>
+                                                        </div>
+                                                        <div id="from_city_search_error_{{ $session->id }}" class="text-danger small mt-1 d-none"></div>
+                                                    </div>
+                                                    <div class="mb-2">
+                                                        <label for="from_location_name_input_{{ $session->id }}" class="form-label small mb-1">{{ __('messages.location_name') ?? 'Location Name' }}</label>
+                                                        <input type="text" id="from_location_name_input_{{ $session->id }}" class="form-control form-control-sm" placeholder="{{ __('messages.enter_location_name') ?? 'Enter location name (optional)' }}" value="{{ old('from_location_name', $session->from_location_name) }}">
+                                                        <div class="form-text">{{ __('messages.location_name_optional') ?? 'Optional: custom label for this point' }}</div>
+                                                    </div>
+                                                    <div id="from-location-map-{{ $session->id }}" style="height: 220px; width: 100%; background: #f5f5f5;"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-lg-6">
+                                            <div class="card border-0">
+                                                <div class="card-body">
+                                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                                        <div>
+                                                            <h6 class="fw-semibold mb-0">{{ __('messages.to_location') }}</h6>
+                                                            <small class="text-muted" id="to-coords-label-{{ $session->id }}">
+                                                                @php
+                                                                    $toLat = old('to_latitude', $session->to_latitude);
+                                                                    $toLng = old('to_longitude', $session->to_longitude);
+                                                                    $toName = old('to_location_name', $session->to_location_name);
+                                                                @endphp
+                                                                @if($toLat && $toLng)
+                                                                    @if($toName)
+                                                                        <span class="fw-semibold">{{ $toName }}</span><br>
+                                                                        <small class="text-muted">{{ __('messages.location_coords_label') ?? 'Coordinates' }}: {{ $toLat }}, {{ $toLng }}</small>
+                                                                    @else
+                                                                        {{ __('messages.location_coords_label') ?? 'Coordinates' }}:
+                                                                        <span class="fw-semibold">{{ $toLat }}, {{ $toLng }}</span>
+                                                                    @endif
+                                                                @else
+                                                                    {{ __('messages.location_map_help') ?? 'Search a city or village below.' }}
+                                                                @endif
+                                                            </small>
+                                                        </div>
+                                                    </div>
+                                                    <div class="mb-2">
+                                                        <label for="to_city_search_input_{{ $session->id }}" class="form-label small mb-1">
+                                                            <i class="bi bi-search me-1"></i> {{ __('messages.search_city_village') ?? 'Search City or Village' }}
+                                                        </label>
+                                                        <div class="input-group input-group-sm">
+                                                            <input type="text" id="to_city_search_input_{{ $session->id }}" class="form-control" placeholder="{{ __('messages.enter_city_village_name') ?? 'e.g., Tangier, Rabat, Casablanca...' }}">
+                                                            <button type="button" class="btn btn-primary" id="to_city_search_btn_{{ $session->id }}">
+                                                                <i class="bi bi-search"></i> {{ __('messages.search') ?? 'Search' }}
+                                                            </button>
+                                                        </div>
+                                                        <div id="to_city_search_error_{{ $session->id }}" class="text-danger small mt-1 d-none"></div>
+                                                    </div>
+                                                    <div class="mb-2">
+                                                        <label for="to_location_name_input_{{ $session->id }}" class="form-label small mb-1">{{ __('messages.location_name') ?? 'Location Name' }}</label>
+                                                        <input type="text" id="to_location_name_input_{{ $session->id }}" class="form-control form-control-sm" placeholder="{{ __('messages.enter_location_name') ?? 'Enter location name (optional)' }}" value="{{ old('to_location_name', $session->to_location_name) }}">
+                                                        <div class="form-text">{{ __('messages.location_name_optional') ?? 'Optional: custom label for this point' }}</div>
+                                                    </div>
+                                                    <div id="to-location-map-{{ $session->id }}" style="height: 220px; width: 100%; background: #f5f5f5;"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-12">
+                                    <hr class="my-2">
+                                </div>
+
+                                <div class="col-12">
+                                    <label for="assessment{{ $session->id }}" class="form-label fw-semibold">
+                                        {{ __('messages.assessment') }}
+                                    </label>
+                                    <textarea name="assessment" id="assessment{{ $session->id }}" rows="5" class="form-control @error('assessment') is-invalid @enderror" placeholder="{{ __('messages.assessment_placeholder') ?? 'Enter your assessment of the driver\'s performance...' }}">{{ old('assessment', $session->assessment) }}</textarea>
+                                    <small class="text-muted">{{ __('messages.assessment_hint') ?? 'Optional: Provide a detailed assessment of the coaching session' }}</small>
                                     @error('assessment')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
 
                                 <div class="col-12">
-                                    <label for="notes{{ $session->id }}" class="form-label fw-semibold">{{ __('messages.notes') ?? 'Notes' }}</label>
-                                    <textarea name="notes" id="notes{{ $session->id }}" rows="3" class="form-control @error('notes') is-invalid @enderror">{{ old('notes', $session->notes) }}</textarea>
+                                    <label for="notes{{ $session->id }}" class="form-label fw-semibold">
+                                        {{ __('messages.notes') ?? 'Notes' }}
+                                    </label>
+                                    <textarea name="notes" id="notes{{ $session->id }}" rows="4" class="form-control @error('notes') is-invalid @enderror" placeholder="{{ __('messages.notes_placeholder') ?? 'Enter any additional notes or comments...' }}">{{ old('notes', $session->notes) }}</textarea>
+                                    <small class="text-muted">{{ __('messages.notes_hint') ?? 'Optional: Add any additional notes or comments about this session' }}</small>
                                     @error('notes')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
@@ -500,42 +689,6 @@
         @endif
     @endforeach
 
-    {{-- Delete Session Modal --}}
-    <div class="modal fade" id="deleteSessionModal" tabindex="-1" aria-labelledby="deleteSessionModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <form id="deleteSessionForm" method="POST">
-                    @csrf
-                    @method('DELETE')
-                    <div class="modal-header bg-danger text-white">
-                        <h5 class="modal-title" id="deleteSessionModalLabel">
-                            <i class="bi bi-trash me-2"></i>
-                            {{ __('messages.coaching_cabines_delete_confirm') ?? 'Are you sure you want to delete this coaching session?' }}
-                        </h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <p class="mb-2">
-                            {{ __('messages.confirm_delete_turnover_warning') ?? 'This action cannot be undone.' }}
-                        </p>
-                        <p class="mb-0 text-muted">
-                            <strong>{{ __('messages.driver') }}:</strong>
-                            <span id="delete-session-driver"></span>
-                        </p>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
-                            {{ __('messages.cancel') }}
-                        </button>
-                        <button type="submit" class="btn btn-danger">
-                            <i class="bi bi-trash me-1"></i>{{ __('messages.delete') }}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
     {{-- Leaflet CSS and JS for rest places maps --}}
     <link
         rel="stylesheet"
@@ -549,9 +702,371 @@
         crossorigin=""
     ></script>
 
+    <style>
+        /* Inline map styling */
+        .inline-map {
+            height: 220px;
+            width: 100%;
+            background: #f5f5f5;
+        }
+    </style>
+
     @push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Sync date, end date, duration, and next planning in complete modals
+            document.querySelectorAll('[id^="completeModal"]').forEach(modal => {
+                const sessionId = modal.id.replace('completeModal', '');
+                const dateInput = document.getElementById(`date${sessionId}`);
+                const dateFinInput = document.getElementById(`date_fin${sessionId}`);
+                const nextPlanningInput = document.getElementById(`next_planning_session${sessionId}`);
+                const validityDaysInput = document.getElementById(`validity_days${sessionId}`);
+
+                if (!dateInput || !dateFinInput || !validityDaysInput) {
+                    return;
+                }
+
+                let isAutoFillingDateFin = false;
+
+                const toYmd = (date) => {
+                    const year = date.getFullYear();
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const day = String(date.getDate()).padStart(2, '0');
+                    return `${year}-${month}-${day}`;
+                };
+
+                const autoFillDateFin = () => {
+                    if (!dateInput.value) {
+                        dateFinInput.value = '';
+                        return;
+                    }
+
+                    if (document.activeElement === dateFinInput) {
+                        return;
+                    }
+
+                    isAutoFillingDateFin = true;
+                    try {
+                        const start = new Date(dateInput.value);
+                        if (isNaN(start.getTime())) return;
+
+                        start.setDate(start.getDate() + 5);
+                        dateFinInput.value = toYmd(start);
+
+                        // Default duration to 5 days when auto-filling
+                        validityDaysInput.value = 5;
+                    } catch (error) {
+                        console.error('Error auto-filling end date:', error);
+                    } finally {
+                        setTimeout(() => { isAutoFillingDateFin = false; }, 100);
+                    }
+                };
+
+                const autoFillNextPlanning = () => {
+                    if (!nextPlanningInput) return;
+                    if (!dateInput.value) {
+                        nextPlanningInput.value = '';
+                        return;
+                    }
+                    if (document.activeElement === nextPlanningInput) {
+                        return;
+                    }
+                    try {
+                        const start = new Date(dateInput.value);
+                        if (isNaN(start.getTime())) return;
+                        start.setMonth(start.getMonth() + 6);
+                        nextPlanningInput.value = toYmd(start);
+                    } catch (error) {
+                        console.error('Error auto-filling next planning date:', error);
+                    }
+                };
+
+                const calculateValidityDays = () => {
+                    if (isAutoFillingDateFin) return;
+                    if (!dateInput.value || !dateFinInput.value) return;
+                    if (document.activeElement === validityDaysInput) return;
+
+                    try {
+                        const start = new Date(dateInput.value);
+                        const end = new Date(dateFinInput.value);
+                        if (isNaN(start.getTime()) || isNaN(end.getTime())) return;
+
+                        const diff = end.getTime() - start.getTime();
+                        const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+                        if (days > 0) {
+                            validityDaysInput.value = days;
+                        }
+                    } catch (error) {
+                        console.error('Error calculating validity days:', error);
+                    }
+                };
+
+                const handleDateChange = () => {
+                    autoFillDateFin();
+                    autoFillNextPlanning();
+                };
+
+                dateInput.addEventListener('change', handleDateChange);
+                dateInput.addEventListener('input', handleDateChange);
+                dateInput.addEventListener('blur', () => {
+                    if (dateInput.value) handleDateChange();
+                });
+
+                dateFinInput.addEventListener('change', () => {
+                    if (!isAutoFillingDateFin) calculateValidityDays();
+                });
+                dateFinInput.addEventListener('blur', () => {
+                    if (!isAutoFillingDateFin) calculateValidityDays();
+                });
+
+                modal.addEventListener('shown.bs.modal', () => {
+                    handleDateChange();
+                    calculateValidityDays();
+                });
+
+                // Initial sync for pre-filled values
+                handleDateChange();
+                calculateValidityDays();
+            });
+
+            // Map-based route selection (from/to) for each complete modal
+            const routePickers = {};
+
+            async function geocodeQuery(query) {
+                const url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(query);
+                const response = await fetch(url, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'User-Agent': 'GCV Coaching System'
+                    }
+                });
+                if (!response.ok) {
+                    throw new Error('Geocoding request failed');
+                }
+                const data = await response.json();
+                if (!Array.isArray(data) || data.length === 0) {
+                    throw new Error('No results found');
+                }
+                const first = data[0];
+                const lat = parseFloat(first.lat);
+                const lon = parseFloat(first.lon);
+                if (Number.isNaN(lat) || Number.isNaN(lon)) {
+                    throw new Error('Invalid coordinates in response');
+                }
+
+                let shortName = query;
+                if (first.address) {
+                    shortName = first.address.city ||
+                                first.address.town ||
+                                first.address.village ||
+                                first.address.municipality ||
+                                first.address.county ||
+                                query;
+                } else if (first.display_name) {
+                    shortName = first.display_name.split(',')[0].trim();
+                }
+
+                return { lat, lng: lon, display_name: shortName };
+            }
+
+            function initRoutePicker(sessionId) {
+                const defaultCenter = [31.8, -7.1];
+                const hidden = {
+                    fromLat: document.getElementById(`from_latitude_${sessionId}`),
+                    fromLng: document.getElementById(`from_longitude_${sessionId}`),
+                    toLat: document.getElementById(`to_latitude_${sessionId}`),
+                    toLng: document.getElementById(`to_longitude_${sessionId}`),
+                    fromName: document.getElementById(`from_location_name_${sessionId}`),
+                    toName: document.getElementById(`to_location_name_${sessionId}`),
+                };
+
+                const labels = {
+                    from: document.getElementById(`from-coords-label-${sessionId}`),
+                    to: document.getElementById(`to-coords-label-${sessionId}`)
+                };
+
+                const nameInputs = {
+                    from: document.getElementById(`from_location_name_input_${sessionId}`),
+                    to: document.getElementById(`to_location_name_input_${sessionId}`)
+                };
+
+                const search = {
+                    fromInput: document.getElementById(`from_city_search_input_${sessionId}`),
+                    fromBtn: document.getElementById(`from_city_search_btn_${sessionId}`),
+                    fromError: document.getElementById(`from_city_search_error_${sessionId}`),
+                    toInput: document.getElementById(`to_city_search_input_${sessionId}`),
+                    toBtn: document.getElementById(`to_city_search_btn_${sessionId}`),
+                    toError: document.getElementById(`to_city_search_error_${sessionId}`)
+                };
+
+                const mapEls = {
+                    from: document.getElementById(`from-location-map-${sessionId}`),
+                    to: document.getElementById(`to-location-map-${sessionId}`)
+                };
+
+                let fromMap = null;
+                let toMap = null;
+                let fromMarker = null;
+                let toMarker = null;
+
+                const setLabel = (type, lat, lng, name) => {
+                    const label = labels[type];
+                    if (!label) return;
+                    if (lat && lng) {
+                        if (name) {
+                            label.innerHTML = `<span class="fw-semibold">${name}</span><br><small class="text-muted">{{ __('messages.location_coords_label') ?? 'Coordinates' }}: ${lat}, ${lng}</small>`;
+                        } else {
+                            label.innerHTML = `{{ __('messages.location_coords_label') ?? 'Coordinates' }}: <span class="fw-semibold">${lat}, ${lng}</span>`;
+                        }
+                    } else {
+                        label.textContent = `{{ __('messages.location_map_help') ?? 'Search a city or village below.' }}`;
+                    }
+                };
+
+                const invalidateMaps = () => {
+                    setTimeout(() => {
+                        fromMap?.invalidateSize();
+                        toMap?.invalidateSize();
+                    }, 120);
+                    setTimeout(() => {
+                        fromMap?.invalidateSize();
+                        toMap?.invalidateSize();
+                    }, 300);
+                };
+
+                const ensureFromMap = () => {
+                    if (fromMap || !mapEls.from || !window.L) return;
+                    fromMap = L.map(mapEls.from).setView(defaultCenter, 7);
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap contributors' }).addTo(fromMap);
+                    const lat = parseFloat(hidden.fromLat?.value);
+                    const lng = parseFloat(hidden.fromLng?.value);
+                    if (!isNaN(lat) && !isNaN(lng)) setFromCoordinates(lat, lng, true);
+                    if (nameInputs.from && hidden.fromName?.value) nameInputs.from.value = hidden.fromName.value;
+                    fromMap.on('click', (e) => setFromCoordinates(e.latlng.lat, e.latlng.lng, false));
+                };
+
+                const ensureToMap = () => {
+                    if (toMap || !mapEls.to || !window.L) return;
+                    toMap = L.map(mapEls.to).setView(defaultCenter, 7);
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap contributors' }).addTo(toMap);
+                    const lat = parseFloat(hidden.toLat?.value);
+                    const lng = parseFloat(hidden.toLng?.value);
+                    if (!isNaN(lat) && !isNaN(lng)) setToCoordinates(lat, lng, true);
+                    if (nameInputs.to && hidden.toName?.value) nameInputs.to.value = hidden.toName.value;
+                    toMap.on('click', (e) => setToCoordinates(e.latlng.lat, e.latlng.lng, false));
+                };
+
+                const setFromCoordinates = (lat, lng, focus) => {
+                    if (hidden.fromLat) hidden.fromLat.value = lat;
+                    if (hidden.fromLng) hidden.fromLng.value = lng;
+                    const name = nameInputs.from?.value || hidden.fromName?.value;
+                    setLabel('from', lat, lng, name);
+                    ensureFromMap();
+                    if (fromMap) {
+                        if (fromMarker) fromMarker.remove();
+                        fromMarker = L.marker([lat, lng]).addTo(fromMap);
+                        if (focus) fromMap.setView([lat, lng], 10);
+                        invalidateMaps();
+                    }
+                };
+
+                const setToCoordinates = (lat, lng, focus) => {
+                    if (hidden.toLat) hidden.toLat.value = lat;
+                    if (hidden.toLng) hidden.toLng.value = lng;
+                    const name = nameInputs.to?.value || hidden.toName?.value;
+                    setLabel('to', lat, lng, name);
+                    ensureToMap();
+                    if (toMap) {
+                        if (toMarker) toMarker.remove();
+                        toMarker = L.marker([lat, lng]).addTo(toMap);
+                        if (focus) toMap.setView([lat, lng], 10);
+                        invalidateMaps();
+                    }
+                };
+
+                // Initial labels and maps
+                setLabel('from', hidden.fromLat?.value, hidden.fromLng?.value, hidden.fromName?.value);
+                setLabel('to', hidden.toLat?.value, hidden.toLng?.value, hidden.toName?.value);
+                const modalEl = document.getElementById(`completeModal${sessionId}`);
+                if (modalEl) {
+                    modalEl.addEventListener('shown.bs.modal', () => {
+                        ensureFromMap();
+                        ensureToMap();
+                        invalidateMaps();
+                    });
+                } else {
+                    ensureFromMap();
+                    ensureToMap();
+                    invalidateMaps();
+                }
+
+                const handleSearch = async (type) => {
+                    const input = search[`${type}Input`];
+                    const btn = search[`${type}Btn`];
+                    const errorEl = search[`${type}Error`];
+                    if (errorEl) {
+                        errorEl.classList.add('d-none');
+                        errorEl.textContent = '';
+                    }
+                    if (!input) return;
+                    const query = input.value.trim();
+                    if (!query) {
+                        if (errorEl) {
+                            errorEl.textContent = '{{ __('messages.please_enter_city_name') ?? 'Please enter a city or village name' }}';
+                            errorEl.classList.remove('d-none');
+                        }
+                        return;
+                    }
+                    const originalText = btn ? btn.innerHTML : '';
+                    if (btn) {
+                        btn.disabled = true;
+                        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>{{ __('messages.searching') ?? 'Searching...' }}';
+                    }
+                    try {
+                        const { lat, lng, display_name } = await geocodeQuery(query);
+                        if (type === 'from') {
+                            if (nameInputs.from) nameInputs.from.value = display_name;
+                            if (hidden.fromName) hidden.fromName.value = display_name;
+                            setFromCoordinates(lat, lng, true);
+                        } else {
+                            if (nameInputs.to) nameInputs.to.value = display_name;
+                            if (hidden.toName) hidden.toName.value = display_name;
+                            setToCoordinates(lat, lng, true);
+                        }
+                        input.value = '';
+                    } catch (err) {
+                        if (errorEl) {
+                            errorEl.textContent = err.message || '{{ __('messages.unable_to_find_location') ?? 'Unable to find this location' }}';
+                            errorEl.classList.remove('d-none');
+                        }
+                    } finally {
+                        if (btn) {
+                            btn.disabled = false;
+                            btn.innerHTML = originalText;
+                        }
+                    }
+                };
+
+                search.fromBtn?.addEventListener('click', () => handleSearch('from'));
+                search.toBtn?.addEventListener('click', () => handleSearch('to'));
+                search.fromInput?.addEventListener('keypress', (e) => { if (e.key === 'Enter') { e.preventDefault(); handleSearch('from'); }});
+                search.toInput?.addEventListener('keypress', (e) => { if (e.key === 'Enter') { e.preventDefault(); handleSearch('to'); }});
+
+                nameInputs.from?.addEventListener('input', (e) => {
+                    if (hidden.fromName) hidden.fromName.value = e.target.value;
+                    setLabel('from', hidden.fromLat?.value, hidden.fromLng?.value, e.target.value);
+                });
+                nameInputs.to?.addEventListener('input', (e) => {
+                    if (hidden.toName) hidden.toName.value = e.target.value;
+                    setLabel('to', hidden.toLat?.value, hidden.toLng?.value, e.target.value);
+                });
+            }
+
+            document.querySelectorAll('[id^="completeModal"]').forEach(modal => {
+                const sessionId = modal.id.replace('completeModal', '');
+                initRoutePicker(sessionId);
+            });
+
             // Geocoding function for rest places
             async function geocodeRestPlace(query) {
                 const url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(query);
@@ -1146,30 +1661,30 @@
     </script>
     @endpush
 
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const deleteModal = document.getElementById('deleteSessionModal');
-    if (!deleteModal) return;
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const deleteModal = document.getElementById('deleteSessionModal');
+        if (!deleteModal) return;
 
-    const deleteForm = document.getElementById('deleteSessionForm');
-    const driverSpan = document.getElementById('delete-session-driver');
+        const deleteForm = document.getElementById('deleteSessionForm');
+        const driverSpan = document.getElementById('delete-session-driver');
 
-    deleteModal.addEventListener('show.bs.modal', function (event) {
-        const button = event.relatedTarget;
-        if (!button) return;
+        deleteModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            if (!button) return;
 
-        const sessionId = button.getAttribute('data-session-id');
-        const driverName = button.getAttribute('data-session-driver') || '';
+            const sessionId = button.getAttribute('data-session-id');
+            const driverName = button.getAttribute('data-session-driver') || '';
 
-        if (driverSpan) {
-            driverSpan.textContent = driverName;
-        }
+            if (driverSpan) {
+                driverSpan.textContent = driverName;
+            }
 
-        if (deleteForm && sessionId) {
-            const actionTemplate = '{{ route("coaching-cabines.destroy", ":id") }}';
-            deleteForm.action = actionTemplate.replace(':id', sessionId);
-        }
+            if (deleteForm && sessionId) {
+                const actionTemplate = '{{ route("coaching-cabines.destroy", ":id") }}';
+                deleteForm.action = actionTemplate.replace(':id', sessionId);
+            }
+        });
     });
-});
-</script>
+    </script>
 </x-app-layout>

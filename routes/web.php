@@ -202,6 +202,7 @@ Route::middleware('auth')->group(function () {
     
     // Coaching Cabines
     Route::get('/coaching-cabines/planning/{year?}', [CoachingCabineController::class, 'planning'])->name('coaching-cabines.planning');
+    Route::post('/coaching-cabines/quick-plan', [CoachingCabineController::class, 'quickPlan'])->name('coaching-cabines.quick-plan');
     Route::get('/coaching-cabines/planning/{year}/pdf', [CoachingCabineController::class, 'planningPdf'])->name('coaching-cabines.planning.pdf');
     Route::match(['get', 'post'], '/coaching-cabines/{coachingCabine}/pdf', [CoachingCabineController::class, 'pdf'])->name('coaching-cabines.pdf');
     Route::put('/coaching-cabines/{coachingCabine}/complete', [CoachingCabineController::class, 'complete'])->name('coaching-cabines.complete');

@@ -41,11 +41,9 @@ class CoachingCabineController extends Controller
                 $query->where('date', '<=', $request->date_to);
             }
 
-            $year = $request->filled('year') ? $request->year : date('Y');
-            
-            if ($request->filled('year')) {
-                $query->whereYear('date', $request->year);
-            }
+            $year = $request->input('year', date('Y'));
+            // Always scope to selected year (default current year)
+            $query->whereYear('date', $year);
 
             // Calculate stats for the selected year
             // Base query builder function
@@ -87,7 +85,7 @@ class CoachingCabineController extends Controller
             $sessions = $query->with(['checklist.answers'])
                 ->orderBy('date', 'desc')
                 ->orderBy('created_at', 'desc')
-                ->paginate(15);
+                ->get();
 
             $drivers = Driver::orderBy('full_name')->get();
             $flottes = Flotte::orderBy('name')->get();
@@ -147,8 +145,10 @@ class CoachingCabineController extends Controller
     {
         try {
             $coachingCabine->load(['driver', 'flotte']);
+            $drivers = Driver::orderBy('full_name')->get();
+            $flottes = Flotte::orderBy('name')->get();
 
-            return view('coaching_cabines.show', compact('coachingCabine'));
+            return view('coaching_cabines.show', compact('coachingCabine', 'drivers', 'flottes'));
         } catch (Throwable $th) {
             report($th);
             return back()->with('error', __('messages.coaching_cabines_show_error') ?? 'Impossible de charger les détails de la session.');
@@ -696,6 +696,17 @@ class CoachingCabineController extends Controller
             'notes' => ['nullable', 'string'],
             'rest_places' => ['nullable', 'array'],
             'rest_places.*' => ['required', 'string', 'max:255'],
+            'moniteur' => ['nullable', 'string', 'max:255'],
+            'date' => ['nullable', 'date'],
+            'date_fin' => ['nullable', 'date', 'after_or_equal:date'],
+            'type' => ['nullable', 'in:initial,suivi,correctif,route_analysing,obc_suite,other'],
+            'validity_days' => ['nullable', 'integer', 'min:1'],
+            'from_latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'from_longitude' => ['nullable', 'numeric', 'between:-180,180'],
+            'from_location_name' => ['nullable', 'string', 'max:255'],
+            'to_latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'to_longitude' => ['nullable', 'numeric', 'between:-180,180'],
+            'to_location_name' => ['nullable', 'string', 'max:255'],
         ]);
 
         // Validate rest_places count doesn't exceed validity_days - 1 (maximum allowed)
@@ -712,8 +723,8 @@ class CoachingCabineController extends Controller
         }
 
         try {
-            // Update the session with completion data
-            $coachingCabine->update([
+            // Prepare update data
+            $updateData = [
                 'status' => 'completed',
                 'score' => $validated['score'],
                 'next_planning_session' => $validated['next_planning_session'] ?? null,
@@ -721,7 +732,45 @@ class CoachingCabineController extends Controller
                 'assessment' => $validated['assessment'] ?? null,
                 'notes' => $validated['notes'] ?? null,
                 'rest_places' => $restPlaces,
-            ]);
+            ];
+
+            // Add optional fields if provided
+            if (isset($validated['moniteur'])) {
+                $updateData['moniteur'] = $validated['moniteur'];
+            }
+            if (isset($validated['date'])) {
+                $updateData['date'] = $validated['date'];
+            }
+            if (isset($validated['date_fin'])) {
+                $updateData['date_fin'] = $validated['date_fin'];
+            }
+            if (isset($validated['type'])) {
+                $updateData['type'] = $validated['type'];
+            }
+            if (isset($validated['validity_days'])) {
+                $updateData['validity_days'] = $validated['validity_days'];
+            }
+            if (isset($validated['from_latitude'])) {
+                $updateData['from_latitude'] = $validated['from_latitude'];
+            }
+            if (isset($validated['from_longitude'])) {
+                $updateData['from_longitude'] = $validated['from_longitude'];
+            }
+            if (isset($validated['from_location_name'])) {
+                $updateData['from_location_name'] = $validated['from_location_name'];
+            }
+            if (isset($validated['to_latitude'])) {
+                $updateData['to_latitude'] = $validated['to_latitude'];
+            }
+            if (isset($validated['to_longitude'])) {
+                $updateData['to_longitude'] = $validated['to_longitude'];
+            }
+            if (isset($validated['to_location_name'])) {
+                $updateData['to_location_name'] = $validated['to_location_name'];
+            }
+
+            // Update the session with completion data
+            $coachingCabine->update($updateData);
 
             // Handle next_planning_session changes
             $oldNextPlanning = $coachingCabine->next_planning_session?->format('Y-m-d');
@@ -760,8 +809,10 @@ class CoachingCabineController extends Controller
                 }
             }
 
+            $returnUrl = $request->input('return_url') ?: $request->headers->get('referer');
+
             return redirect()
-                ->route('coaching-cabines.index')
+                ->to($returnUrl ?? route('coaching-cabines.index'))
                 ->with('success', __('messages.coaching_cabines_completed') ?? 'Session de coaching complétée avec succès.');
         } catch (Throwable $th) {
             report($th);
@@ -833,6 +884,70 @@ class CoachingCabineController extends Controller
                 'status' => 'planned',
                 'validity_days' => $validityDays,
             ]);
+        }
+    }
+
+    /**
+     * Quick plan a coaching session for a driver in a specific month.
+     */
+    public function quickPlan(Request $request)
+    {
+        $validated = $request->validate([
+            'driver_id' => ['required', 'exists:drivers,id'],
+            'year' => ['required', 'integer', 'min:2000', 'max:2100'],
+            'month' => ['required', 'integer', 'min:1', 'max:12'],
+        ]);
+
+        try {
+            $driver = Driver::findOrFail($validated['driver_id']);
+            $year = $validated['year'];
+            $month = $validated['month'];
+
+            // Calculate the date (first day of the month)
+            $date = \Carbon\Carbon::create($year, $month, 1);
+
+            // Check if a session already exists for this driver in this month
+            $existingSession = CoachingSession::where('driver_id', $driver->id)
+                ->whereYear('date', $year)
+                ->whereMonth('date', $month)
+                ->where('status', 'planned')
+                ->first();
+
+            if ($existingSession) {
+                return response()->json([
+                    'success' => false,
+                    'message' => __('messages.coaching_session_already_planned_for_month') ?? 'A coaching session is already planned for this driver in this month.',
+                ], 422);
+            }
+
+            // Calculate date_fin based on validity_days (5 days for suivi type)
+            $validityDays = 5; // Default for suivi type
+            $dateFin = $date->copy()->addDays($validityDays);
+
+            // Get flotte_id from driver
+            $flotteId = $driver->flotte_id;
+
+            // Create new coaching session
+            CoachingSession::create([
+                'driver_id' => $driver->id,
+                'flotte_id' => $flotteId,
+                'date' => $date->format('Y-m-d'),
+                'date_fin' => $dateFin->format('Y-m-d'),
+                'type' => 'suivi',
+                'status' => 'planned',
+                'validity_days' => $validityDays,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => __('messages.coaching_session_planned_successfully') ?? 'Coaching session planned successfully.',
+            ]);
+        } catch (Throwable $th) {
+            report($th);
+            return response()->json([
+                'success' => false,
+                'message' => __('messages.coaching_session_planning_error') ?? 'Error planning coaching session.',
+            ], 500);
         }
     }
 }

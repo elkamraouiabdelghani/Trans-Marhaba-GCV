@@ -126,7 +126,13 @@
                                                     {{ $planned }}
                                                 </span>
                                             @else
-                                                <span class="text-muted">-</span>
+                                                <span class="text-muted" 
+                                                      style="cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: background-color 0.2s;"
+                                                      onmouseover="this.style.backgroundColor='#e7f1ff';"
+                                                      onmouseout="this.style.backgroundColor='transparent';"
+                                                      onclick="openPlanningModal({{ $driver->id }}, {{ $year }}, {{ $monthNum }}, '{{ $driver->full_name }}', '{{ $monthName }}')">
+                                                    -
+                                                </span>
                                             @endif
                                         </td>
                                         <td class="text-center bg-{{ $monthNum % 2 == 0 ? 'light' : 'white' }}">
@@ -218,16 +224,170 @@
             </div>
         </div>
     </div>
-</x-app-layout>
 
-@push('scripts')
-<script>
-    function showSessions(sessionIds, status) {
-        if (sessionIds.length === 0) return;
-        // For now, just redirect to index with filter
-        // In future, could show a modal with session details
-        window.location.href = '{{ route("coaching-cabines.index") }}?status=' + status;
-    }
-</script>
-@endpush
+    <!-- Bootstrap JS Bundle (includes Popper.js) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js" 
+            crossorigin="anonymous"></script>
+
+    <!-- Planning Confirmation Modal -->
+    <div class="modal fade" id="planningModal" tabindex="-1" aria-labelledby="planningModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="planningModalLabel">
+                        <i class="bi bi-calendar-check me-2"></i>
+                        {{ __('messages.confirm_planning') ?? 'Confirm Planning' }}
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-3">
+                        {{ __('messages.confirm_planning_message') ?? 'Are you sure you want to plan a coaching session for' }}
+                        <strong id="modalDriverName"></strong>
+                        {{ __('messages.in_month') ?? 'in' }}
+                        <strong id="modalMonthName"></strong>
+                        <strong id="modalYear"></strong>?
+                    </p>
+                    <div class="alert alert-info mb-0">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <small>{{ __('messages.planning_info') ?? 'A planned coaching session will be created for this driver in the selected month.' }}</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                        {{ __('messages.cancel') ?? 'Cancel' }}
+                    </button>
+                    <button type="button" class="btn btn-primary" id="confirmPlanningBtn">
+                        <i class="bi bi-check-circle me-2"></i>
+                        {{ __('messages.confirm') ?? 'Confirm' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Wait for Bootstrap to be loaded
+        function waitForBootstrap(callback) {
+            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                callback();
+            } else {
+                // Wait a bit and try again
+                setTimeout(function() {
+                    if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                        callback();
+                    } else {
+                        console.error('Bootstrap is not loaded. Please ensure Bootstrap JS bundle is included.');
+                        alert('{{ __('messages.error') ?? 'An error occurred' }}: Bootstrap is not loaded.');
+                    }
+                }, 100);
+            }
+        }
+
+        // Define functions globally so they're accessible from onclick handlers
+        let currentPlanningData = null;
+
+        function showSessions(sessionIds, status) {
+            if (sessionIds.length === 0) return;
+            // For now, just redirect to index with filter
+            // In future, could show a modal with session details
+            window.location.href = '{{ route("coaching-cabines.index") }}?status=' + status;
+        }
+
+        function openPlanningModal(driverId, year, month, driverName, monthName) {
+            currentPlanningData = {
+                driver_id: driverId,
+                year: year,
+                month: month
+            };
+
+            document.getElementById('modalDriverName').textContent = driverName;
+            document.getElementById('modalMonthName').textContent = monthName;
+            document.getElementById('modalYear').textContent = year;
+
+            // Wait for Bootstrap to be available before showing modal
+            waitForBootstrap(function() {
+                const modalEl = document.getElementById('planningModal');
+                if (modalEl) {
+                    const modal = new bootstrap.Modal(modalEl);
+                    modal.show();
+                }
+            });
+        }
+
+        // Initialize modal functionality when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            const confirmBtn = document.getElementById('confirmPlanningBtn');
+            const modal = document.getElementById('planningModal');
+
+            if (confirmBtn) {
+                confirmBtn.addEventListener('click', function() {
+                    if (!currentPlanningData) return;
+
+                    // Disable button and show loading state
+                    confirmBtn.disabled = true;
+                    confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>{{ __('messages.planning') ?? 'Planning...' }}';
+
+                    // Send AJAX request
+                    fetch('{{ route("coaching-cabines.quick-plan") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify(currentPlanningData)
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Show success message
+                            const alertDiv = document.createElement('div');
+                            alertDiv.className = 'alert alert-success alert-dismissible fade show';
+                            alertDiv.innerHTML = `
+                                <i class="bi bi-check-circle me-2"></i>
+                                ${data.message}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            `;
+                            document.querySelector('.container-fluid').insertBefore(alertDiv, document.querySelector('.container-fluid').firstChild);
+
+                            // Close modal
+                            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                                const modalInstance = bootstrap.Modal.getInstance(modal);
+                                if (modalInstance) {
+                                    modalInstance.hide();
+                                }
+                            }
+
+                            // Reload page after a short delay
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 1000);
+                        } else {
+                            // Show error message
+                            alert(data.message || '{{ __('messages.error') ?? 'An error occurred' }}');
+                            confirmBtn.disabled = false;
+                            confirmBtn.innerHTML = '<i class="bi bi-check-circle me-2"></i>{{ __('messages.confirm') ?? 'Confirm' }}';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('{{ __('messages.error') ?? 'An error occurred' }}');
+                        confirmBtn.disabled = false;
+                        confirmBtn.innerHTML = '<i class="bi bi-check-circle me-2"></i>{{ __('messages.confirm') ?? "Confirm" }}';
+                    });
+                });
+
+                // Reset button state when modal is hidden
+                if (modal) {
+                    modal.addEventListener('hidden.bs.modal', function() {
+                        confirmBtn.disabled = false;
+                        confirmBtn.innerHTML = '<i class="bi bi-check-circle me-2"></i>{{ __('messages.confirm') ?? "Confirm" }}';
+                        currentPlanningData = null;
+                    });
+                }
+            }
+        });
+    </script>
+</x-app-layout>
 
