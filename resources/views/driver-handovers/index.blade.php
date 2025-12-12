@@ -198,7 +198,7 @@
                                                 </button>
                                             @endif
                                             @if($handover->handover_file_path)
-                                                <a href="{{ asset('storage/' . $handover->handover_file_path) }}" 
+                                                <a href="{{ route('driver-handovers.pdf', $handover) }}" 
                                                    target="_blank" 
                                                    class="btn btn-sm btn-outline-danger"
                                                    download>

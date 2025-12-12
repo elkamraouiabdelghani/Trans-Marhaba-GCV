@@ -237,6 +237,10 @@ Route::middleware('auth')->group(function () {
 
     // Driver Handovers
     Route::get('/driver-handovers/export', [DriverHandoverController::class, 'export'])->name('driver-handovers.export');
+    Route::get('/driver-handovers/{driver_handover}/document-file/{index}', [DriverHandoverController::class, 'showDocumentFile'])->name('driver-handovers.document-file');
+    Route::get('/driver-handovers/{driver_handover}/document-image/{key}', [DriverHandoverController::class, 'showDocumentImage'])->name('driver-handovers.document-image');
+    Route::get('/driver-handovers/{driver_handover}/equipment-image/{key}', [DriverHandoverController::class, 'showEquipmentImage'])->name('driver-handovers.equipment-image');
+    Route::get('/driver-handovers/{driver_handover}/pdf', [DriverHandoverController::class, 'downloadPdf'])->name('driver-handovers.pdf');
     Route::resource('driver-handovers', DriverHandoverController::class);
     Route::post('/driver-handovers/{driver_handover}/confirm', [DriverHandoverController::class, 'confirm'])->name('driver-handovers.confirm');
 

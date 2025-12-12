@@ -144,7 +144,7 @@
                             @endif
 
                             @if($handover->handover_file_path)
-                                <a href="{{ asset('storage/' . $handover->handover_file_path) }}" 
+                                <a href="{{ route('driver-handovers.pdf', $handover) }}" 
                                    target="_blank" 
                                    class="btn btn-primary btn-sm"
                                    download>
@@ -191,7 +191,7 @@
                                             <small class="text-muted">{{ number_format($file['size'] / 1024, 2) }} KB</small>
                                         @endif
                                     </div>
-                                    <a href="{{ asset('storage/' . ($file['path'] ?? $file)) }}" 
+                                    <a href="{{ route('driver-handovers.document-file', ['driver_handover' => $handover, 'index' => $index]) }}" 
                                        target="_blank" 
                                        class="btn btn-sm btn-outline-primary"
                                        download>
@@ -294,7 +294,7 @@
                                         </td>
                                         <td class="text-center">
                                             @if(isset($documents["{$key}_image"]) && $documents["{$key}_image"])
-                                                <img src="{{ asset('storage/' . $documents["{$key}_image"]) }}" 
+                                                <img src="{{ route('driver-handovers.document-image', ['driver_handover' => $handover, 'key' => $key]) }}" 
                                                      alt="Image" 
                                                      class="img-thumbnail" 
                                                      style="max-width: 80px; max-height: 80px; cursor: pointer;"
@@ -332,7 +332,7 @@
                                         </td>
                                         <td class="text-center">
                                             @if(isset($documents["{$key}_image"]) && $documents["{$key}_image"])
-                                                <img src="{{ asset('storage/' . $documents["{$key}_image"]) }}" 
+                                                <img src="{{ route('driver-handovers.document-image', ['driver_handover' => $handover, 'key' => $key]) }}" 
                                                      alt="Image" 
                                                      class="img-thumbnail" 
                                                      style="max-width: 80px; max-height: 80px; cursor: pointer;"
@@ -393,7 +393,7 @@
                                         </td>
                                         <td class="text-center">
                                             @if(isset($documents['options']['row_' . $chunkIndex]['image']) && $documents['options']['row_' . $chunkIndex]['image'])
-                                                <img src="{{ asset('storage/' . $documents['options']['row_' . $chunkIndex]['image']) }}" 
+                                                <img src="{{ route('driver-handovers.document-image', ['driver_handover' => $handover, 'key' => 'row_' . $chunkIndex]) }}" 
                                                      alt="Image" 
                                                      class="img-thumbnail" 
                                                      style="max-width: 80px; max-height: 80px; cursor: pointer;"
@@ -477,7 +477,7 @@
                                     </td>
                                     <td class="text-center">
                                         @if(isset($equipment["{$key}_image"]) && $equipment["{$key}_image"])
-                                            <img src="{{ asset('storage/' . $equipment["{$key}_image"]) }}" 
+                                            <img src="{{ route('driver-handovers.equipment-image', ['driver_handover' => $handover, 'key' => $key]) }}" 
                                                  alt="Image" 
                                                  class="img-thumbnail" 
                                                  style="max-width: 80px; max-height: 80px; cursor: pointer;"

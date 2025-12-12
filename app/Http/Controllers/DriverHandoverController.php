@@ -576,5 +576,173 @@ class DriverHandoverController extends Controller
 
         return $data;
     }
+
+    /**
+     * Serve a document file from document_files array
+     */
+    public function showDocumentFile(DriverHandover $driver_handover, int $index)
+    {
+        try {
+            $documentFiles = $driver_handover->document_files ?? [];
+            
+            if (!isset($documentFiles[$index])) {
+                abort(404);
+            }
+
+            $file = $documentFiles[$index];
+            $path = $file['path'] ?? $file;
+
+            if (is_array($path)) {
+                $path = $path['path'] ?? null;
+            }
+
+            if (!$path) {
+                abort(404);
+            }
+
+            $disk = Storage::disk('public');
+
+            if (!$disk->exists($path)) {
+                abort(404);
+            }
+
+            $filename = $file['name'] ?? basename($path);
+
+            return response()->file($disk->path($path), [
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Failed to serve handover document file', [
+                'handover_id' => $driver_handover->id,
+                'index' => $index,
+                'error' => $e->getMessage(),
+            ]);
+
+            abort(404);
+        }
+    }
+
+    /**
+     * Serve a document image from documents array
+     */
+    public function showDocumentImage(DriverHandover $driver_handover, string $key)
+    {
+        try {
+            $documents = $driver_handover->documents ?? [];
+            $path = null;
+            
+            // Handle regular document images (e.g., cartes_grises_image)
+            $imageKey = "{$key}_image";
+            if (isset($documents[$imageKey])) {
+                $path = $documents[$imageKey];
+            } 
+            // Handle options document images (e.g., row_0, row_1, etc.)
+            elseif (isset($documents['options']) && is_array($documents['options'])) {
+                // Try with the key directly (e.g., row_0)
+                if (isset($documents['options'][$key]['image'])) {
+                    $path = $documents['options'][$key]['image'];
+                }
+                // Try to find in any row
+                else {
+                    foreach ($documents['options'] as $rowKey => $rowData) {
+                        if (isset($rowData['image']) && $rowKey === $key) {
+                            $path = $rowData['image'];
+                            break;
+                        }
+                    }
+                }
+            }
+            // Try direct key
+            elseif (isset($documents[$key])) {
+                $path = is_array($documents[$key]) ? ($documents[$key]['image'] ?? null) : $documents[$key];
+            }
+
+            if (!$path) {
+                abort(404);
+            }
+
+            $disk = Storage::disk('public');
+
+            if (!$disk->exists($path)) {
+                abort(404);
+            }
+
+            return response()->file($disk->path($path));
+        } catch (\Throwable $e) {
+            Log::error('Failed to serve handover document image', [
+                'handover_id' => $driver_handover->id,
+                'key' => $key,
+                'error' => $e->getMessage(),
+            ]);
+
+            abort(404);
+        }
+    }
+
+    /**
+     * Serve an equipment image from equipment array
+     */
+    public function showEquipmentImage(DriverHandover $driver_handover, string $key)
+    {
+        try {
+            $equipment = $driver_handover->equipment ?? [];
+            
+            $imageKey = "{$key}_image";
+            if (!isset($equipment[$imageKey])) {
+                abort(404);
+            }
+
+            $path = $equipment[$imageKey];
+
+            if (!$path) {
+                abort(404);
+            }
+
+            $disk = Storage::disk('public');
+
+            if (!$disk->exists($path)) {
+                abort(404);
+            }
+
+            return response()->file($disk->path($path));
+        } catch (\Throwable $e) {
+            Log::error('Failed to serve handover equipment image', [
+                'handover_id' => $driver_handover->id,
+                'key' => $key,
+                'error' => $e->getMessage(),
+            ]);
+
+            abort(404);
+        }
+    }
+
+    /**
+     * Download the handover PDF
+     */
+    public function downloadPdf(DriverHandover $driver_handover)
+    {
+        try {
+            $path = $driver_handover->handover_file_path;
+
+            if (!$path) {
+                abort(404);
+            }
+
+            $disk = Storage::disk('public');
+
+            if (!$disk->exists($path)) {
+                abort(404);
+            }
+
+            return response()->download($disk->path($path), 'handover-' . $driver_handover->id . '.pdf');
+        } catch (\Throwable $e) {
+            Log::error('Failed to download handover PDF', [
+                'handover_id' => $driver_handover->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            abort(404);
+        }
+    }
 }
 

@@ -273,7 +273,7 @@
                                         <td>
                                             @if(isset($documents["{$key}_image"]) && $documents["{$key}_image"])
                                                 <div class="mb-2">
-                                                    <img src="{{ asset('storage/' . $documents["{$key}_image"]) }}" 
+                                                    <img src="{{ route('driver-handovers.document-image', ['driver_handover' => $handover, 'key' => $key]) }}" 
                                                          alt="Image" 
                                                          class="img-thumbnail" 
                                                          style="max-width: 80px; max-height: 80px;">
@@ -308,7 +308,7 @@
                                         <td>
                                             @if(isset($documents["{$key}_image"]) && $documents["{$key}_image"])
                                                 <div class="mb-2">
-                                                    <img src="{{ asset('storage/' . $documents["{$key}_image"]) }}" 
+                                                    <img src="{{ route('driver-handovers.document-image', ['driver_handover' => $handover, 'key' => $key]) }}" 
                                                          alt="Image" 
                                                          class="img-thumbnail" 
                                                          style="max-width: 80px; max-height: 80px;">
@@ -379,7 +379,7 @@
                                     <td>
                                         @if(isset($documents['options']['row_' . $loop->index]['image']) && $documents['options']['row_' . $loop->index]['image'])
                                             <div class="mb-2">
-                                                <img src="{{ asset('storage/' . $documents['options']['row_' . $loop->index]['image']) }}" 
+                                                <img src="{{ route('driver-handovers.document-image', ['driver_handover' => $handover, 'key' => 'row_' . $loop->index]) }}" 
                                                      alt="Image" 
                                                      class="img-thumbnail" 
                                                      style="max-width: 80px; max-height: 80px;">
@@ -485,7 +485,7 @@
                                 <td>
                                     @if(isset($equipment["{$key}_image"]) && $equipment["{$key}_image"])
                                         <div class="mb-2">
-                                            <img src="{{ asset('storage/' . $equipment["{$key}_image"]) }}" 
+                                            <img src="{{ route('driver-handovers.equipment-image', ['driver_handover' => $handover, 'key' => $key]) }}" 
                                                  alt="Image" 
                                                  class="img-thumbnail" 
                                                  style="max-width: 80px; max-height: 80px;">
