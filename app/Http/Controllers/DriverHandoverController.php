@@ -109,26 +109,59 @@ class DriverHandoverController extends Controller
 
     public function store(StoreDriverHandoverRequest $request)
     {
-        $data = $this->prepareData($request);
-
-        $handover = DriverHandover::create($data);
-
-        // Generate PDF automatically after creation
         try {
-            $pdfService = new DriverHandoverPdfService();
-            $pdfPath = $pdfService->generateHandoverPdf($handover);
-            $handover->update(['handover_file_path' => $pdfPath]);
-        } catch (\Exception $e) {
-            // Log error but don't fail the creation
-            Log::error('Failed to generate handover PDF', [
-                'handover_id' => $handover->id,
-                'error' => $e->getMessage(),
+            DB::beginTransaction();
+            
+            $data = $this->prepareData($request);
+            
+            // Log prepared data for debugging (without sensitive file data)
+            Log::info('Creating handover', [
+                'data_keys' => array_keys($data),
+                'has_documents' => isset($data['documents']),
+                'has_document_files' => isset($data['document_files']),
+                'has_equipment' => isset($data['equipment']),
             ]);
-        }
 
-        return redirect()
-            ->route('driver-handovers.show', $handover)
-            ->with('success', __('messages.handover_created'));
+            $handover = DriverHandover::create($data);
+            
+            DB::commit();
+
+            // Generate PDF automatically after creation
+            try {
+                $pdfService = new DriverHandoverPdfService();
+                $pdfPath = $pdfService->generateHandoverPdf($handover);
+                $handover->update(['handover_file_path' => $pdfPath]);
+            } catch (\Exception $e) {
+                // Log error but don't fail the creation
+                Log::error('Failed to generate handover PDF', [
+                    'handover_id' => $handover->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
+            return redirect()
+                ->route('driver-handovers.show', $handover)
+                ->with('success', __('messages.handover_created'));
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            DB::rollBack();
+            // Laravel automatically redirects back with validation errors
+            throw $e;
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            Log::error('Failed to create handover', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+                'request_data' => $request->except(['documents_files', 'documents_images', 'equipment_images']),
+            ]);
+
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', __('messages.handover_creation_failed') ?? 'Failed to create handover: ' . $e->getMessage());
+        }
     }
 
     public function show(DriverHandover $driver_handover)
@@ -363,94 +396,160 @@ class DriverHandoverController extends Controller
         // Remove cause_other from data as it's not a database field
         unset($data['cause_other']);
 
-        // Prepare documents data
-        if ($request->has('documents')) {
-            $documents = $request->input('documents', []);
+        // Prepare documents data - documents for document items (table)
+        $documents = $request->input('documents', []);
+        
+        // Handle document images uploads
+        if ($request->hasFile('documents_images')) {
+            $images = $request->file('documents_images');
             
-            // Handle document images uploads
-            if ($request->hasFile('documents_images')) {
-                $images = $request->file('documents_images');
+            // Handle regular document images (exclude 'options' key)
+            foreach ($images as $key => $file) {
+                if ($key === 'options') {
+                    continue; // Handle options separately
+                }
                 
-                // Handle regular document images
-                foreach ($images as $key => $file) {
-                    if ($key === 'options') {
-                        continue; // Handle options separately
-                    }
+                // Check if it's actually a file (not an array)
+                if ($file && !is_array($file) && $file->isValid()) {
+                    $path = $file->store('driver-handovers/documents', 'public');
+                    $documents["{$key}_image"] = $path;
                     
-                    if ($file && $file->isValid()) {
+                    // Delete old image if updating
+                    if ($handover && isset($handover->documents["{$key}_image"])) {
+                        $oldPath = $handover->documents["{$key}_image"];
+                        if (Storage::disk('public')->exists($oldPath)) {
+                            Storage::disk('public')->delete($oldPath);
+                        }
+                    }
+                }
+            }
+            
+            // Handle document options images
+            if (isset($images['options']) && is_array($images['options'])) {
+                if (!isset($documents['options'])) {
+                    $documents['options'] = [];
+                }
+                
+                foreach ($images['options'] as $rowKey => $file) {
+                    // Check if it's actually a file (not an array)
+                    if ($file && !is_array($file) && $file->isValid()) {
                         $path = $file->store('driver-handovers/documents', 'public');
-                        $documents["{$key}_image"] = $path;
+                        
+                        if (!isset($documents['options'][$rowKey])) {
+                            $documents['options'][$rowKey] = [];
+                        }
+                        
+                        $documents['options'][$rowKey]['image'] = $path;
                         
                         // Delete old image if updating
-                        if ($handover && isset($handover->documents["{$key}_image"])) {
-                            $oldPath = $handover->documents["{$key}_image"];
+                        if ($handover && isset($handover->documents['options'][$rowKey]['image'])) {
+                            $oldPath = $handover->documents['options'][$rowKey]['image'];
                             if (Storage::disk('public')->exists($oldPath)) {
                                 Storage::disk('public')->delete($oldPath);
                             }
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Always set documents, even if empty
+        $data['documents'] = $documents;
+
+        // Handle document_files - general document files for the handover (multiple files)
+        $documentFiles = [];
+        
+        if ($request->hasFile('documents_files')) {
+            $files = $request->file('documents_files');
+            
+            // Handle multiple files upload
+            foreach ($files as $index => $file) {
+                if ($file && $file->isValid()) {
+                    $path = $file->store('driver-handovers/documents/files', 'public');
+                    $documentFiles[] = [
+                        'path' => $path,
+                        'name' => $file->getClientOriginalName(),
+                        'size' => $file->getSize(),
+                        'mime_type' => $file->getMimeType(),
+                    ];
+                }
+            }
+            
+            // Merge with existing files if updating (excluding removed files)
+            if ($handover && isset($handover->document_files) && is_array($handover->document_files)) {
+                $removedFiles = json_decode($request->input('removed_files', '[]'), true) ?? [];
+                $existingFiles = array_filter($handover->document_files, function($index) use ($removedFiles) {
+                    return !in_array($index, $removedFiles);
+                }, ARRAY_FILTER_USE_KEY);
+                
+                // Delete removed files from storage
+                foreach ($removedFiles as $index) {
+                    if (isset($handover->document_files[$index]['path'])) {
+                        $oldPath = $handover->document_files[$index]['path'];
+                        if (Storage::disk('public')->exists($oldPath)) {
+                            Storage::disk('public')->delete($oldPath);
                         }
                     }
                 }
                 
-                // Handle document options images
-                if (isset($images['options']) && is_array($images['options'])) {
-                    if (!isset($documents['options'])) {
-                        $documents['options'] = [];
-                    }
-                    
-                    foreach ($images['options'] as $rowKey => $file) {
-                        if ($file && $file->isValid()) {
-                            $path = $file->store('driver-handovers/documents', 'public');
-                            
-                            if (!isset($documents['options'][$rowKey])) {
-                                $documents['options'][$rowKey] = [];
-                            }
-                            
-                            $documents['options'][$rowKey]['image'] = $path;
-                            
-                            // Delete old image if updating
-                            if ($handover && isset($handover->documents['options'][$rowKey]['image'])) {
-                                $oldPath = $handover->documents['options'][$rowKey]['image'];
-                                if (Storage::disk('public')->exists($oldPath)) {
-                                    Storage::disk('public')->delete($oldPath);
-                                }
-                            }
+                // Re-index array and merge
+                $existingFiles = array_values($existingFiles);
+                $documentFiles = array_merge($existingFiles, $documentFiles);
+            }
+        } elseif ($handover && isset($handover->document_files)) {
+            // Handle removed files even if no new files uploaded
+            $removedFiles = json_decode($request->input('removed_files', '[]'), true) ?? [];
+            if (!empty($removedFiles)) {
+                // Delete removed files from storage
+                foreach ($removedFiles as $index) {
+                    if (isset($handover->document_files[$index]['path'])) {
+                        $oldPath = $handover->document_files[$index]['path'];
+                        if (Storage::disk('public')->exists($oldPath)) {
+                            Storage::disk('public')->delete($oldPath);
                         }
                     }
                 }
+                
+                $existingFiles = array_filter($handover->document_files, function($index) use ($removedFiles) {
+                    return !in_array($index, $removedFiles);
+                }, ARRAY_FILTER_USE_KEY);
+                $documentFiles = array_values($existingFiles);
+            } else {
+                $documentFiles = $handover->document_files;
             }
-            
-            $data['documents'] = $documents;
         }
+        
+        // Always set document_files, even if empty (for new handovers)
+        $data['document_files'] = $documentFiles;
 
-        // Prepare equipment data
-        if ($request->has('equipment')) {
-            $equipment = $request->input('equipment', []);
-            
-            // Merge equipment_counts into equipment data
-            if ($request->has('equipment_counts')) {
-                $equipment['counts'] = $request->input('equipment_counts', []);
-            }
-            
-            // Handle equipment images uploads
-            if ($request->hasFile('equipment_images')) {
-                foreach ($request->file('equipment_images') as $key => $file) {
-                    if ($file && $file->isValid()) {
-                        $path = $file->store('driver-handovers/equipment', 'public');
-                        $equipment["{$key}_image"] = $path;
-                        
-                        // Delete old image if updating
-                        if ($handover && isset($handover->equipment["{$key}_image"])) {
-                            $oldPath = $handover->equipment["{$key}_image"];
-                            if (Storage::disk('public')->exists($oldPath)) {
-                                Storage::disk('public')->delete($oldPath);
-                            }
+        // Prepare equipment data - equipment documents/images
+        $equipment = $request->input('equipment', []);
+        
+        // Merge equipment_counts into equipment data
+        if ($request->has('equipment_counts')) {
+            $equipment['counts'] = $request->input('equipment_counts', []);
+        }
+        
+        // Handle equipment images uploads
+        if ($request->hasFile('equipment_images')) {
+            foreach ($request->file('equipment_images') as $key => $file) {
+                if ($file && $file->isValid()) {
+                    $path = $file->store('driver-handovers/equipment', 'public');
+                    $equipment["{$key}_image"] = $path;
+                    
+                    // Delete old image if updating
+                    if ($handover && isset($handover->equipment["{$key}_image"])) {
+                        $oldPath = $handover->equipment["{$key}_image"];
+                        if (Storage::disk('public')->exists($oldPath)) {
+                            Storage::disk('public')->delete($oldPath);
                         }
                     }
                 }
             }
-            
-            $data['equipment'] = $equipment;
         }
+        
+        // Always set equipment, even if empty
+        $data['equipment'] = $equipment;
 
         if ($request->hasFile('handover_file')) {
             if ($handover && $handover->handover_file_path) {
@@ -459,6 +558,21 @@ class DriverHandoverController extends Controller
 
             $data['handover_file_path'] = $request->file('handover_file')->store('driver-handovers', 'public');
         }
+
+        // Ensure JSON fields are properly formatted (Laravel will auto-cast, but ensure they're arrays)
+        if (isset($data['documents']) && !is_array($data['documents'])) {
+            $data['documents'] = [];
+        }
+        if (isset($data['document_files']) && !is_array($data['document_files'])) {
+            $data['document_files'] = [];
+        }
+        if (isset($data['equipment']) && !is_array($data['equipment'])) {
+            $data['equipment'] = [];
+        }
+
+        // Remove any fields that are not in fillable
+        $fillable = (new DriverHandover())->getFillable();
+        $data = array_intersect_key($data, array_flip($fillable));
 
         return $data;
     }

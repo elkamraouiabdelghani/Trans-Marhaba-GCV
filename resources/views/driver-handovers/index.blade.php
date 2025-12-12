@@ -131,7 +131,7 @@
                     <table class="table table-hover align-middle mb-0">
                         <thead class="table-light">
                             <tr>
-                                <th>{{ __('messages.date') }}</th>
+                                <th>{{ __('messages.dates') ?? 'Dates' }}</th>
                                 <th>{{ __('messages.driver_replace') }}</th>
                                 <th>{{ __('messages.driver_replacement') }}</th>
                                 <th>{{ __('messages.vehicle') }}</th>
@@ -143,7 +143,12 @@
                             @forelse($handovers as $handover)
                                 <tr>
                                     <td>
-                                        <div class="fw-semibold text-dark">{{ optional($handover->handover_date)->format('d/m/Y') }}</div>
+                                        <div class="fw-semibold text-dark">
+                                            <div>{{ __('messages.handover_date') ?? 'Sortie' }}: {{ optional($handover->handover_date)->format('d/m/Y') ?? '—' }}</div>
+                                            @if($handover->back_date)
+                                                <div class="text-success small mt-1">{{ __('messages.back_date') ?? 'Retour' }}: {{ $handover->back_date->format('d/m/Y') }}</div>
+                                            @endif
+                                        </div>
                                         @if($handover->location)
                                             <small class="text-muted">{{ $handover->location }}</small>
                                         @endif

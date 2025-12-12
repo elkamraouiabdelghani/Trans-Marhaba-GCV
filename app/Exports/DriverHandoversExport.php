@@ -24,7 +24,8 @@ class DriverHandoversExport implements FromCollection, WithHeadings, WithMapping
     public function headings(): array
     {
         return [
-            __('messages.date'),
+            __('messages.handover_date') ?? 'Date de sortie',
+            __('messages.back_date') ?? 'Date de retour',
             __('messages.driver_replace'),
             __('messages.driver_replacement'),
             __('messages.vehicle'),
@@ -41,6 +42,7 @@ class DriverHandoversExport implements FromCollection, WithHeadings, WithMapping
     {
         return [
             $handover->handover_date ? $handover->handover_date->format('d/m/Y') : __('messages.not_available'),
+            $handover->back_date ? $handover->back_date->format('d/m/Y') : __('messages.not_available'),
             $handover->driver_from_name ?? optional($handover->driverFrom)->full_name ?? __('messages.not_available'),
             $handover->driver_to_name ?? optional($handover->driverTo)->full_name ?? __('messages.not_available'),
             optional($handover->vehicle)->license_plate ?? __('messages.not_available'),
@@ -55,8 +57,8 @@ class DriverHandoversExport implements FromCollection, WithHeadings, WithMapping
 
     public function styles(Worksheet $sheet)
     {
-        $sheet->getStyle('A1:J1')->getFont()->setBold(true)->getColor()->setRGB('FFFFFF');
-        $sheet->getStyle('A1:J1')->getFill()->setFillType('solid')->getStartColor()->setRGB('198754'); // bootstrap success
+        $sheet->getStyle('A1:K1')->getFont()->setBold(true)->getColor()->setRGB('FFFFFF');
+        $sheet->getStyle('A1:K1')->getFill()->setFillType('solid')->getStartColor()->setRGB('198754'); // bootstrap success
 
         return [];
     }

@@ -90,13 +90,17 @@
                                 </p>
                             </div>
                             <div class="col-md-6">
-                                <h6 class="text-muted text-uppercase small">{{ __('messages.date') }}</h6>
+                                <h6 class="text-muted text-uppercase small">{{ __('messages.handover_date') ?? 'Date de sortie' }}</h6>
                                 <div class="d-flex align-items-center gap-2">
                                     <p class="mb-1 fw-semibold">{{ optional($handover->handover_date)->format('d/m/Y') ?? '—' }}</p>
                                     @if($handover->location)
                                         -<small class="fw-semibold">{{ $handover->location }}</small>
                                     @endif
                                 </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-muted text-uppercase small">{{ __('messages.back_date') ?? 'Date de retour' }}</h6>
+                                <p class="mb-1 fw-semibold">{{ optional($handover->back_date)->format('d/m/Y') ?? '—' }}</p>
                             </div>
                             <div class="col-md-6">
                                 <h6 class="text-muted text-uppercase small">{{ __('messages.cause') }}</h6>
@@ -166,6 +170,41 @@
             </div>
         </div>
 
+        {{-- Document Files Section --}}
+        @if(isset($handover->document_files) && !empty($handover->document_files) && is_array($handover->document_files))
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-0 py-3">
+                    <h6 class="mb-0 text-dark fw-bold text-uppercase small">
+                        <i class="bi bi-file-earmark-text me-2 text-primary"></i>
+                        {{ __('messages.document_files') ?? 'Document Files' }}
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        @foreach($handover->document_files as $index => $file)
+                            <div class="col-md-4">
+                                <div class="d-flex align-items-center gap-2 p-2 border rounded">
+                                    <i class="bi bi-file-earmark-pdf text-danger fs-4"></i>
+                                    <div class="flex-grow-1">
+                                        <div class="fw-semibold small">{{ $file['name'] ?? 'Document ' . ($index + 1) }}</div>
+                                        @if(isset($file['size']))
+                                            <small class="text-muted">{{ number_format($file['size'] / 1024, 2) }} KB</small>
+                                        @endif
+                                    </div>
+                                    <a href="{{ asset('storage/' . ($file['path'] ?? $file)) }}" 
+                                       target="_blank" 
+                                       class="btn btn-sm btn-outline-primary"
+                                       download>
+                                        <i class="bi bi-download"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+        @endif
+
         {{-- Documents Table --}}
         <div class="card border-0 shadow-sm mb-4">
             @php
@@ -218,6 +257,7 @@
                 ];
 
                 $documents = $handover->documents ?? [];
+                $documentFiles = $handover->document_files ?? [];
                 $equipment = $handover->equipment ?? [];
                 $equipmentCounts = $equipment['counts'] ?? [];
             @endphp
@@ -238,6 +278,7 @@
                                 <th class="text-center" style="width: 80px;">{{ __('messages.no') }}</th>
                                 <th style="width: 250px;">{{ __('messages.observation') ?? 'Observation' }}</th>
                                 <th style="width: 150px;">{{ __('messages.image') ?? 'Image' }}</th>
+                                <th style="width: 150px;">{{ __('messages.document_file') ?? 'Document File' }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -258,6 +299,19 @@
                                                      class="img-thumbnail" 
                                                      style="max-width: 80px; max-height: 80px; cursor: pointer;"
                                                      onclick="window.open(this.src, '_blank')">
+                                            @else
+                                                <span class="text-muted small">—</span>
+                                            @endif
+                                        </td>
+                                        <td class="text-center">
+                                            @if(isset($documentFiles[$key]['path']) && $documentFiles[$key]['path'])
+                                                <a href="{{ asset('storage/' . $documentFiles[$key]['path']) }}" 
+                                                   target="_blank" 
+                                                   class="btn btn-sm btn-outline-primary"
+                                                   download>
+                                                    <i class="bi bi-download me-1"></i>
+                                                    {{ $documentFiles[$key]['name'] ?? __('messages.download') }}
+                                                </a>
                                             @else
                                                 <span class="text-muted small">—</span>
                                             @endif
@@ -283,6 +337,19 @@
                                                      class="img-thumbnail" 
                                                      style="max-width: 80px; max-height: 80px; cursor: pointer;"
                                                      onclick="window.open(this.src, '_blank')">
+                                            @else
+                                                <span class="text-muted small">—</span>
+                                            @endif
+                                        </td>
+                                        <td class="text-center">
+                                            @if(isset($documentFiles[$key]['path']) && $documentFiles[$key]['path'])
+                                                <a href="{{ asset('storage/' . $documentFiles[$key]['path']) }}" 
+                                                   target="_blank" 
+                                                   class="btn btn-sm btn-outline-primary"
+                                                   download>
+                                                    <i class="bi bi-download me-1"></i>
+                                                    {{ $documentFiles[$key]['name'] ?? __('messages.download') }}
+                                                </a>
                                             @else
                                                 <span class="text-muted small">—</span>
                                             @endif
@@ -331,6 +398,19 @@
                                                      class="img-thumbnail" 
                                                      style="max-width: 80px; max-height: 80px; cursor: pointer;"
                                                      onclick="window.open(this.src, '_blank')">
+                                            @else
+                                                <span class="text-muted small">—</span>
+                                            @endif
+                                        </td>
+                                        <td class="text-center">
+                                            @if(isset($documentFiles['options'][$chunkIndex]['path']) && $documentFiles['options'][$chunkIndex]['path'])
+                                                <a href="{{ asset('storage/' . $documentFiles['options'][$chunkIndex]['path']) }}" 
+                                                   target="_blank" 
+                                                   class="btn btn-sm btn-outline-primary"
+                                                   download>
+                                                    <i class="bi bi-download me-1"></i>
+                                                    {{ $documentFiles['options'][$chunkIndex]['name'] ?? __('messages.download') }}
+                                                </a>
                                             @else
                                                 <span class="text-muted small">—</span>
                                             @endif

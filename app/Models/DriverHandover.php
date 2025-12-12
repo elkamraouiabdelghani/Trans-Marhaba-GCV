@@ -20,11 +20,13 @@ class DriverHandover extends Model
         'vehicle_km',
         'gasoil',
         'handover_date',
+        'back_date',
         'location',
         'cause',
         'status',
         'handover_file_path',
         'documents',
+        'document_files',
         'equipment',
         'anomalies_description',
         'anomalies_actions',
@@ -32,7 +34,9 @@ class DriverHandover extends Model
 
     protected $casts = [
         'handover_date' => 'date',
+        'back_date' => 'date',
         'documents' => 'array',
+        'document_files' => 'array',
         'equipment' => 'array',
     ];
 

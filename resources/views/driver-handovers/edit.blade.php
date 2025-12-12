@@ -41,7 +41,7 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">{{ __('messages.driver_replacement') }}</label>
-                            <select name="driver_to_id" class="form-select @error('driver_to_id') is-invalid @enderror">
+                            <select name="driver_to_id" id="driver-to-select" class="form-select @error('driver_to_id') is-invalid @enderror">
                                 <option value="">{{ __('messages.select_driver') }}</option>
                                 @foreach($drivers as $id => $name)
                                     <option value="{{ $id }}" {{ (string) old('driver_to_id', $handover->driver_to_id) === (string) $id ? 'selected' : '' }}>
@@ -71,18 +71,8 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">{{ __('messages.vehicle_km') }}</label>
-                            <input type="number" name="vehicle_km" id="vehicle-km-input" value="{{ old('vehicle_km', $handover->vehicle_km) }}" class="form-control @error('vehicle_km') is-invalid @enderror" min="0">
+                            <input type="number" name="vehicle_km" id="vehicle-km-input" value="{{ old('vehicle_km', $handover->vehicle_km) }}" placeholder="0" class="form-control @error('vehicle_km') is-invalid @enderror" min="0">
                             @error('vehicle_km')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">{{ __('messages.code') ?? 'Code' }}</label>
-                            <input type="text" 
-                                   name="code" 
-                                   value="{{ old('code', $handover->code) }}" 
-                                   class="form-control @error('code') is-invalid @enderror">
-                            @error('code')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
@@ -100,20 +90,6 @@
                             @enderror
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">{{ __('messages.date') }}</label>
-                            <input type="date" name="handover_date" value="{{ old('handover_date', optional($handover->handover_date)->toDateString()) }}" class="form-control @error('handover_date') is-invalid @enderror">
-                            @error('handover_date')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">{{ __('messages.location') }}</label>
-                            <input type="text" name="location" value="{{ old('location', $handover->location) }}" class="form-control @error('location') is-invalid @enderror">
-                            @error('location')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-                        <div class="">
                             <label class="form-label">{{ __('messages.cause') }}</label>
                             @php
                                 $currentCause = old('cause', $handover->cause);
@@ -144,6 +120,93 @@
                                 @enderror
                             </div>
                         </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{{ __('messages.handover_date') ?? 'Date de sortie' }}</label>
+                            <input type="date" name="handover_date" value="{{ old('handover_date', optional($handover->handover_date)->toDateString()) }}" class="form-control @error('handover_date') is-invalid @enderror">
+                            @error('handover_date')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                        <div class="col-md-6" id="back-date-container" style="display: none;">
+                            <label class="form-label">{{ __('messages.back_date') ?? 'Date de retour' }}</label>
+                            <input type="date" name="back_date" id="back-date-input" value="{{ old('back_date', optional($handover->back_date)->toDateString()) }}" class="form-control @error('back_date') is-invalid @enderror">
+                            @error('back_date')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{{ __('messages.location') }}</label>
+                            <input type="text" name="location" value="{{ old('location', $handover->location) }}" placeholder="Tangier..." class="form-control @error('location') is-invalid @enderror">
+                            @error('location')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                        {{-- documents input --}}
+                        <div class="col-12">
+                            <label class="form-label fw-bold mb-3">{{ __('messages.upload_document_files') }}</label>
+                            @php
+                                $existingFiles = old('document_files', $handover->document_files ?? []);
+                            @endphp
+                            @if(!empty($existingFiles) && is_array($existingFiles))
+                                <div class="mb-3">
+                                    <small class="text-muted d-block mb-2 fw-semibold">{{ __('messages.existing_files') }}:</small>
+                                    <div class="row g-2">
+                                        @foreach($existingFiles as $index => $file)
+                                            <div class="col-md-4">
+                                                <div class="d-flex align-items-center gap-2 p-2 bg-light border rounded">
+                                                    <i class="bi bi-file-earmark text-primary"></i>
+                                                    <div class="flex-grow-1">
+                                                        <div class="small fw-semibold">{{ $file['name'] ?? basename($file['path'] ?? $file) }}</div>
+                                                        @if(isset($file['size']))
+                                                            <small class="text-muted">{{ number_format($file['size'] / 1024, 2) }} KB</small>
+                                                        @endif
+                                                    </div>
+                                                    <a href="{{ asset('storage/' . ($file['path'] ?? $file)) }}" 
+                                                       target="_blank" 
+                                                       class="btn btn-sm btn-outline-primary">
+                                                        <i class="bi bi-eye"></i>
+                                                    </a>
+                                                    <button type="button" 
+                                                            class="btn btn-sm btn-outline-danger remove-existing-file-btn" 
+                                                            data-index="{{ $index }}">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endif
+                            <div class="border-2 border-dashed rounded p-4 text-center @error('documents_files') border-danger @else border-secondary @enderror" 
+                                 id="document-files-dropzone"
+                                 style="min-height: 150px; background-color: #f8f9fa; cursor: pointer; transition: all 0.3s ease;"
+                                 onmouseover="this.style.backgroundColor='#e9ecef'" 
+                                 onmouseout="this.style.backgroundColor='#f8f9fa'">
+                                <input type="file" 
+                                       name="documents_files[]" 
+                                       id="documents-files-input"
+                                       accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif"
+                                       class="d-none @error('documents_files') is-invalid @enderror"
+                                       multiple>
+                                <div id="dropzone-content">
+                                    <i class="bi bi-cloud-upload fs-1 text-dark mb-3"></i>
+                                    <p class="mb-2 fw-semibold">{{ __('messages.upload_document_files') }}</p>
+                                    <p class="text-muted small mb-2">{{ __('messages.multiple_files_hint') }}</p>
+                                    <p class="text-muted small mb-0">{{ __('messages.accepted_formats') }}</p>
+                                    <button type="button" class="btn btn-dark btn-sm mt-3" onclick="document.getElementById('documents-files-input').click()">
+                                        <i class="bi bi-folder2-open me-2"></i>{{ __('messages.select_files') }}
+                                    </button>
+                                </div>
+                                <div id="selected-files-list" class="mt-3 text-start" style="display: none;">
+                                    <p class="fw-semibold mb-2">{{ __('messages.selected_files') }}:</p>
+                                    <ul id="files-list" class="list-unstyled mb-0"></ul>
+                                </div>
+                            </div>
+                            @error('documents_files')
+                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                            @enderror
+                            <input type="hidden" name="removed_files" id="removed-files-input" value="">
+                        </div>
                     </div>
                 </div>
                 <hr class="my-4" style="width: 97%; margin: 0 auto;">
@@ -160,7 +223,7 @@
                         'carnet_metrologique' => 'CARNET METROLOGIQUE + ATTESTATION D\'INSTALLATION',
                         'attestation_flexible' => 'ATTESTATION DE FLEXIBLE',
                         'attestation_extincteurs' => 'ATTESTATION DES EXTINCTEURS',
-                        'manuel_atlas' => 'MANUEL ATLAS',
+                        'manuel_atlas' => 'MANUEL LES RISQUES ET AIRS REPOS',
                     ];
 
                     $documentCheckboxes = [
@@ -174,7 +237,7 @@
                         'cheque_dv' => 'CHEQUE D.V',
                         'facture_bl_dv' => 'FACTURE & BL CACHETE D.V',
                         'certificat_jaugeage' => 'CERTIFICAT DE JAUGEAGE',
-                        'attestation_deplacement' => 'Attestation de déplacement obligatoire',
+                        'attestation_deplacement' => 'Attestation de déplacement (optionnel)',
                     ];
 
                     $documents = old('documents', $handover->documents ?? []);
@@ -477,13 +540,52 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const driverSelect = document.getElementById('driver-from-select');
+            const driverFromSelect = document.getElementById('driver-from-select');
+            const driverToSelect = document.getElementById('driver-to-select');
             const vehicleSelect = document.getElementById('vehicle-select');
             const vehicleKmInput = document.getElementById('vehicle-km-input');
             const vehicleMileageMap = @json($vehicleMileageMap);
 
-            if (!driverSelect || !vehicleSelect) {
+            if (!driverFromSelect || !vehicleSelect) {
                 return;
+            }
+
+            // Function to filter drivers - exclude selected driver from the other dropdown
+            function filterDriverOptions() {
+                const driverFromValue = driverFromSelect.value;
+                const driverToValue = driverToSelect ? driverToSelect.value : '';
+
+                // Filter driver_to dropdown - exclude driver_from selection
+                if (driverToSelect) {
+                    Array.from(driverToSelect.options).forEach(option => {
+                        if (option.value === '') {
+                            // Keep the empty option visible
+                            option.style.display = '';
+                        } else if (option.value === driverFromValue && driverFromValue !== '' && option.value !== driverToValue) {
+                            // Hide the selected driver_from in driver_to dropdown (unless it's the current selection)
+                            option.style.display = 'none';
+                        } else {
+                            // Show all other options
+                            option.style.display = '';
+                        }
+                    });
+                }
+
+                // Filter driver_from dropdown - exclude driver_to selection
+                if (driverFromSelect) {
+                    Array.from(driverFromSelect.options).forEach(option => {
+                        if (option.value === '') {
+                            // Keep the empty option visible
+                            option.style.display = '';
+                        } else if (option.value === driverToValue && driverToValue !== '' && option.value !== driverFromValue) {
+                            // Hide the selected driver_to in driver_from dropdown (unless it's the current selection)
+                            option.style.display = 'none';
+                        } else {
+                            // Show all other options
+                            option.style.display = '';
+                        }
+                    });
+                }
             }
 
             const applyVehicleSelection = (vehicleId) => {
@@ -507,46 +609,189 @@
                 }
             };
 
-            driverSelect.addEventListener('change', () => {
-                const selectedOption = driverSelect.options[driverSelect.selectedIndex];
+            driverFromSelect.addEventListener('change', () => {
+                const selectedOption = driverFromSelect.options[driverFromSelect.selectedIndex];
                 const vehicleId = selectedOption?.getAttribute('data-vehicle');
                 applyVehicleSelection(vehicleId);
+                // Filter driver options when driver_from changes
+                filterDriverOptions();
             });
+
+            // Filter driver options when driver_to changes
+            if (driverToSelect) {
+                driverToSelect.addEventListener('change', () => {
+                    filterDriverOptions();
+                });
+            }
 
             vehicleSelect.addEventListener('change', () => {
                 updateVehicleKm(vehicleSelect.value);
             });
 
+            // Initialize filters on page load
+            filterDriverOptions();
             // Initialize on page load
             if (vehicleSelect.value) {
                 updateVehicleKm(vehicleSelect.value);
             }
 
-            // Handle cause dropdown - show/hide "other" input
+            // Handle cause dropdown - show/hide "other" input and back_date
             const causeSelect = document.getElementById('cause-select');
             const causeOtherInput = document.getElementById('cause-other-input');
             const causeOtherText = document.getElementById('cause-other-text');
+            const backDateContainer = document.getElementById('back-date-container');
+            const backDateInput = document.getElementById('back-date-input');
 
-            if (causeSelect && causeOtherInput) {
+            function toggleBackDate() {
+                if (!causeSelect || !backDateContainer || !backDateInput) return;
+                
+                const cause = causeSelect.value;
+                // Show back_date for malade, conge, or other
+                if (cause === 'malade' || cause === 'conge' || cause === 'other') {
+                    backDateContainer.style.display = 'block';
+                    backDateInput.required = true;
+                } else {
+                    backDateContainer.style.display = 'none';
+                    backDateInput.required = false;
+                    if (cause !== 'malade' && cause !== 'conge' && cause !== 'other') {
+                        backDateInput.value = '';
+                    }
+                }
+            }
+
+            if (causeSelect) {
                 causeSelect.addEventListener('change', function() {
-                    if (this.value === 'other') {
-                        causeOtherInput.style.display = 'block';
-                        if (causeOtherText) {
-                            causeOtherText.required = true;
-                        }
-                    } else {
-                        causeOtherInput.style.display = 'none';
-                        if (causeOtherText) {
-                            causeOtherText.required = false;
-                            if (this.value !== 'other') {
-                                causeOtherText.value = '';
+                    // Handle "other" input
+                    if (causeOtherInput) {
+                        if (this.value === 'other') {
+                            causeOtherInput.style.display = 'block';
+                            if (causeOtherText) {
+                                causeOtherText.required = true;
+                            }
+                        } else {
+                            causeOtherInput.style.display = 'none';
+                            if (causeOtherText) {
+                                causeOtherText.required = false;
+                                if (this.value !== 'other') {
+                                    causeOtherText.value = '';
+                                }
                             }
                         }
                     }
+                    
+                    // Handle back_date
+                    toggleBackDate();
                 });
 
                 // Trigger on page load to set initial state
+                toggleBackDate();
                 causeSelect.dispatchEvent(new Event('change'));
+            }
+
+            // Handle existing file removal
+            const removedFiles = [];
+            document.querySelectorAll('.remove-existing-file-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const index = this.getAttribute('data-index');
+                    removedFiles.push(index);
+                    document.getElementById('removed-files-input').value = JSON.stringify(removedFiles);
+                    this.closest('.col-md-4').style.display = 'none';
+                });
+            });
+
+            // Document files upload area
+            const dropzone = document.getElementById('document-files-dropzone');
+            const fileInput = document.getElementById('documents-files-input');
+            const filesList = document.getElementById('files-list');
+            const selectedFilesDiv = document.getElementById('selected-files-list');
+            const dropzoneContent = document.getElementById('dropzone-content');
+
+            if (dropzone && fileInput) {
+                // Click on dropzone to trigger file input
+                dropzone.addEventListener('click', function(e) {
+                    if (e.target !== fileInput && !e.target.closest('button')) {
+                        fileInput.click();
+                    }
+                });
+
+                // Drag and drop functionality
+                dropzone.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.style.backgroundColor = '#e3f2fd';
+                    this.style.borderColor = '#2196f3';
+                });
+
+                dropzone.addEventListener('dragleave', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.style.backgroundColor = '#f8f9fa';
+                    this.style.borderColor = '#6c757d';
+                });
+
+                dropzone.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.style.backgroundColor = '#f8f9fa';
+                    this.style.borderColor = '#6c757d';
+                    
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0) {
+                        // Create a new FileList and add files
+                        const dataTransfer = new DataTransfer();
+                        Array.from(fileInput.files).forEach(file => dataTransfer.items.add(file));
+                        Array.from(files).forEach(file => dataTransfer.items.add(file));
+                        fileInput.files = dataTransfer.files;
+                        updateFilesList();
+                    }
+                });
+
+                // Handle file selection
+                fileInput.addEventListener('change', function() {
+                    updateFilesList();
+                });
+
+                function updateFilesList() {
+                    const files = Array.from(fileInput.files);
+                    if (files.length > 0) {
+                        filesList.innerHTML = '';
+                        files.forEach((file, index) => {
+                            const li = document.createElement('li');
+                            li.className = 'd-flex align-items-center justify-content-between mb-2 p-2 bg-white rounded border';
+                            li.innerHTML = `
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="bi bi-file-earmark text-primary"></i>
+                                    <span class="small">${file.name}</span>
+                                    <span class="badge bg-secondary small">${(file.size / 1024).toFixed(2)} KB</span>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-danger remove-file-btn" data-index="${index}">
+                                    <i class="bi bi-x"></i>
+                                </button>
+                            `;
+                            filesList.appendChild(li);
+                        });
+                        selectedFilesDiv.style.display = 'block';
+                        dropzoneContent.style.display = 'none';
+                    } else {
+                        selectedFilesDiv.style.display = 'none';
+                        dropzoneContent.style.display = 'block';
+                    }
+                }
+
+                // Remove file from list
+                if (filesList) {
+                    filesList.addEventListener('click', function(e) {
+                        if (e.target.closest('.remove-file-btn')) {
+                            const index = parseInt(e.target.closest('.remove-file-btn').getAttribute('data-index'));
+                            const dataTransfer = new DataTransfer();
+                            const files = Array.from(fileInput.files);
+                            files.splice(index, 1);
+                            files.forEach(file => dataTransfer.items.add(file));
+                            fileInput.files = dataTransfer.files;
+                            updateFilesList();
+                        }
+                    });
+                }
             }
         });
     </script>

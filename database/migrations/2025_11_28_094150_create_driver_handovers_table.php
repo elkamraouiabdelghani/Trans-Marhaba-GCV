@@ -22,9 +22,11 @@ return new class extends Migration
             $table->unsignedInteger('vehicle_km')->nullable();
             $table->decimal('gasoil', 8, 2)->nullable();
             $table->date('handover_date')->nullable();
+            $table->date('back_date')->nullable();
             $table->string('location')->nullable();
             $table->string('cause')->nullable();
             $table->json('documents')->nullable();
+            $table->json('document_files')->nullable();
             $table->json('equipment')->nullable();
             $table->text('anomalies_description')->nullable();
             $table->text('anomalies_actions')->nullable();

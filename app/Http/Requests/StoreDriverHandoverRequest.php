@@ -13,7 +13,7 @@ class StoreDriverHandoverRequest extends FormRequest
 
     public function rules(): array
     {
-        return [
+        $rules = [
             'code' => ['nullable', 'string', 'max:255'],
             'driver_from_id' => ['nullable', 'exists:drivers,id'],
             'driver_from_name' => ['nullable', 'string', 'max:255'],
@@ -23,6 +23,7 @@ class StoreDriverHandoverRequest extends FormRequest
             'vehicle_km' => ['nullable', 'integer', 'min:0'],
             'gasoil' => ['nullable', 'numeric', 'min:0'],
             'handover_date' => ['nullable', 'date'],
+            'back_date' => ['nullable', 'date', 'after_or_equal:handover_date'],
             'location' => ['nullable', 'string', 'max:255'],
             'cause' => ['nullable', 'string', 'max:255'],
             'cause_other' => ['nullable', 'string', 'max:255', 'required_if:cause,other'],
@@ -30,7 +31,11 @@ class StoreDriverHandoverRequest extends FormRequest
             'handover_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
             'documents' => ['nullable', 'array'],
             'documents_images' => ['nullable', 'array'],
-            'documents_images.*' => ['nullable', 'image', 'mimes:jpeg,jpg,png,gif', 'max:5120'],
+            'documents_images.options' => ['nullable', 'array'],
+            'documents_images.options.*' => ['nullable', 'image', 'mimes:jpeg,jpg,png,gif', 'max:5120'],
+            'documents_files' => ['nullable', 'array'],
+            'documents_files.*' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,gif,doc,docx,xls,xlsx', 'max:10240'],
+            'removed_files' => ['nullable', 'string'],
             'equipment' => ['nullable', 'array'],
             'equipment_images' => ['nullable', 'array'],
             'equipment_images.*' => ['nullable', 'image', 'mimes:jpeg,jpg,png,gif', 'max:5120'],
@@ -38,6 +43,19 @@ class StoreDriverHandoverRequest extends FormRequest
             'anomalies_description' => ['nullable', 'string'],
             'anomalies_actions' => ['nullable', 'string'],
         ];
+
+        // Add dynamic validation for documents_images keys (excluding 'options')
+        // These are the document row images like 'cartes_grises', 'certificats_visite', etc.
+        if ($this->has('documents_images')) {
+            $images = $this->input('documents_images', []);
+            foreach ($images as $key => $value) {
+                if ($key !== 'options') {
+                    $rules["documents_images.{$key}"] = ['nullable', 'image', 'mimes:jpeg,jpg,png,gif', 'max:5120'];
+                }
+            }
+        }
+
+        return $rules;
     }
 }
 

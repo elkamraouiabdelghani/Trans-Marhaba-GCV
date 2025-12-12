@@ -252,7 +252,7 @@
                     Code : <span style="font-weight: bold;">{{ $handover->code ?? 'N/A' }}</span>
                 </td>
                 <td class="info-label">
-                    Date : <span style="font-weight: bold;">{{ $handover->handover_date ? $handover->handover_date->format('d/m/Y') : 'N/A' }}</span>
+                    Date de sortie : <span style="font-weight: bold;">{{ $handover->handover_date ? $handover->handover_date->format('d/m/Y') : 'N/A' }}</span>
                 </td>
             </tr>
             <tr>
@@ -260,10 +260,10 @@
                     Lieu : <span style="font-weight: bold;">{{ $handover->location ?? 'N/A' }}</span>
                 </td>
                 <td class="info-label">
-                    Motif : <span style="font-weight: bold;">{{ $handover->cause ?? 'N/A' }}</span>
+                    Date de retour : <span style="font-weight: bold;">{{ $handover->back_date ? $handover->back_date->format('d/m/Y') : 'N/A' }}</span>
                 </td>
                 <td class="info-label">
-                    Nom / prénom chauffeur à Bord : <span style="font-weight: bold;">{{ $handover->driver_from_name ?? ($handover->driverFrom->full_name ?? 'N/A') }}</span>
+                    Motif : <span style="font-weight: bold;">{{ $handover->cause ?? 'N/A' }}</span>
                 </td>
             </tr>
             <tr>
@@ -274,6 +274,11 @@
                     GASOIL : <span style="font-weight: bold;">{{ $handover->gasoil ? number_format($handover->gasoil, 2) : 'N/A' }}</span>
                 </td>
                 <td class="info-label">
+                    Nom / prénom chauffeur à Bord : <span style="font-weight: bold;">{{ $handover->driver_from_name ?? ($handover->driverFrom->full_name ?? 'N/A') }}</span>
+                </td>
+            </tr>
+            <tr>
+                <td class="info-label" colspan="3">
                     Nom / prénom chauffeur remplaçant : <span style="font-weight: bold;">{{ $handover->driver_to_name ?? ($handover->driverTo->full_name ?? 'N/A') }}</span>
                 </td>
             </tr>
@@ -368,6 +373,54 @@
                             @if(count($imageRow) < 2)
                                 <td></td>
                             @endif
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    @endif
+
+    {{-- Document Files Section --}}
+    @php
+        $documentFiles = [];
+        foreach($documentRows as $key => $label) {
+            if(isset($documents["{$key}_file"]) && $documents["{$key}_file"]) {
+                $documentFiles[] = [
+                    'label' => $label,
+                    'file_name' => $documents["{$key}_file_name"] ?? 'Document'
+                ];
+            }
+        }
+        // Add files from document options
+        if(isset($documents['options']) && is_array($documents['options'])) {
+            $optionsChunks = array_chunk($documentCheckboxes, 3, true);
+            foreach($optionsChunks as $chunkIndex => $chunk) {
+                $rowKey = 'row_' . $chunkIndex;
+                if(isset($documents['options'][$rowKey]['file']) && $documents['options'][$rowKey]['file']) {
+                    $labels = array_values($chunk);
+                    $documentFiles[] = [
+                        'label' => implode(' / ', $labels),
+                        'file_name' => $documents['options'][$rowKey]['file_name'] ?? 'Document'
+                    ];
+                }
+            }
+        }
+    @endphp
+    @if(count($documentFiles) > 0)
+        <div style="margin-top: 10px; margin-bottom: 10px; page-break-inside: avoid;">
+            <div style="font-weight: bold; font-size: 9px; margin-bottom: 5px; color: #166534;">FICHIERS DES DOCUMENTS</div>
+            <table style="width: 100%; border-collapse: collapse; font-size: 8px;">
+                <thead>
+                    <tr style="background-color: #e0f2fe;">
+                        <th style="border: 1px solid #94a3b8; padding: 4px; text-align: left;">Document</th>
+                        <th style="border: 1px solid #94a3b8; padding: 4px; text-align: left;">Nom du fichier</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($documentFiles as $fileData)
+                        <tr>
+                            <td style="border: 1px solid #94a3b8; padding: 4px; font-weight: bold;">{{ $fileData['label'] }}</td>
+                            <td style="border: 1px solid #94a3b8; padding: 4px;">{{ $fileData['file_name'] }}</td>
                         </tr>
                     @endforeach
                 </tbody>
