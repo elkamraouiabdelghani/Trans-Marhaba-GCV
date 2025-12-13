@@ -180,23 +180,35 @@
                     </h6>
                 </div>
                 <div class="card-body">
-                    <div class="row g-2">
+                    <div class="row g-3">
                         @foreach($handover->document_files as $index => $file)
-                            <div class="col-md-4">
-                                <div class="d-flex align-items-center gap-2 p-2 border rounded">
-                                    <i class="bi bi-file-earmark-pdf text-danger fs-4"></i>
-                                    <div class="flex-grow-1">
-                                        <div class="fw-semibold small">{{ $file['name'] ?? 'Document ' . ($index + 1) }}</div>
+                            <div class="col-md-3 col-sm-6">
+                                <div class="border rounded p-3 h-100 d-flex flex-column">
+                                    <div class="text-center mb-2">
+                                        <i class="bi bi-file-earmark-pdf text-danger" style="font-size: 2.5rem;"></i>
+                                    </div>
+                                    <div class="text-center mb-2 flex-grow-1">
+                                        <div class="fw-semibold small text-truncate" title="{{ $file['name'] ?? 'Document ' . ($index + 1) }}">
+                                            {{ $file['name'] ?? 'Document ' . ($index + 1) }}
+                                        </div>
                                         @if(isset($file['size']))
                                             <small class="text-muted">{{ number_format($file['size'] / 1024, 2) }} KB</small>
                                         @endif
                                     </div>
-                                    <a href="{{ route('driver-handovers.document-file', ['driver_handover' => $handover, 'index' => $index]) }}" 
-                                       target="_blank" 
-                                       class="btn btn-sm btn-outline-primary"
-                                       download>
-                                        <i class="bi bi-download"></i>
-                                    </a>
+                                    <div class="d-flex gap-2 justify-content-center">
+                                        <a href="{{ route('driver-handovers.document-file', ['driver_handover' => $handover, 'index' => $index]) }}" 
+                                           target="_blank" 
+                                           class="btn btn-sm btn-outline-primary"
+                                           title="{{ __('messages.view_file') ?? 'View' }}">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a href="{{ route('driver-handovers.document-file', ['driver_handover' => $handover, 'index' => $index]) }}" 
+                                           class="btn btn-sm btn-outline-success"
+                                           download
+                                           title="{{ __('messages.download') ?? 'Download' }}">
+                                            <i class="bi bi-download"></i>
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
                         @endforeach

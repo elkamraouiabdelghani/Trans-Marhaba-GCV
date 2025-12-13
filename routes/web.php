@@ -241,6 +241,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/driver-handovers/{driver_handover}/document-image/{key}', [DriverHandoverController::class, 'showDocumentImage'])->name('driver-handovers.document-image');
     Route::get('/driver-handovers/{driver_handover}/equipment-image/{key}', [DriverHandoverController::class, 'showEquipmentImage'])->name('driver-handovers.equipment-image');
     Route::get('/driver-handovers/{driver_handover}/pdf', [DriverHandoverController::class, 'downloadPdf'])->name('driver-handovers.pdf');
+    Route::delete('/driver-handovers/{driver_handover}/document-file/{index}', [DriverHandoverController::class, 'deleteDocumentFile'])->name('driver-handovers.document-file.delete');
     Route::resource('driver-handovers', DriverHandoverController::class);
     Route::post('/driver-handovers/{driver_handover}/confirm', [DriverHandoverController::class, 'confirm'])->name('driver-handovers.confirm');
 

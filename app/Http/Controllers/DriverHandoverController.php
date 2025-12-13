@@ -457,8 +457,46 @@ class DriverHandoverController extends Controller
         $data['documents'] = $documents;
 
         // Handle document_files - general document files for the handover (multiple files)
-        $documentFiles = [];
+        // Start with existing files if updating
+        $documentFiles = ($handover && isset($handover->document_files) && is_array($handover->document_files)) 
+            ? $handover->document_files 
+            : [];
         
+        // Handle removed files first (before adding new ones)
+        $removedFilesData = $request->input('removed_files', []);
+        if (!empty($removedFilesData) && is_array($removedFilesData)) {
+            // Filter out removed files by matching path
+            $documentFiles = array_filter($documentFiles, function($file) use ($removedFilesData) {
+                $filePath = $file['path'] ?? $file;
+                if (is_array($filePath)) {
+                    $filePath = $filePath['path'] ?? null;
+                }
+                
+                // Check if this file is in the removed files list
+                foreach ($removedFilesData as $removedFileJson) {
+                    $removedFile = json_decode($removedFileJson, true);
+                    if ($removedFile) {
+                        $removedPath = $removedFile['path'] ?? $removedFile;
+                        if (is_array($removedPath)) {
+                            $removedPath = $removedPath['path'] ?? null;
+                        }
+                        if ($filePath === $removedPath) {
+                            // Delete file from storage
+                            if ($filePath && Storage::disk('public')->exists($filePath)) {
+                                Storage::disk('public')->delete($filePath);
+                            }
+                            return false; // Remove this file
+                        }
+                    }
+                }
+                return true; // Keep this file
+            });
+            
+            // Re-index array
+            $documentFiles = array_values($documentFiles);
+        }
+        
+        // Handle new file uploads
         if ($request->hasFile('documents_files')) {
             $files = $request->file('documents_files');
             
@@ -473,49 +511,6 @@ class DriverHandoverController extends Controller
                         'mime_type' => $file->getMimeType(),
                     ];
                 }
-            }
-            
-            // Merge with existing files if updating (excluding removed files)
-            if ($handover && isset($handover->document_files) && is_array($handover->document_files)) {
-                $removedFiles = json_decode($request->input('removed_files', '[]'), true) ?? [];
-                $existingFiles = array_filter($handover->document_files, function($index) use ($removedFiles) {
-                    return !in_array($index, $removedFiles);
-                }, ARRAY_FILTER_USE_KEY);
-                
-                // Delete removed files from storage
-                foreach ($removedFiles as $index) {
-                    if (isset($handover->document_files[$index]['path'])) {
-                        $oldPath = $handover->document_files[$index]['path'];
-                        if (Storage::disk('public')->exists($oldPath)) {
-                            Storage::disk('public')->delete($oldPath);
-                        }
-                    }
-                }
-                
-                // Re-index array and merge
-                $existingFiles = array_values($existingFiles);
-                $documentFiles = array_merge($existingFiles, $documentFiles);
-            }
-        } elseif ($handover && isset($handover->document_files)) {
-            // Handle removed files even if no new files uploaded
-            $removedFiles = json_decode($request->input('removed_files', '[]'), true) ?? [];
-            if (!empty($removedFiles)) {
-                // Delete removed files from storage
-                foreach ($removedFiles as $index) {
-                    if (isset($handover->document_files[$index]['path'])) {
-                        $oldPath = $handover->document_files[$index]['path'];
-                        if (Storage::disk('public')->exists($oldPath)) {
-                            Storage::disk('public')->delete($oldPath);
-                        }
-                    }
-                }
-                
-                $existingFiles = array_filter($handover->document_files, function($index) use ($removedFiles) {
-                    return !in_array($index, $removedFiles);
-                }, ARRAY_FILTER_USE_KEY);
-                $documentFiles = array_values($existingFiles);
-            } else {
-                $documentFiles = $handover->document_files;
             }
         }
         
@@ -742,6 +737,53 @@ class DriverHandoverController extends Controller
             ]);
 
             abort(404);
+        }
+    }
+
+    /**
+     * Delete a document file from document_files array
+     */
+    public function deleteDocumentFile(DriverHandover $driver_handover, int $index)
+    {
+        try {
+            $documentFiles = $driver_handover->document_files ?? [];
+            
+            if (!isset($documentFiles[$index])) {
+                return response()->json(['error' => 'File not found'], 404);
+            }
+
+            $file = $documentFiles[$index];
+            $path = $file['path'] ?? $file;
+
+            if (is_array($path)) {
+                $path = $path['path'] ?? null;
+            }
+
+            // Delete the file from storage
+            if ($path) {
+                $disk = Storage::disk('public');
+                if ($disk->exists($path)) {
+                    $disk->delete($path);
+                }
+            }
+
+            // Remove from array
+            unset($documentFiles[$index]);
+            $documentFiles = array_values($documentFiles); // Re-index array
+
+            // Update the handover
+            $driver_handover->document_files = $documentFiles;
+            $driver_handover->save();
+
+            return response()->json(['success' => true, 'message' => __('messages.file_deleted_success') ?? 'File deleted successfully']);
+        } catch (\Throwable $e) {
+            Log::error('Failed to delete handover document file', [
+                'handover_id' => $driver_handover->id,
+                'index' => $index,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json(['error' => __('messages.file_delete_error') ?? 'Failed to delete file'], 500);
         }
     }
 }

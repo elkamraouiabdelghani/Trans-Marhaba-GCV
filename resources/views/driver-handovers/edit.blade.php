@@ -15,6 +15,37 @@
             </a>
         </div>
 
+        {{-- Display success messages --}}
+        @if(session('success'))
+            <div class="alert alert-success alert-dismissible fade show col-md-10 mx-auto" role="alert">
+                <i class="bi bi-check-circle me-2"></i>
+                {{ session('success') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        @endif
+
+        {{-- Display error messages --}}
+        @if(session('error'))
+            <div class="alert alert-danger alert-dismissible fade show col-md-10 mx-auto" role="alert">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                {{ session('error') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        @endif
+
+        {{-- Display validation errors --}}
+        @if($errors->any())
+            <div class="alert alert-danger alert-dismissible fade show col-md-10 mx-auto" role="alert">
+                <h6 class="alert-heading"><i class="bi bi-exclamation-triangle me-2"></i>{{ __('messages.validation_errors') ?? 'Validation Errors' }}</h6>
+                <ul class="mb-0">
+                    @foreach($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        @endif
+
         <div class="card border-0 shadow-sm col-md-10 mx-auto">
             <form method="POST" action="{{ route('driver-handovers.update', $handover) }}" enctype="multipart/form-data">
                 @csrf
@@ -150,33 +181,50 @@
                             @if(!empty($existingFiles) && is_array($existingFiles))
                                 <div class="mb-3">
                                     <small class="text-muted d-block mb-2 fw-semibold">{{ __('messages.existing_files') }}:</small>
-                                    <div class="row g-2">
+                                    <div class="row g-3" id="existing-files-container">
                                         @foreach($existingFiles as $index => $file)
-                                            <div class="col-md-4">
-                                                <div class="d-flex align-items-center gap-2 p-2 bg-light border rounded">
-                                                    <i class="bi bi-file-earmark text-primary"></i>
-                                                    <div class="flex-grow-1">
-                                                        <div class="small fw-semibold">{{ $file['name'] ?? basename($file['path'] ?? $file) }}</div>
+                                            <div class="col-md-3 col-sm-6 existing-file-item" 
+                                                 data-index="{{ $index }}"
+                                                 data-file='@json($file)'>
+                                                <div class="border rounded p-3 h-100 d-flex flex-column">
+                                                    <div class="text-center mb-2">
+                                                        <i class="bi bi-file-earmark-pdf text-danger" style="font-size: 2.5rem;"></i>
+                                                    </div>
+                                                    <div class="text-center mb-2 flex-grow-1">
+                                                        <div class="fw-semibold small text-truncate" title="{{ $file['name'] ?? basename($file['path'] ?? $file) }}">
+                                                            {{ $file['name'] ?? basename($file['path'] ?? $file) }}
+                                                        </div>
                                                         @if(isset($file['size']))
                                                             <small class="text-muted">{{ number_format($file['size'] / 1024, 2) }} KB</small>
                                                         @endif
                                                     </div>
-                                                    <a href="{{ asset('storage/' . ($file['path'] ?? $file)) }}" 
-                                                       target="_blank" 
-                                                       class="btn btn-sm btn-outline-primary">
-                                                        <i class="bi bi-eye"></i>
-                                                    </a>
-                                                    <button type="button" 
-                                                            class="btn btn-sm btn-outline-danger remove-existing-file-btn" 
-                                                            data-index="{{ $index }}">
-                                                        <i class="bi bi-trash"></i>
-                                                    </button>
+                                                    <div class="d-flex gap-2 justify-content-center">
+                                                        <a href="{{ route('driver-handovers.document-file', ['driver_handover' => $handover, 'index' => $index]) }}" 
+                                                           target="_blank" 
+                                                           class="btn btn-sm btn-outline-primary"
+                                                           title="{{ __('messages.view_file') ?? 'View' }}">
+                                                            <i class="bi bi-eye"></i>
+                                                        </a>
+                                                        <a href="{{ route('driver-handovers.document-file', ['driver_handover' => $handover, 'index' => $index]) }}" 
+                                                           class="btn btn-sm btn-outline-success"
+                                                           download
+                                                           title="{{ __('messages.download') ?? 'Download' }}">
+                                                            <i class="bi bi-download"></i>
+                                                        </a>
+                                                        <button type="button" 
+                                                                class="btn btn-sm btn-outline-danger" 
+                                                                data-action="remove-file"
+                                                                title="{{ __('messages.delete') ?? 'Delete' }}">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         @endforeach
                                     </div>
                                 </div>
                             @endif
+                            <div id="removed-files-container"></div>
                             <div class="border-2 border-dashed rounded p-4 text-center @error('documents_files') border-danger @else border-secondary @enderror" 
                                  id="document-files-dropzone"
                                  style="min-height: 150px; background-color: #f8f9fa; cursor: pointer; transition: all 0.3s ease;"
@@ -205,7 +253,6 @@
                             @error('documents_files')
                                 <div class="invalid-feedback d-block">{{ $message }}</div>
                             @enderror
-                            <input type="hidden" name="removed_files" id="removed-files-input" value="">
                         </div>
                     </div>
                 </div>
@@ -688,16 +735,39 @@
                 causeSelect.dispatchEvent(new Event('change'));
             }
 
-            // Handle existing file removal
-            const removedFiles = [];
-            document.querySelectorAll('.remove-existing-file-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const index = this.getAttribute('data-index');
-                    removedFiles.push(index);
-                    document.getElementById('removed-files-input').value = JSON.stringify(removedFiles);
-                    this.closest('.col-md-4').style.display = 'none';
-                });
+            // Handle existing file removal (without page refresh)
+            document.addEventListener('click', function(event) {
+                const target = event.target.closest('[data-action="remove-file"]');
+                if (!target) return;
+
+                const fileItem = target.closest('.existing-file-item');
+                if (!fileItem) return;
+
+                const fileData = fileItem.getAttribute('data-file');
+                const fileInfo = fileData ? JSON.parse(fileData) : null;
+                if (!fileInfo) return;
+
+                removeExistingFile(fileItem, fileInfo);
             });
+
+            function removeExistingFile(element, fileInfo) {
+                addToRemovedFiles(fileInfo);
+                element.style.transition = 'all 0.3s ease';
+                element.style.transform = 'scale(0.95)';
+                element.style.opacity = '0';
+                setTimeout(() => element.remove(), 300);
+            }
+
+            function addToRemovedFiles(fileInfo) {
+                const container = document.getElementById('removed-files-container');
+                if (!container) return;
+
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = 'removed_files[]';
+                hiddenInput.value = JSON.stringify(fileInfo);
+                container.appendChild(hiddenInput);
+            }
 
             // Document files upload area
             const dropzone = document.getElementById('document-files-dropzone');
