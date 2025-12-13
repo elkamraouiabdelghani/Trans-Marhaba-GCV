@@ -1587,6 +1587,8 @@ return [
     'violation_edit_form_error' => 'Impossible d\'afficher le formulaire de modification pour le moment.',
     'violation_update_error' => 'Une erreur est survenue lors de la mise à jour de l\'infraction.',
     'violation_delete_error' => 'Une erreur est survenue lors de la suppression de l\'infraction.',
+    'confirm_delete_violation_title' => 'Confirmer la suppression',
+    'confirm_delete_violation' => 'Êtes-vous sûr de vouloir supprimer cette infraction ? Cette action est irréversible et supprimera définitivement l\'infraction et tous les documents associés.',
     'violation_marked_as_confirmed' => 'Infraction marquée comme confirmée.',
     'violation_marked_as_rejected' => 'Infraction marquée comme rejetée.',
     'violation_mark_confirmed_error' => 'Une erreur est survenue lors du marquage de l\'infraction comme confirmée.',

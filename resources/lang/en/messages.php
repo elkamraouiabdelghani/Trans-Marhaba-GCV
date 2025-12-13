@@ -1598,6 +1598,8 @@ return [
     'violation_edit_form_error' => 'Unable to display the edit form at this time.',
     'violation_update_error' => 'An error occurred while updating the violation.',
     'violation_delete_error' => 'An error occurred while deleting the violation.',
+    'confirm_delete_violation_title' => 'Confirm Deletion',
+    'confirm_delete_violation' => 'Are you sure you want to delete this violation? This action cannot be undone and will permanently delete the violation and all associated documents.',
     'violation_marked_as_confirmed' => 'Violation marked as confirmed.',
     'violation_marked_as_rejected' => 'Violation marked as rejected.',
     'violation_mark_confirmed_error' => 'An error occurred while marking the violation as confirmed.',

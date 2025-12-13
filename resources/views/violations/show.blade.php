@@ -325,6 +325,11 @@
                                     </button>
                                 </form>
                             @endif
+                            <hr class="my-2">
+                            <button type="button" class="btn btn-sm btn-outline-danger w-100" data-bs-toggle="modal" data-bs-target="#deleteViolationModal">
+                                <i class="bi bi-trash me-2"></i>
+                                {{ __('messages.delete') }}
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -438,6 +443,42 @@
                     </div>
                 </div>
                 @endif
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Violation Confirmation Modal -->
+    <div class="modal fade" id="deleteViolationModal" tabindex="-1" aria-labelledby="deleteViolationModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="deleteViolationModalLabel">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        {{ __('messages.confirm_delete_violation_title') ?? __('messages.confirm_delete') }}
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="{{ __('messages.close') }}"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-3">{{ __('messages.confirm_delete_violation') }}</p>
+                    <div class="alert alert-warning mb-0">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <strong>{{ __('messages.warning') }}:</strong>
+                        {{ __('messages.delete_warning') }}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        {{ __('messages.cancel') }}
+                    </button>
+                    <form action="{{ route('violations.destroy', $violation) }}" method="POST" class="d-inline">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-trash me-2"></i>
+                            {{ __('messages.delete') }}
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
