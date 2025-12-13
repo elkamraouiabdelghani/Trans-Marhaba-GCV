@@ -46,12 +46,13 @@ class DriverConcernController extends Controller
             $concerns = $concernsQuery->paginate(12)->withQueryString();
 
             $totalConcerns = DriverConcern::count();
-            $totalDrivers = Driver::count();
-            $concernsPerDriverPercentage = $totalDrivers > 0 ? round(($totalConcerns / $totalDrivers) * 100, 1) : 0;
             
             $statusCounts = DriverConcern::select('status', DB::raw('COUNT(*) as aggregate'))
                 ->groupBy('status')
                 ->pluck('aggregate', 'status');
+            
+            $closedCount = $statusCounts['closed'] ?? 0;
+            $resolutionRate = $totalConcerns > 0 ? round(($closedCount / $totalConcerns) * 100, 1) : 0;
 
             $driverStats = DriverConcern::select('driver_id', DB::raw('COUNT(*) as total'))
                 ->with('driver:id,full_name')
@@ -83,7 +84,7 @@ class DriverConcernController extends Controller
                     'total' => $totalConcerns,
                     'in_progress' => $statusCounts['in_progress'] ?? 0,
                     'closed' => $statusCounts['closed'] ?? 0,
-                    'concerns_per_driver_percentage' => $concernsPerDriverPercentage,
+                    'resolution_rate' => $resolutionRate,
                 ],
                 'driverStats' => $driverStats,
             ]);

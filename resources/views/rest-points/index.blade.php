@@ -39,7 +39,7 @@
                 <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-2">
                     <h2 class="mb-0 fw-bold text-dark fs-4">
                         <i class="bi bi-geo-alt-fill me-2 text-primary"></i>
-                        {{ __('messages.rest_points') ?? 'Rest Points' }}
+                        {{ __('messages.rest_points') ?? 'Rest Areas' }}
                     </h2>
                     <div class="d-flex flex-column flex-md-row gap-2 gap-md-3 mt-2 mt-md-0">
                         <button type="button" id="exportPdfBtn" class="btn btn-sm btn-danger">
@@ -56,7 +56,7 @@
                         </a>
                         <a href="{{ route('rest-points.create') }}" class="btn btn-sm btn-dark">
                             <i class="bi bi-plus-circle me-2"></i>
-                            {{ __('messages.add_rest_point') ?? 'Add Rest Point' }}
+                            {{ __('messages.add_rest_point') ?? 'Add Rest Area' }}
                         </a>
                     </div>
                 </div>
@@ -113,7 +113,7 @@
             <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
                 <h5 class="mb-0 text-dark fw-bold">
                     <i class="bi bi-table me-2 text-primary"></i>
-                    {{ __('messages.rest_points') ?? 'Rest Points' }}
+                    {{ __('messages.rest_points') ?? 'Rest Areas' }}
                 </h5>
             </div>
             <div class="card-body p-0">
@@ -205,7 +205,7 @@
                                 <tr>
                                     <td colspan="6" class="text-center py-5 text-muted">
                                         <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-                                        {{ __('messages.no_rest_points_found') ?? 'No rest points found' }}
+                                        {{ __('messages.no_rest_points_found') ?? 'No rest areas found' }}
                                     </td>
                                 </tr>
                             @endforelse

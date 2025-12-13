@@ -18,8 +18,6 @@
         ];
     @endphp
 
-    
-
     <!-- Toast Container -->
     <div class="toast-container position-fixed top-0 start-50 translate-middle-x p-3" style="z-index: 1055;">
         @if(session('success'))
@@ -104,8 +102,8 @@
                                 <i class="bi bi-percent text-info fs-4"></i>
                             </div>
                             <div>
-                                <p class="text-muted mb-1">{{ __('messages.concerns_per_driver_percentage') }}</p>
-                                <h4 class="mb-0 fw-bold text-dark">{{ $stats['concerns_per_driver_percentage'] ?? 0 }}%</h4>
+                                <p class="text-muted mb-1">{{ __('messages.resolution_rate') }}</p>
+                                <h4 class="mb-0 fw-bold text-dark">{{ $stats['resolution_rate'] ?? 0 }}%</h4>
                             </div>
                         </div>
                     </div>

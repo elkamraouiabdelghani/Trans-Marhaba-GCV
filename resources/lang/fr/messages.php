@@ -1221,6 +1221,7 @@ return [
     'closed_concerns' => 'Clôturées',
     'open_concerns' => 'Ouvertes',
     'concerns_per_driver_percentage' => '% Préoccupations par conducteur',
+    'resolution_rate' => 'Taux de résolution',
     'driver_concern_distribution' => 'Préoccupations par conducteur',
     'no_driver_stats' => 'Aucune préoccupation enregistrée par conducteur pour le moment.',
     'quick_actions' => 'Actions rapides',
