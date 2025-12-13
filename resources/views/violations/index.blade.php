@@ -114,6 +114,24 @@
                 <form action="{{ route('violations.index') }}" method="GET" id="violationFiltersForm">
                     <div class="row g-3 align-items-end">
                         <div class="col-12 col-md-2">
+                            <label for="yearFilter" class="form-label fw-semibold">{{ __('messages.year') ?? 'Year' }}</label>
+                            <select name="year" id="yearFilter" class="form-select">
+                                @foreach($availableYears as $year)
+                                    <option value="{{ $year }}" @selected($selectedYear == $year)>{{ $year }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-2">
+                            <label for="monthFilter" class="form-label fw-semibold">{{ __('messages.month') ?? 'Month' }}</label>
+                            <select name="month" id="monthFilter" class="form-select">
+                                @for($i = 1; $i <= 12; $i++)
+                                    <option value="{{ $i }}" @selected($selectedMonth == $i)>
+                                        {{ \Carbon\Carbon::create(null, $i, 1)->translatedFormat('F') }}
+                                    </option>
+                                @endfor
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-2">
                             <label for="statusFilter" class="form-label fw-semibold">{{ __('messages.status') }}</label>
                             <select name="status" id="statusFilter" class="form-select">
                                 <option value="">{{ __('messages.all_status') }}</option>
@@ -141,14 +159,6 @@
                                     <option value="{{ $id }}" @selected(($filters['flotte_id'] ?? '') == $id)>{{ $name }}</option>
                                 @endforeach
                             </select>
-                        </div>
-                        <div class="col-12 col-md-2">
-                            <label for="dateFromFilter" class="form-label fw-semibold">{{ __('messages.date_from') }}</label>
-                            <input type="date" name="date_from" id="dateFromFilter" class="form-select" value="{{ $filters['date_from'] ?? '' }}">
-                        </div>
-                        <div class="col-12 col-md-2">
-                            <label for="dateToFilter" class="form-label fw-semibold">{{ __('messages.date_to') }}</label>
-                            <input type="date" name="date_to" id="dateToFilter" class="form-select" value="{{ $filters['date_to'] ?? '' }}">
                         </div>
                         <div class="col-12 col-md-2">
                             <label for="searchViolations" class="form-label fw-semibold">{{ __('messages.search') }}</label>
@@ -231,9 +241,6 @@
                                     </td>
                                     <td class="text-end pe-3">
                                         <div class="btn-group" role="group">
-                                            <button type="button" class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#changeStatusModal" data-violation-id="{{ $violation->id }}" data-current-status="{{ $violation->status }}" data-violation-driver="{{ $violation->driver?->full_name ?? __('messages.not_available') }}" title="{{ __('messages.change_status') }}">
-                                                <i class="bi bi-arrow-repeat"></i>
-                                            </button>
                                             <a href="{{ route('violations.show', $violation) }}" class="btn btn-sm btn-outline-secondary" title="{{ __('messages.view_details') }}">
                                                 <i class="bi bi-eye"></i>
                                             </a>
@@ -258,72 +265,30 @@
                     </table>
                 </div>
             </div>
-
-            @if ($violations instanceof \Illuminate\Contracts\Pagination\LengthAwarePaginator)
-                <div class="card-footer bg-white border-0">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div class="text-muted small">
-                            {{ __('messages.showing') }} {{ $violations->firstItem() }} {{ __('messages.to') }} {{ $violations->lastItem() }} {{ __('messages.of') }} {{ $violations->total() }}
-                        </div>
-                        {{ $violations->links() }}
-                    </div>
-                </div>
-            @endif
         </div>
     </div>
 
-    <!-- Change Status Modal -->
-    <div class="modal fade" id="changeStatusModal" tabindex="-1" aria-labelledby="changeStatusModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header bg-info">
-                    <h5 class="modal-title" id="changeStatusModalLabel">
-                        <i class="bi bi-arrow-repeat me-2"></i>{{ __('messages.change_status') }}
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <form id="changeStatusForm" method="POST">
-                    @csrf
-                    @method('POST')
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <label class="form-label text-muted small">{{ __('messages.driver') }}</label>
-                            <p class="fw-semibold mb-0" id="modal-violation-driver"></p>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label text-muted small">{{ __('messages.current_status') }}</label>
-                            <p class="mb-0">
-                                <span class="badge" id="modal-current-status-badge"></span>
-                            </p>
-                        </div>
-                        <div class="mb-3">
-                            <label for="new_status" class="form-label fw-semibold">{{ __('messages.new_status') }} <span class="text-danger">*</span></label>
-                            <select class="form-select @error('status') is-invalid @enderror" id="new_status" name="status" required>
-                                <option value="">{{ __('messages.select_status') }}</option>
-                                <option value="pending" data-badge="warning">{{ __('messages.pending') }}</option>
-                                <option value="confirmed" data-badge="success">{{ __('messages.confirmed') }}</option>
-                                <option value="rejected" data-badge="danger">{{ __('messages.rejected') }}</option>
-                            </select>
-                            @error('status')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ __('messages.cancel') }}</button>
-                        <button type="submit" class="btn btn-dark">
-                            <i class="bi bi-check-circle me-1"></i>{{ __('messages.update') }}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
 </x-app-layout>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const changeStatusModal = document.getElementById('changeStatusModal');
+    // Auto-submit form when year or month changes
+    const yearFilter = document.getElementById('yearFilter');
+    const monthFilter = document.getElementById('monthFilter');
+    const violationFiltersForm = document.getElementById('violationFiltersForm');
+    
+    if (yearFilter && violationFiltersForm) {
+        yearFilter.addEventListener('change', function() {
+            violationFiltersForm.submit();
+        });
+    }
+    
+    if (monthFilter && violationFiltersForm) {
+        monthFilter.addEventListener('change', function() {
+            violationFiltersForm.submit();
+        });
+    }
+
     const changeStatusForm = document.getElementById('changeStatusForm');
     const statusSelect = document.getElementById('new_status');
     const currentStatusBadge = document.getElementById('modal-current-status-badge');
@@ -341,39 +306,6 @@ document.addEventListener('DOMContentLoaded', function() {
         'rejected': 'danger'
     };
 
-    if (changeStatusModal) {
-        changeStatusModal.addEventListener('show.bs.modal', function(event) {
-            const button = event.relatedTarget;
-            const violationId = button.getAttribute('data-violation-id');
-            const currentStatus = button.getAttribute('data-current-status');
-            const driverName = button.getAttribute('data-violation-driver');
-
-            // Update form action
-            changeStatusForm.action = '{{ route("violations.update-status", ":id") }}'.replace(':id', violationId);
-
-            // Update driver name
-            violationDriver.textContent = driverName;
-
-            // Update current status badge
-            const badgeColor = statusBadges[currentStatus] || 'secondary';
-            currentStatusBadge.className = 'badge bg-' + badgeColor + ' bg-opacity-10 text-' + badgeColor;
-            currentStatusBadge.textContent = statusLabels[currentStatus] || currentStatus;
-
-            // Reset and disable current status option
-            statusSelect.value = '';
-            Array.from(statusSelect.options).forEach(option => {
-                option.disabled = option.value === currentStatus;
-            });
-        });
-
-        // Reset form when modal is hidden
-        changeStatusModal.addEventListener('hidden.bs.modal', function() {
-            changeStatusForm.reset();
-            Array.from(statusSelect.options).forEach(option => {
-                option.disabled = false;
-            });
-        });
-    }
 });
 </script>
 

@@ -25,8 +25,14 @@ class DriverViolationController extends Controller
     public function index(Request $request): View|RedirectResponse
     {
         try {
+            // Get year and month from request, default to current year and month
+            $selectedYear = $request->input('year', now()->year);
+            $selectedMonth = $request->input('month', now()->month);
+
             $violationsQuery = DriverViolation::query()
                 ->with(['driver.flotte', 'flotte', 'violationType', 'vehicle'])
+                ->whereYear('violation_date', $selectedYear)
+                ->whereMonth('violation_date', $selectedMonth)
                 ->orderByDesc('violation_date')
                 ->orderByDesc('id'); // ensure stable ordering when dates are identical
 
@@ -62,13 +68,28 @@ class DriverViolationController extends Controller
                 });
             }
 
-            $violations = $violationsQuery->paginate(15)->withQueryString();
+            // Get available years from violations (before filtering)
+            $availableYears = DriverViolation::selectRaw('YEAR(violation_date) as year')
+                ->distinct()
+                ->orderByDesc('year')
+                ->pluck('year')
+                ->filter()
+                ->values();
 
-            // Statistics
-            $totalViolations = DriverViolation::count();
-            $statusCounts = DriverViolation::select('status', DB::raw('COUNT(*) as aggregate'))
+            // If no years found, add current year
+            if ($availableYears->isEmpty()) {
+                $availableYears = collect([now()->year]);
+            }
+
+            // Statistics for the selected year/month
+            $statsQuery = clone $violationsQuery;
+            $totalViolations = $statsQuery->count();
+            $statusCounts = (clone $violationsQuery)
+                ->select('status', DB::raw('COUNT(*) as aggregate'))
                 ->groupBy('status')
                 ->pluck('aggregate', 'status');
+
+            $violations = $violationsQuery->get();
 
             return view('violations.index', [
                 'violations' => $violations,
@@ -79,6 +100,9 @@ class DriverViolationController extends Controller
                     'confirmed' => __('messages.confirmed'),
                     'rejected' => __('messages.rejected'),
                 ],
+                'availableYears' => $availableYears,
+                'selectedYear' => $selectedYear,
+                'selectedMonth' => $selectedMonth,
                 'filters' => $request->all([
                     'status',
                     'violation_type_id',
@@ -86,6 +110,8 @@ class DriverViolationController extends Controller
                     'date_from',
                     'date_to',
                     'search',
+                    'year',
+                    'month',
                 ]),
                 'stats' => [
                     'total' => $totalViolations,
